@@ -1,0 +1,22 @@
+
+Source: capi-media-player
+Section: libs
+Priority: extra
+Maintainer: Kangho Hur <kangho.hur@samsung.com>, Seungkeun Lee <sngn.lee@samsung.com>
+Build-Depends: debhelper (>= 5), dlog-dev, libmm-player-dev, libmm-player-internal-dev, capi-base-common-dev, capi-media-sound-manager-dev
+
+Package: capi-media-player
+Architecture: any
+Depends: ${shilbs:Depends}, ${misc:Depends}
+Description: A Media Player library in Tizen Native API
+
+Package: capi-media-player-dev
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, capi-media-player (= ${Source-Version}), dlog-dev, libmm-player-dev, libmm-player-internal-dev, capi-base-common-dev
+Description: A Media Player library in Tizen Native API (DEV)
+
+Package: capi-media-player-dbg
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, capi-media-player (= ${Source-Version})
+Description: A Media Player library in Tizen Native API (DBG)
+
