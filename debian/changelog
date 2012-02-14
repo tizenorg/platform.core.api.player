@@ -1,3 +1,9 @@
+capi-media-player (0.1.0-6) unstable; urgency=low
+
+  * Apply the SOVERSION 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Tue, 14 Feb 2012 18:21:11 +0900
+
 capi-media-player (0.1.0-5) unstable; urgency=low
 
   * Initial release.
