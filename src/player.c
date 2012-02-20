@@ -51,7 +51,7 @@
 /*
 * Internal Implementation
 */
-int _convert_error_code(int code, char* func_name)
+static int __convert_error_code(int code, char* func_name)
 {
 	int ret = PLAYER_ERROR_NONE;
 	char* msg="PLAYER_ERROR_NONE";
@@ -154,7 +154,7 @@ int _convert_error_code(int code, char* func_name)
 	return ret;	
 }
 
-player_state_e _convert_player_state(MMPlayerStateType state)
+static player_state_e __convert_player_state(MMPlayerStateType state)
 {
 	if(state == MM_PLAYER_STATE_NONE)
 		return PLAYER_STATE_NONE;
@@ -162,14 +162,14 @@ player_state_e _convert_player_state(MMPlayerStateType state)
 		return state +1;
 }
 
-bool _player_state_validate(player_s * handle, player_state_e threshold)
+static bool __player_state_validate(player_s * handle, player_state_e threshold)
 {
 	if (handle->state < threshold)
 		return FALSE;
 	return TRUE;
 }
 
-int _set_callback(_player_event_e type, player_h player, void* callback, void *user_data)
+static int __set_callback(_player_event_e type, player_h player, void* callback, void *user_data)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
@@ -180,7 +180,7 @@ int _set_callback(_player_event_e type, player_h player, void* callback, void *u
 	return PLAYER_ERROR_NONE; 
 }
 
-int _unset_callback(_player_event_e type, player_h player)
+static int __unset_callback(_player_event_e type, player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player; 
@@ -190,12 +190,7 @@ int _unset_callback(_player_event_e type, player_h player)
 	return PLAYER_ERROR_NONE; 
 }
 
-player_state_e _get_current_state(player_s * handle)
-{
-	return handle->state;
-}
-
-int _msg_callback(int message, void *param, void *user_data)
+static int __msg_callback(int message, void *param, void *user_data)
 {
 	player_s * handle = (player_s*)user_data;
 	MMMessageParamType *msg = (MMMessageParamType*)param;
@@ -205,11 +200,11 @@ int _msg_callback(int message, void *param, void *user_data)
 		case  MM_MESSAGE_ERROR: //0x01
 			if( handle->user_cb[_PLAYER_EVENT_TYPE_ERROR] )
 			{
-				((player_error_cb)handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])(_convert_error_code(msg->code,(char*)__FUNCTION__),handle->user_data[_PLAYER_EVENT_TYPE_ERROR]);
+				((player_error_cb)handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])(__convert_error_code(msg->code,(char*)__FUNCTION__),handle->user_data[_PLAYER_EVENT_TYPE_ERROR]);
 			}	
 			break;
 		case  MM_MESSAGE_STATE_CHANGED:	//0x03
-			handle->state = _convert_player_state(msg->state.current);
+			handle->state = __convert_player_state(msg->state.current);
 			if(handle->state == PLAYER_STATE_PAUSED &&  handle->user_cb[_PLAYER_EVENT_TYPE_PAUSE] )
 			{
 				((player_paused_cb)handle->user_cb[_PLAYER_EVENT_TYPE_PAUSE])(handle->user_data[_PLAYER_EVENT_TYPE_PAUSE]);
@@ -347,7 +342,7 @@ int 	player_prepare (player_h player)
 	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);  
 
 	int ret;
-	ret = mm_player_set_message_callback(handle->mm_handle, _msg_callback, (void*)handle);
+	ret = mm_player_set_message_callback(handle->mm_handle, __msg_callback, (void*)handle);
 	if(ret != MM_ERROR_NONE)
 	{
 		LOGW("[%s] Failed to set message callback function (0x%x)" ,__FUNCTION__, ret);
@@ -355,7 +350,7 @@ int 	player_prepare (player_h player)
 	ret = mm_player_realize(handle->mm_handle);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -368,7 +363,7 @@ int 	player_unprepare (player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
-	if (!_player_state_validate(handle, PLAYER_STATE_READY))
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
@@ -377,7 +372,7 @@ int 	player_unprepare (player_h player)
 	int ret = mm_player_unrealize(handle->mm_handle);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -396,7 +391,7 @@ int 	player_set_uri (player_h player, const char *uri)
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,MM_PLAYER_CONTENT_URI , uri, strlen(uri), (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 		return PLAYER_ERROR_NONE;
@@ -416,7 +411,7 @@ int 	player_set_memory_buffer (player_h player, const void *data, int size)
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,MM_PLAYER_CONTENT_URI, uri, strlen(uri), MM_PLAYER_MEMORY_SRC, data,size,(char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 		return PLAYER_ERROR_NONE; 
@@ -432,11 +427,11 @@ int 	player_get_state (player_h player, player_state_e *state)
 	if(ret != MM_ERROR_NONE)
 	{
 		*state = handle->state;
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
-		handle->state  = _convert_player_state(currentStat);
+		handle->state  = __convert_player_state(currentStat);
 		*state = handle->state;
 		return PLAYER_ERROR_NONE;
 	}
@@ -454,7 +449,7 @@ int 	player_set_volume (player_h player, float left, float right)
 	int ret = mm_player_set_volume(handle->mm_handle,&vol);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -472,7 +467,7 @@ int 	player_get_volume (player_h player, float *left, float *right)
 	int ret = mm_player_get_volume(handle->mm_handle,&vol);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -490,7 +485,7 @@ int player_set_sound_type(player_h player, sound_type_e type)
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,"sound_volume_type" , type, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 		return PLAYER_ERROR_NONE;
@@ -517,7 +512,7 @@ int 	player_start (player_h player)
 
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -535,7 +530,7 @@ int 	player_stop (player_h player)
 		int ret = mm_player_stop(handle->mm_handle);
 		if(ret != MM_ERROR_NONE)
 		{
-			return _convert_error_code(ret,(char*)__FUNCTION__);
+			return __convert_error_code(ret,(char*)__FUNCTION__);
 		}
 		else
 		{
@@ -559,7 +554,7 @@ int 	player_pause (player_h player)
 	int ret = mm_player_pause(handle->mm_handle);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -577,7 +572,7 @@ int 	player_set_position (player_h player, int millisecond)
 	int ret = mm_player_set_position(handle->mm_handle, MM_PLAYER_POS_FORMAT_TIME, millisecond);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -595,7 +590,7 @@ int 	player_set_position_ratio (player_h player, int percent)
 	int ret = mm_player_set_position(handle->mm_handle, MM_PLAYER_POS_FORMAT_PERCENT , percent);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -609,7 +604,7 @@ int 	player_get_position (player_h player, int *millisecond)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(millisecond);
 	player_s * handle = (player_s *) player;
-	if (!_player_state_validate(handle, PLAYER_STATE_READY))
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (current state : %d)" ,__FUNCTION__, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
@@ -618,7 +613,7 @@ int 	player_get_position (player_h player, int *millisecond)
 	int ret = mm_player_get_position(handle->mm_handle, MM_PLAYER_POS_FORMAT_TIME , &pos);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -632,7 +627,7 @@ int 	player_get_position_ratio (player_h player,int *percent)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(percent);
 	player_s * handle = (player_s *) player;
-	if (!_player_state_validate(handle, PLAYER_STATE_READY))
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (current state : %d)" ,__FUNCTION__, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
@@ -641,7 +636,7 @@ int 	player_get_position_ratio (player_h player,int *percent)
 	int ret = mm_player_get_position(handle->mm_handle, MM_PLAYER_POS_FORMAT_PERCENT, &pos);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -658,7 +653,7 @@ int 	player_set_mute (player_h player, bool muted)
 	int ret = mm_player_set_mute(handle->mm_handle, muted);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -676,7 +671,7 @@ int 	player_is_muted (player_h player, bool *muted)
 	int ret = mm_player_get_mute(handle->mm_handle, &_mute);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -696,7 +691,7 @@ int 	player_set_looping (player_h player, bool looping)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
-	if (!_player_state_validate(handle, PLAYER_STATE_IDLE))
+	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (current state : %d)" ,__FUNCTION__, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
@@ -711,7 +706,7 @@ int 	player_set_looping (player_h player, bool looping)
 	
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -724,7 +719,7 @@ int 	player_is_looping (player_h player, bool *looping)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(looping);
 	player_s * handle = (player_s *) player;
-	if (!_player_state_validate(handle, PLAYER_STATE_IDLE))
+	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (current state : %d)" ,__FUNCTION__, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
@@ -733,7 +728,7 @@ int 	player_is_looping (player_h player, bool *looping)
 	int ret = mm_player_get_attribute(handle->mm_handle, NULL,MM_PLAYER_PLAYBACK_COUNT , &count, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -754,7 +749,7 @@ int 	player_get_duration (player_h player, int *duration)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(duration);
 	player_s * handle = (player_s *) player;
-	if (!_player_state_validate(handle, PLAYER_STATE_PLAYING))
+	if (!__player_state_validate(handle, PLAYER_STATE_PLAYING))
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (current state : %d)" ,__FUNCTION__, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
@@ -763,7 +758,7 @@ int 	player_get_duration (player_h player, int *duration)
 	int ret = mm_player_get_attribute(handle->mm_handle, NULL,MM_PLAYER_CONTENT_DURATION, &_duration, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -783,7 +778,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", type, "display_overlay" , type == PLAYER_DISPLAY_TYPE_X11 ? &handle->display_handle : display, sizeof(display), (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 		return PLAYER_ERROR_NONE;
@@ -797,7 +792,7 @@ int player_set_x11_display_rotation(player_h player, player_display_rotation_e r
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,MM_PLAYER_VIDEO_ROTATION , rotation, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 		return PLAYER_ERROR_NONE;
@@ -811,7 +806,7 @@ int player_get_x11_display_rotation( player_h player, player_display_rotation_e 
 	int ret = mm_player_get_attribute(handle->mm_handle, NULL,MM_PLAYER_VIDEO_ROTATION ,rotation, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -833,7 +828,7 @@ int player_set_x11_display_visible(player_h player, bool visible)
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,"display_visible" , value, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 		return PLAYER_ERROR_NONE;
@@ -848,7 +843,7 @@ int player_is_x11_display_visible(player_h player, bool* visible)
 	int ret = mm_player_get_attribute(handle->mm_handle, NULL,"display_visible" ,&count, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -874,7 +869,7 @@ int player_set_x11_display_mode(player_h player, player_display_mode_e mode)
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,"display_method" , mode, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 		return PLAYER_ERROR_NONE;
@@ -888,7 +883,7 @@ int player_get_x11_display_mode(player_h player, player_display_mode_e *mode)
 	int ret = mm_player_get_attribute(handle->mm_handle, NULL,"display_method"  ,mode, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -902,7 +897,7 @@ int 	player_get_video_size (player_h player, int *width, int *height)
 	PLAYER_NULL_ARG_CHECK(width);
 	PLAYER_NULL_ARG_CHECK(height);
 	player_s * handle = (player_s *) player;
-	if (!_player_state_validate(handle, PLAYER_STATE_READY))
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (current state : %d)" ,__FUNCTION__, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
@@ -912,7 +907,7 @@ int 	player_get_video_size (player_h player, int *width, int *height)
 	int ret = mm_player_get_attribute(handle->mm_handle, NULL,MM_PLAYER_VIDEO_WIDTH ,&w,  MM_PLAYER_VIDEO_HEIGHT, &h, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 	{
@@ -932,7 +927,7 @@ int player_set_subtitle_path(player_h player, char* path)
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,"subtitle_uri" , path, strlen(path),"subtitle_silent", 0, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
-		return _convert_error_code(ret,(char*)__FUNCTION__);
+		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
 		return PLAYER_ERROR_NONE;
@@ -940,7 +935,7 @@ int player_set_subtitle_path(player_h player, char* path)
 
 int player_capture_video(player_h player, player_video_captured_cb callback, void *user_data)
 {
-	int ret =_set_callback(_PLAYER_EVENT_TYPE_CAPTURE,player,callback,user_data);
+	int ret =__set_callback(_PLAYER_EVENT_TYPE_CAPTURE,player,callback,user_data);
 	if(ret != PLAYER_ERROR_NONE)
 		return ret;
 	
@@ -950,7 +945,7 @@ int player_capture_video(player_h player, player_video_captured_cb callback, voi
 		ret = mm_player_do_video_capture(handle->mm_handle);
 		if(ret != MM_ERROR_NONE)
 		{
-			return _convert_error_code(ret,(char*)__FUNCTION__);
+			return __convert_error_code(ret,(char*)__FUNCTION__);
 		}
 		else
 			return PLAYER_ERROR_NONE;
@@ -964,72 +959,72 @@ int player_capture_video(player_h player, player_video_captured_cb callback, voi
 
 int 	player_set_started_cb (player_h player, player_started_cb callback, void *user_data)
 {
-	return _set_callback(_PLAYER_EVENT_TYPE_BEGIN,player,callback,user_data);
+	return __set_callback(_PLAYER_EVENT_TYPE_BEGIN,player,callback,user_data);
 }
 
 int 	player_unset_started_cb (player_h player)
 {
-	return _unset_callback(_PLAYER_EVENT_TYPE_BEGIN,player);
+	return __unset_callback(_PLAYER_EVENT_TYPE_BEGIN,player);
 }
 
 int 	player_set_completed_cb (player_h player, player_completed_cb callback, void *user_data)
 {
-	return _set_callback(_PLAYER_EVENT_TYPE_COMPLETE,player,callback,user_data);
+	return __set_callback(_PLAYER_EVENT_TYPE_COMPLETE,player,callback,user_data);
 }
 
 int 	player_unset_completed_cb (player_h player)
 {
-	return _unset_callback(_PLAYER_EVENT_TYPE_COMPLETE,player);
+	return __unset_callback(_PLAYER_EVENT_TYPE_COMPLETE,player);
 }
 
 int 	player_set_paused_cb (player_h player, player_paused_cb callback, void *user_data)
 {
-	return _set_callback(_PLAYER_EVENT_TYPE_PAUSE,player,callback,user_data);
+	return __set_callback(_PLAYER_EVENT_TYPE_PAUSE,player,callback,user_data);
 }
 
 int 	player_unset_paused_cb (player_h player)
 {
-	return _unset_callback(_PLAYER_EVENT_TYPE_PAUSE,player);
+	return __unset_callback(_PLAYER_EVENT_TYPE_PAUSE,player);
 }
 
 int 	player_set_interrupted_cb (player_h player, player_interrupted_cb callback, void *user_data)
 {
-	return _set_callback(_PLAYER_EVENT_TYPE_INTERRUPT,player,callback,user_data);
+	return __set_callback(_PLAYER_EVENT_TYPE_INTERRUPT,player,callback,user_data);
 }
 
 int 	player_unset_interrupted_cb (player_h player)
 {
-	return _unset_callback(_PLAYER_EVENT_TYPE_INTERRUPT,player);
+	return __unset_callback(_PLAYER_EVENT_TYPE_INTERRUPT,player);
 }
 
 int 	player_set_error_cb (player_h player, player_error_cb callback, void *user_data)
 {
-	return _set_callback(_PLAYER_EVENT_TYPE_ERROR,player,callback,user_data);
+	return __set_callback(_PLAYER_EVENT_TYPE_ERROR,player,callback,user_data);
 }
 
 int 	player_unset_error_cb (player_h player)
 {
-	return _unset_callback(_PLAYER_EVENT_TYPE_ERROR,player);
+	return __unset_callback(_PLAYER_EVENT_TYPE_ERROR,player);
 }
 
 int 	player_set_buffering_cb (player_h player, player_buffering_cb callback, void *user_data)
 {
-	return _set_callback(_PLAYER_EVENT_TYPE_BUFFERING,player,callback,user_data);
+	return __set_callback(_PLAYER_EVENT_TYPE_BUFFERING,player,callback,user_data);
 }
 
 int 	player_unset_buffering_cb (player_h player)
 {
-	return _unset_callback(_PLAYER_EVENT_TYPE_BUFFERING,player);
+	return __unset_callback(_PLAYER_EVENT_TYPE_BUFFERING,player);
 }
 
 
 int 	player_set_subtilte_updated_cb(player_h player, player_subtitle_updated_cb callback, void* user_data )
 {
-	return _set_callback(_PLAYER_EVENT_TYPE_SUBTITLE,player,callback,user_data);
+	return __set_callback(_PLAYER_EVENT_TYPE_SUBTITLE,player,callback,user_data);
 }
 
 int 	player_unset_subtilte_updated_cb (player_h player)
 {
-	return _unset_callback(_PLAYER_EVENT_TYPE_SUBTITLE,player);
+	return __unset_callback(_PLAYER_EVENT_TYPE_SUBTITLE,player);
 }
 

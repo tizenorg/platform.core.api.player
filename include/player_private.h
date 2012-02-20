@@ -44,9 +44,6 @@ typedef struct _player_s{
 	int state;
 } player_s;
 
-int mm_player_msg_callback(int message, void *param, void *user_data);
-
-
 #ifdef __cplusplus
 }
 #endif
