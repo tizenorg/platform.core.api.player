@@ -7,12 +7,12 @@ Build-Depends: debhelper (>= 5), dlog-dev, libmm-player-dev, libmm-player-intern
 
 Package: capi-media-player
 Architecture: any
-Depends: ${shilbs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: A Media Player library in Tizen Native API
 
 Package: capi-media-player-dev
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, capi-media-player (= ${Source-Version}), dlog-dev, libmm-player-dev, libmm-player-internal-dev, capi-base-common-dev
+Depends: ${shlibs:Depends}, ${misc:Depends}, capi-media-player (= ${Source-Version}), capi-base-common-dev, capi-media-sound-manager-dev
 Description: A Media Player library in Tizen Native API (DEV)
 
 Package: capi-media-player-dbg

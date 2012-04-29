@@ -11,6 +11,7 @@ SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
 SET(dependents "dlog mm-player capi-base-common capi-media-sound-manager")
+SET(pc_dependents "capi-base-common capi-media-sound-manager")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})
@@ -51,7 +52,7 @@ INSTALL(
         )
 
 SET(PC_NAME ${fw_name})
-SET(PC_REQUIRED ${dependents})
+SET(PC_REQUIRED ${pc_dependents})
 SET(PC_LDFLAGS -l${fw_name})
 SET(PC_CFLAGS -I\${includedir}/media)
 

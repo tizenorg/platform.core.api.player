@@ -11,7 +11,7 @@
 * distributed under the License is distributed on an "AS IS" BASIS,
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
-* limitations under the License. 
+* limitations under the License.
 */
 
 #include <stdio.h>
@@ -19,6 +19,7 @@
 #include <string.h>
 #include <mm.h>
 #include <mm_player.h>
+#include <mm_player_sndeffect.h>
 #include <mm_player_internal.h>
 #include <mm_types.h>
 #include <player.h>
@@ -149,7 +150,7 @@ static int __convert_error_code(int code, char* func_name)
 			ret = PLAYER_ERROR_SOUND_POLICY;
 			msg = "PLAYER_ERROR_SOUND_POLICY";
 			break;
-	} 
+	}
 	LOGE("[%s] %s(0x%08x) : core fw error(0x%x)",func_name,msg, ret, code);
 	return ret;	
 }
@@ -173,21 +174,21 @@ static int __set_callback(_player_event_e type, player_h player, void* callback,
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
-	player_s * handle = (player_s *) player; 
+	player_s * handle = (player_s *) player;
 	handle->user_cb[type] = callback;
 	handle->user_data[type] = user_data;
 	LOGI("[%s] Event type : %d ",__FUNCTION__, type);
-	return PLAYER_ERROR_NONE; 
+	return PLAYER_ERROR_NONE;
 }
 
 static int __unset_callback(_player_event_e type, player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
-	player_s * handle = (player_s *) player; 
+	player_s * handle = (player_s *) player;
 	handle->user_cb[type] = NULL;
 	handle->user_data[type] = NULL;
 	LOGI("[%s] Event type : %d ",__FUNCTION__, type);
-	return PLAYER_ERROR_NONE; 
+	return PLAYER_ERROR_NONE;
 }
 
 static int __msg_callback(int message, void *param, void *user_data)
@@ -195,13 +196,11 @@ static int __msg_callback(int message, void *param, void *user_data)
 	player_s * handle = (player_s*)user_data;
 	MMMessageParamType *msg = (MMMessageParamType*)param;
 	LOGI("[%s] Got message type : 0x%x" ,__FUNCTION__, message);
+	player_error_e err_code = PLAYER_ERROR_NONE;
 	switch(message)
 	{
-		case  MM_MESSAGE_ERROR: //0x01
-			if( handle->user_cb[_PLAYER_EVENT_TYPE_ERROR] )
-			{
-				((player_error_cb)handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])(__convert_error_code(msg->code,(char*)__FUNCTION__),handle->user_data[_PLAYER_EVENT_TYPE_ERROR]);
-			}	
+		case MM_MESSAGE_ERROR: //0x01
+			err_code = __convert_error_code(msg->code,(char*)__FUNCTION__);
 			break;
 		case  MM_MESSAGE_STATE_CHANGED:	//0x03
 			handle->state = __convert_player_state(msg->state.current);
@@ -209,6 +208,12 @@ static int __msg_callback(int message, void *param, void *user_data)
 			{
 				((player_paused_cb)handle->user_cb[_PLAYER_EVENT_TYPE_PAUSE])(handle->user_data[_PLAYER_EVENT_TYPE_PAUSE]);
 			}	
+			break;
+		case MM_MESSAGE_READY_TO_RESUME: //0x05
+			if( handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT] )
+			{
+				((player_interrupted_cb)handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT])(PLAYER_INTERRUPTED_COMPLETED,handle->user_data[_PLAYER_EVENT_TYPE_INTERRUPT]);
+			}
 			break;
 		case MM_MESSAGE_BEGIN_OF_STREAM: //0x104
 			if( handle->user_cb[_PLAYER_EVENT_TYPE_BEGIN] )
@@ -231,37 +236,69 @@ static int __msg_callback(int message, void *param, void *user_data)
 		case MM_MESSAGE_STATE_INTERRUPTED: //0x04
 			if( handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT] )
 			{
+				MMPlayerStateType currentStat = MM_PLAYER_STATE_PAUSED;
+				int ret = mm_player_get_state(handle->mm_handle, &currentStat);
+				handle->state = (ret != MM_ERROR_NONE )? currentStat: __convert_player_state(currentStat);
 				((player_interrupted_cb)handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT])(msg->code,handle->user_data[_PLAYER_EVENT_TYPE_INTERRUPT]);
-			}	
-			break;	
+			}
+			break;
+		case MM_MESSAGE_CONNECTION_TIMEOUT: //0x102
+			LOGE("[%s] PLAYER_ERROR_CONNECTION_FAILED (0x%08x) : CONNECTION_TIMEOUT" ,__FUNCTION__, PLAYER_ERROR_CONNECTION_FAILED);
+			err_code = PLAYER_ERROR_CONNECTION_FAILED;
+			break;
 		case MM_MESSAGE_UPDATE_SUBTITLE: //0x109
 			if( handle->user_cb[_PLAYER_EVENT_TYPE_SUBTITLE] )
 			{
 				((player_subtitle_updated_cb)handle->user_cb[_PLAYER_EVENT_TYPE_SUBTITLE])(msg->subtitle.duration, (char*)msg->data,handle->user_data[_PLAYER_EVENT_TYPE_SUBTITLE]);
 			}	
-			break;	
+			break;
+		case MM_MESSAGE_VIDEO_NOT_CAPTURED: //0x113
+			LOGE("[%s] PLAYER_ERROR_VIDEO_CAPTURE_FAILED (0x%08x)",__FUNCTION__, PLAYER_ERROR_VIDEO_CAPTURE_FAILED);
+			if( handle->user_cb[_PLAYER_EVENT_TYPE_ERROR] )
+			{
+				((player_error_cb)handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])(PLAYER_ERROR_VIDEO_CAPTURE_FAILED,handle->user_data[_PLAYER_EVENT_TYPE_ERROR]);
+			}	
+			break;
 		case MM_MESSAGE_VIDEO_CAPTURED: //0x110
 			if( handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE] )
 			{
 				int w;
 				int h;
 				int ret = mm_player_get_attribute(handle->mm_handle, NULL,MM_PLAYER_VIDEO_WIDTH ,&w,  MM_PLAYER_VIDEO_HEIGHT, &h, (char*)NULL);
-				if(ret != MM_ERROR_NONE)
+				if(ret != MM_ERROR_NONE && handle->user_cb[_PLAYER_EVENT_TYPE_ERROR] )
 				{
-					w=0;
-					h=0;
-					LOGI("[%s] Failed to get video size on video captured : 0x%x" ,__FUNCTION__, ret);
+					LOGE("[%s] PLAYER_ERROR_VIDEO_CAPTURE_FAILED (0x%08x) : Failed to get video size on video captured (0x%x)" ,__FUNCTION__, PLAYER_ERROR_VIDEO_CAPTURE_FAILED, ret);
+					err_code=PLAYER_ERROR_VIDEO_CAPTURE_FAILED;
 				}
-				MMPlayerVideoCapture* capture = (MMPlayerVideoCapture *)msg->data;
-				((player_video_captured_cb)handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE])(capture->data, w, h, capture->size, handle->user_data[_PLAYER_EVENT_TYPE_CAPTURE]);
+				else
+				{
+					MMPlayerVideoCapture* capture = (MMPlayerVideoCapture *)msg->data;
+					((player_video_captured_cb)handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE])(capture->data, w, h, capture->size, handle->user_data[_PLAYER_EVENT_TYPE_CAPTURE]);
+
+					if (capture->data)
+					{
+						g_free(capture->data);
+						capture->data = NULL;
+					}
+				}
 			}	
 			break;	
+		case MM_MESSAGE_FILE_NOT_SUPPORTED: //0x10f
+			LOGE("[%s] PLAYER_ERROR_NOT_SUPPORTED_FILE (0x%08x) : FILE_NOT_SUPPORTED" ,__FUNCTION__, PLAYER_ERROR_NOT_SUPPORTED_FILE);
+			err_code = PLAYER_ERROR_NOT_SUPPORTED_FILE;
+			break;
+		case MM_MESSAGE_FILE_NOT_FOUND: //0x110
+			LOGE("[%s] PLAYER_ERROR_NOT_SUPPORTED_FILE (0x%08x) : FILE_NOT_FOUND" ,__FUNCTION__, PLAYER_ERROR_NOT_SUPPORTED_FILE);
+			err_code = PLAYER_ERROR_NOT_SUPPORTED_FILE;
+			break;
+		case MM_MESSAGE_DRM_NOT_AUTHORIZED: //0x111
+			LOGE("[%s] PLAYER_ERROR_NOT_SUPPORTED_FILE (0x%08x) : DRM_NOT_AUTHORIZED" ,__FUNCTION__, PLAYER_ERROR_NOT_SUPPORTED_FILE);
+			err_code = PLAYER_ERROR_NOT_SUPPORTED_FILE;
+			break;
 		case MM_MESSAGE_UNKNOWN: //0x00
 		case MM_MESSAGE_WARNING: //0x02
-		case MM_MESSAGE_READY_TO_RESUME: //0x05
 		case MM_MESSAGE_CONNECTING: //0x100
 		case MM_MESSAGE_CONNECTED: //0x101
-		case MM_MESSAGE_CONNECTION_TIMEOUT: //0x102
 		case MM_MESSAGE_BLUETOOTH_ON: //0x106
 		case MM_MESSAGE_BLUETOOTH_OFF: //0x107
 		case MM_MESSAGE_RESUMED_BY_REW: //0x108
@@ -270,17 +307,38 @@ static int __msg_callback(int message, void *param, void *user_data)
 		case MM_MESSAGE_RTP_SESSION_STATUS: //0x10c
 		case MM_MESSAGE_SENDER_STATE: //0x10d
 		case MM_MESSAGE_RECEIVER_STATE: //0x10e
-		case MM_MESSAGE_FILE_NOT_SUPPORTED: //0x10f
-		case MM_MESSAGE_FILE_NOT_FOUND: //0x110
-		case MM_MESSAGE_DRM_NOT_AUTHORIZED: //0x111
-		case MM_MESSAGE_VIDEO_NOT_CAPTURED: //0x113
 		case MM_MESSAGE_SEEK_COMPLETED: //0x114
 		default:
 			break;
 	}
-	
+
+	if(err_code != PLAYER_ERROR_NONE && handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])
+	{
+		((player_error_cb)handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])(err_code,handle->user_data[_PLAYER_EVENT_TYPE_ERROR]);
+	}
 	return 1;
 }
+
+static bool  __video_stream_callback(void *stream, int stream_size, void *user_data, int width, int height)
+{
+	player_s * handle = (player_s*)user_data;
+	if( handle->user_cb[_PLAYER_EVENT_TYPE_VIDEO_FRAME] )
+	{
+		((player_video_frame_decoded_cb)handle->user_cb[_PLAYER_EVENT_TYPE_VIDEO_FRAME])((unsigned char *)stream, width, height, stream_size, handle->user_data[_PLAYER_EVENT_TYPE_VIDEO_FRAME]);
+	}	
+	return TRUE;
+}
+
+static bool  __audio_stream_callback(void *stream, int stream_size, void *user_data)
+{
+	player_s * handle = (player_s*)user_data;
+	if( handle->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME] )
+	{
+		((player_audio_frame_decoded_cb)handle->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME])((unsigned char *)stream, stream_size, handle->user_data[_PLAYER_EVENT_TYPE_AUDIO_FRAME]);
+	}	
+	return TRUE;
+}
+
 
 /*
 * Public Implementation
@@ -339,7 +397,7 @@ int 	player_prepare (player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
-	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);  
+	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);
 
 	int ret;
 	ret = mm_player_set_message_callback(handle->mm_handle, __msg_callback, (void*)handle);
@@ -386,7 +444,7 @@ int 	player_set_uri (player_h player, const char *uri)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(uri);
 	player_s * handle = (player_s *) player;
-	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE); 
+	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);
 	
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,MM_PLAYER_CONTENT_URI , uri, strlen(uri), (char*)NULL);
 	if(ret != MM_ERROR_NONE)
@@ -414,7 +472,7 @@ int 	player_set_memory_buffer (player_h player, const void *data, int size)
 		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
-		return PLAYER_ERROR_NONE; 
+		return PLAYER_ERROR_NONE;
 }
 
 int 	player_get_state (player_h player, player_state_e *state)
@@ -549,7 +607,7 @@ int 	player_pause (player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
-	PLAYER_STATE_CHECK(handle,PLAYER_STATE_PLAYING); 
+	PLAYER_STATE_CHECK(handle,PLAYER_STATE_PLAYING);
 	
 	int ret = mm_player_pause(handle->mm_handle);
 	if(ret != MM_ERROR_NONE)
@@ -771,7 +829,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
-	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE); 
+	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);
 
 	handle->display_handle = display;
 	handle->display_type = type;
@@ -782,6 +840,32 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	}
 	else
 		return PLAYER_ERROR_NONE;
+}
+
+int player_set_playback_rate(player_h player, float rate)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_CHECK_CONDITION(rate>=-5.0 && rate <= 5.0 ,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
+	player_s * handle = (player_s *) player;
+	PLAYER_STATE_CHECK(handle,PLAYER_STATE_PLAYING);
+
+	int ret = mm_player_set_play_speed(handle->mm_handle, rate);
+
+	switch (ret)
+	{
+	case MM_ERROR_NONE:
+	case MM_ERROR_PLAYER_NO_OP:
+		ret = PLAYER_ERROR_NONE;
+		break;
+	case MM_ERROR_NOT_SUPPORT_API:
+	case MM_ERROR_PLAYER_SEEK:		
+		LOGE("[%s] %s(0x%08x)",__FUNCTION__, PLAYER_ERROR_INVALID_OPERATION,"PLAYER_ERROR_INVALID_OPERATION" );
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+		break;
+	default:
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	return ret;
 }
 
 int player_set_x11_display_rotation(player_h player, player_display_rotation_e rotation)
@@ -891,6 +975,226 @@ int player_get_x11_display_mode(player_h player, player_display_mode_e *mode)
 	}
 }
 
+int player_set_audio_effect_output(player_h player,  sound_device_out_e output)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+
+	MMAudioFilterOutputMode _mode=MM_AUDIO_FILTER_OUTPUT_SPK;
+	switch(output)
+	{
+	case SOUND_DEVICE_OUT_SPEAKER:
+		 _mode = MM_AUDIO_FILTER_OUTPUT_SPK;
+		break;
+	case SOUND_DEVICE_OUT_WIRED_ACCESSORY:
+	case SOUND_DEVICE_OUT_BT_A2DP:
+		 _mode = MM_AUDIO_FILTER_OUTPUT_EAR;
+		break;
+	case SOUND_DEVICE_OUT_BT_SCO:
+	case SOUND_DEVICE_OUT_RECEIVER:
+		LOGE("[%s] PLAYER_ERROR_INVALID_OPERATION BT_SCO and RECEIVER doesn't supported( output : %d)" ,__FUNCTION__, output);
+		return PLAYER_ERROR_INVALID_OPERATION;
+	}
+	
+	MMAudioFilterInfo filter;
+	memset(&filter, 0, sizeof(MMAudioFilterInfo));
+	filter.output_mode = _mode;
+	int ret = mm_player_apply_sound_filter(handle->mm_handle, &filter);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		return PLAYER_ERROR_NONE;
+	}
+}
+
+int player_set_audio_effect_3d(player_h player, audio_effect_3d_e effect)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+
+	MMAudioFilterInfo filter;
+	memset(&filter, 0, sizeof(MMAudioFilterInfo));
+	filter.filter_type = MM_AUDIO_FILTER_3D;
+
+	switch(effect)
+	{
+	case AUDIO_EFFECT_3D_WIDE:
+		 filter.sound_3d.mode = MM_3DSOUND_WIDE;
+		break;
+	case AUDIO_EFFECT_3D_DYNAMIC:
+		 filter.sound_3d.mode = MM_3DSOUND_DYNAMIC;
+		break;
+	case AUDIO_EFFECT_3D_SURROUND:
+		 filter.sound_3d.mode = MM_3DSOUND_SURROUND;
+		break;
+	}
+
+	int ret = mm_player_apply_sound_filter(handle->mm_handle, &filter);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		return PLAYER_ERROR_NONE;
+	}
+}
+
+int player_set_audio_effect_equalizer(player_h player, audio_effect_equalizer_e effect)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+
+	MMAudioFilterInfo filter;
+	memset(&filter, 0, sizeof(MMAudioFilterInfo));
+	filter.filter_type = MM_AUDIO_FILTER_EQUALIZER;
+	
+	switch(effect)
+	{
+	case AUDIO_EFFECT_EQ_ROCK:
+		filter.equalizer.mode = MM_EQ_ROCK;
+		break;
+	case AUDIO_EFFECT_EQ_JAZZ:
+		filter.equalizer.mode = MM_EQ_JAZZ;
+		break;
+	case AUDIO_EFFECT_EQ_LIVE:
+		filter.equalizer.mode = MM_EQ_LIVE;
+		break;
+	case AUDIO_EFFECT_EQ_CLASSIC:
+		 filter.equalizer.mode = MM_EQ_CLASSIC;
+		break;
+	case AUDIO_EFFECT_EQ_FULL_BASS:
+		 filter.equalizer.mode = MM_EQ_FULL_BASS;
+		break;
+	case AUDIO_EFFECT_EQ_FULL_BASS_AND_TREBLE:
+		 filter.equalizer.mode = MM_EQ_FULL_BASS_AND_TREBLE;
+		break;
+	case AUDIO_EFFECT_EQ_DANCE:
+		 filter.equalizer.mode = MM_EQ_DANCE;
+		break;
+	case AUDIO_EFFECT_EQ_POP:
+		filter.equalizer.mode = MM_EQ_POP;
+		break;
+	case AUDIO_EFFECT_EQ_FULL_TREBLE:
+		 filter.equalizer.mode = MM_EQ_FULL_TREBLE;
+		break;
+	case AUDIO_EFFECT_EQ_CLUB:
+		 filter.equalizer.mode = MM_EQ_CLUB;
+		break;
+	case AUDIO_EFFECT_EQ_PARTY:
+		 filter.equalizer.mode = MM_EQ_PARTY;
+		break;
+	case AUDIO_EFFECT_EQ_LARGE_HALL:
+		filter.equalizer.mode = MM_EQ_LARGE_HALL;
+		break;
+	case AUDIO_EFFECT_EQ_SOFT:
+		 filter.equalizer.mode = MM_EQ_SOFT;
+		break;
+	case AUDIO_EFFECT_EQ_SOFT_ROCK:
+		 filter.equalizer.mode = MM_EQ_SOFT_ROCK;
+		break;
+	}
+
+	int ret = mm_player_apply_sound_filter(handle->mm_handle, &filter);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		return PLAYER_ERROR_NONE;
+	}
+}
+
+int player_set_audio_effect_reverb(player_h player, audio_effect_reverb_e effect)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+
+	MMAudioFilterInfo filter;
+	memset(&filter, 0, sizeof(MMAudioFilterInfo));
+	filter.filter_type = MM_AUDIO_FILTER_REVERB;
+	
+	switch(effect)
+	{
+	case AUDIO_EFFECT_REVERB_JAZZ_CLUB:
+		filter.reverb.mode = MM_REVERB_JAZZ_CLUB;
+		break;
+	case AUDIO_EFFECT_REVERB_CONCERT_HALL:
+		 filter.reverb.mode = MM_REVERB_CONCERT_HALL;
+		break;
+	case AUDIO_EFFECT_REVERB_STADIUM:
+		 filter.reverb.mode = MM_REVERB_STADIUM;
+		break;
+	}
+
+	int ret = mm_player_apply_sound_filter(handle->mm_handle, &filter);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		return PLAYER_ERROR_NONE;
+	}
+}
+
+int player_set_audio_effect_extra(player_h player, audio_effect_extra_e effect)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+
+	MMAudioFilterInfo filter;
+	memset(&filter, 0, sizeof(MMAudioFilterInfo));
+	
+	switch(effect)
+	{
+	case AUDIO_EFFECT_EX_BASE:
+		 filter.filter_type = MM_AUDIO_FILTER_BE;
+		break;
+	case AUDIO_EFFECT_EX_MUSIC_CLARITY:
+		 filter.filter_type = MM_AUDIO_FILTER_MC;
+		break;
+	case AUDIO_EFFECT_EX_SURROUND:
+		 filter.filter_type = MM_AUDIO_FILTER_SRSCSHP;
+		break;
+	case AUDIO_EFFECT_EX_SOUND_EXTERNAL:
+		 filter.filter_type = MM_AUDIO_FILTER_SOUND_EX;
+		break;
+	}
+
+	int ret = mm_player_apply_sound_filter(handle->mm_handle, &filter);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		return PLAYER_ERROR_NONE;
+	}
+}
+
+int player_clear_audio_effect(player_h player)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+	MMAudioFilterInfo filter;
+	memset(&filter, 0, sizeof(MMAudioFilterInfo));
+	filter.filter_type = MM_AUDIO_FILTER_NONE;
+	int ret = mm_player_apply_sound_filter(handle->mm_handle, &filter);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		return PLAYER_ERROR_NONE;
+	}
+}
+
 int 	player_get_video_size (player_h player, int *width, int *height)
 {
 	PLAYER_INSTANCE_CHECK(player);
@@ -922,7 +1226,7 @@ int player_set_subtitle_path(player_h player, char* path)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(path);
 	player_s * handle = (player_s *) player;
-	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE); 
+	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);
 
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,"subtitle_uri" , path, strlen(path),"subtitle_silent", 0, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
@@ -955,6 +1259,23 @@ int player_capture_video(player_h player, player_video_captured_cb callback, voi
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (current state : %d)" ,__FUNCTION__, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
 	}	
+}
+
+int player_set_streaming_cookie(player_h player, const char *cookie, int size)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(cookie);
+	PLAYER_CHECK_CONDITION(size>=0,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
+	player_s * handle = (player_s *) player;
+	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);
+	
+	int ret = mm_player_set_attribute(handle->mm_handle, NULL,"streaming_cookie", cookie, size, (char*)NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+		return PLAYER_ERROR_NONE;
 }
 
 int 	player_set_started_cb (player_h player, player_started_cb callback, void *user_data)
@@ -1017,14 +1338,96 @@ int 	player_unset_buffering_cb (player_h player)
 	return __unset_callback(_PLAYER_EVENT_TYPE_BUFFERING,player);
 }
 
-
-int 	player_set_subtilte_updated_cb(player_h player, player_subtitle_updated_cb callback, void* user_data )
+int 	player_set_subtitle_updated_cb(player_h player, player_subtitle_updated_cb callback, void* user_data )
 {
 	return __set_callback(_PLAYER_EVENT_TYPE_SUBTITLE,player,callback,user_data);
 }
 
-int 	player_unset_subtilte_updated_cb (player_h player)
+int 	player_unset_subtitle_updated_cb (player_h player)
 {
 	return __unset_callback(_PLAYER_EVENT_TYPE_SUBTITLE,player);
 }
 
+int player_set_video_frame_decoded_cb(player_h player, player_video_frame_decoded_cb callback, void *user_data)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(callback);
+	player_s * handle = (player_s *) player;
+	if (handle->state != PLAYER_STATE_IDLE  &&  handle->state != PLAYER_STATE_READY)
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (current state : %d)" ,__FUNCTION__, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+	
+	handle->user_cb[_PLAYER_EVENT_TYPE_VIDEO_FRAME] = callback;
+	handle->user_data[_PLAYER_EVENT_TYPE_VIDEO_FRAME] = user_data;
+	LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_VIDEO_FRAME);
+	int ret = mm_player_set_video_stream_callback(handle->mm_handle, __video_stream_callback, (void*)handle);
+	if(ret != MM_ERROR_NONE)
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
+}
+
+int player_unset_video_frame_decoded_cb(player_h player)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+	handle->user_cb[_PLAYER_EVENT_TYPE_VIDEO_FRAME] = NULL;
+	handle->user_data[_PLAYER_EVENT_TYPE_VIDEO_FRAME] = NULL;
+	LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_VIDEO_FRAME);
+	int ret = mm_player_set_video_stream_callback(handle->mm_handle, NULL, NULL);
+	if(ret != MM_ERROR_NONE)
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
+}
+
+int player_set_audio_frame_decoded_cb(player_h player, int start, int end, player_audio_frame_decoded_cb callback, void *user_data)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(callback);
+	PLAYER_CHECK_CONDITION(start>=0 ,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
+	PLAYER_CHECK_CONDITION(end>=1 ,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
+	PLAYER_CHECK_CONDITION((end-start)>0 ,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
+	player_s * handle = (player_s *) player;
+	if (handle->state != PLAYER_STATE_IDLE  &&  handle->state != PLAYER_STATE_READY)
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (current state : %d)" ,__FUNCTION__, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+	
+	handle->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME] = callback;
+	handle->user_data[_PLAYER_EVENT_TYPE_AUDIO_FRAME] = user_data;
+	LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_AUDIO_FRAME);
+
+	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "pcm_extraction",TRUE, "pcm_extraction_start_msec", start, "pcm_extraction_end_msec", end, NULL);	
+	if(ret != MM_ERROR_NONE)
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	
+	ret = mm_player_set_audio_buffer_callback(handle->mm_handle, __audio_stream_callback, (void*)handle);
+	if(ret != MM_ERROR_NONE)
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
+}
+
+int player_unset_audio_frame_decoded_cb(player_h player)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+
+	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "pcm_extraction",FALSE, NULL);
+	if(ret != MM_ERROR_NONE)
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	
+	handle->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME] = NULL;
+	handle->user_data[_PLAYER_EVENT_TYPE_AUDIO_FRAME] = NULL;
+	LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_AUDIO_FRAME);
+
+	ret = mm_player_set_audio_buffer_callback(handle->mm_handle, NULL, NULL);
+	if(ret != MM_ERROR_NONE)
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
+}

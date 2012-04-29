@@ -1,3 +1,15 @@
+capi-media-player (0.1.0-12) unstable; urgency=low
+
+  * capture video callback updated 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Mon, 26 Mar 2012 23:01:54 +0900
+
+capi-media-player (0.1.0-11) unstable; urgency=low
+
+  * Add the new features (playback rate, video/audio frame decoded, audio effects and so on.) 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Mon, 19 Mar 2012 17:40:35 +0900
+
 capi-media-player (0.1.0-7) unstable; urgency=low
 
   * Use 'static' to local function which is limited to the current source file. 

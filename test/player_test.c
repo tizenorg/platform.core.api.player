@@ -142,11 +142,6 @@ static void subtitle_updated_cb(unsigned long duration, char *text, void *user_d
 static void video_captured_cb(unsigned char *data, int width, int height,unsigned int size, void *user_data)
 {
 	g_print("[Player_Test] video_captured_cb!!!! width: %d, height : %d, size : %d \n",width, height,size);
-	if (data)
-	{
-		g_free(data);
-		data = NULL;
-	}
 }
 
 static void input_filename(char *filename)
@@ -200,7 +195,7 @@ static void input_filename(char *filename)
 	{
 		g_print("0. set subtile path() - %s \n", g_subtitle_uri);
 		player_set_subtitle_path(g_player,g_subtitle_uri);
-		player_set_subtilte_updated_cb(g_player, subtitle_updated_cb, (void*)g_player);
+		player_set_subtitle_updated_cb(g_player, subtitle_updated_cb, (void*)g_player);
 	}
 	player_set_display(g_player,PLAYER_DISPLAY_TYPE_X11,GET_DISPLAY(ad.xid));
 
