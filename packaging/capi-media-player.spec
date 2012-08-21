@@ -1,15 +1,17 @@
+#sbs-git:slp/api/player capi-media-player 0.1.0 6b3c03f72f7fd67cdee06dbde70eb2e10335b57a
 Name:       capi-media-player
 Summary:    A Media Player library in Tizen Native API
 Version:    0.1.0
-Release:    12
+Release:    24
 Group:      TO_BE/FILLED_IN
-License:    Apache-2.0
+License:    TO BE FILLED IN
 Source0:    %{name}-%{version}.tar.gz
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(mm-player)
 BuildRequires:  pkgconfig(capi-base-common)
 BuildRequires:  pkgconfig(capi-media-sound-manager)
+BuildRequires:  pkgconfig(mm-ta)
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
@@ -28,9 +30,8 @@ Requires: %{name} = %{version}-%{release}
 
 
 %build
-FULLVER=%{version}
-MAJORVER=`echo ${FULLVER} | cut -d '.' -f 1`
-cmake . -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=${FULLVER} -DMAJORVER=${MAJORVER}
+MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
+cmake . -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=%{version} -DMAJORVER=${MAJORVER}
 
 
 make %{?jobs:-j%jobs}
@@ -45,10 +46,11 @@ rm -rf %{buildroot}
 
 
 %files
-%{_libdir}/libcapi-media-player.so*
+%{_libdir}/libcapi-media-player.so.*
 
 %files devel
 %{_includedir}/media/*.h
 %{_libdir}/pkgconfig/*.pc
+%{_libdir}/libcapi-media-player.so
 
 

@@ -3,6 +3,7 @@ Source: capi-media-player
 Section: libs
 Priority: extra
 Maintainer: Kangho Hur <kangho.hur@samsung.com>, Seungkeun Lee <sngn.lee@samsung.com>
+Uploaders: YoungHwan Ahn <younghwan_.an@samsung.com>, Seungbae Shin <seungbae.shin@samsung.com>
 Build-Depends: debhelper (>= 5), dlog-dev, libmm-player-dev, libmm-player-internal-dev, capi-base-common-dev, capi-media-sound-manager-dev
 
 Package: capi-media-player

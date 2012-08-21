@@ -84,8 +84,17 @@ typedef enum
        PLAYER_INTERRUPTED_BY_CALL,						/**< Interrupted by incoming call*/
        PLAYER_INTERRUPTED_BY_EARJACK_UNPLUG,			/**< Interrupted by unplugging headphone*/
        PLAYER_INTERRUPTED_BY_RESOURCE_CONFLICT,		/**< Interrupted by resource conflict*/
-       PLAYER_INTERRUPTED_BY_ALARM,					/**< Interrupted by alarm starting*/
+       PLAYER_INTERRUPTED_BY_ALARM,					/**< Interrupted by alarm*/
 } player_interrupted_code_e;
+
+/**
+ * @brief Enumerations of progressive download message type
+ */
+typedef enum
+{
+		PLAYER_PD_STARTED = 0, 				/**< Progressive download is started */
+       PLAYER_PD_COMPLETED, 				/**< Progressive download is completed */
+} player_pd_message_type_e;
 
 /**
  * @brief
@@ -95,7 +104,6 @@ typedef enum
 {
   PLAYER_DISPLAY_TYPE_X11 = 0,			/**< X surface display */
   PLAYER_DISPLAY_TYPE_EVAS = 1,		/**< Evas image object surface display */
-  PLAYER_DISPLAY_TYPE_NONE = 3		/**< This just disposes of buffers */
 } player_display_type_e;
 
 /**
@@ -148,71 +156,85 @@ typedef enum
  */
 
 /**
+ * @addtogroup CAPI_MEDIA_PLAYER_STREAM_INFO_MODULE
+ * @{
+ */
+
+/**
+ * @brief  Enumerations of media stream content information
+ */
+typedef enum
+{
+  PLAYER_CONTENT_INFO_ALBUM,		/**< Album */
+  PLAYER_CONTENT_INFO_ARTIST,		/**< Artist */
+  PLAYER_CONTENT_INFO_AUTHOR,	/**< Author */
+  PLAYER_CONTENT_INFO_GENRE,		/**< Genre */
+  PLAYER_CONTENT_INFO_TITLE,		/**< Title */
+  PLAYER_CONTENT_INFO_YEAR,			/**< Year */
+} player_content_info_e;
+
+/**
+ * @}
+ */
+
+/**
  * @addtogroup CAPI_MEDIA_PLAYER_AUDIO_EFFECT_MODULE
  * @{
  */
 
 /**
- * @brief Enumerations of audio output device type.
+ * @brief Enumerations of audio effect
  */
 typedef enum{
-	SOUND_DEVICE_OUT_SPEAKER = 0x01<<8, /**< Device builtin speaker */
-	SOUND_DEVICE_OUT_RECEIVER = 0x02<<8, /**< Device builtin receiver */
-	SOUND_DEVICE_OUT_WIRED_ACCESSORY = 0x04<<8,  	/**< Wired output devices such as headphone, headset, and so on. */
-	SOUND_DEVICE_OUT_BT_SCO = 0x08<<8, /**< Bluetooth SCO device */
-	SOUND_DEVICE_OUT_BT_A2DP = 0x10<<8,	/**< Bluetooth A2DP device */
-} sound_device_out_e;
+	AUDIO_EFFECT_3D = 1, 	/**< 3D effect */
+	AUDIO_EFFECT_BASS,	 	/**< Bass effect */
+	AUDIO_EFFECT_ROOM,		/**< Room effect */
+	AUDIO_EFFECT_REVERB, 	/**< Reverberation effect */
+	AUDIO_EFFECT_CLARITY, /**< Clarity effect */
+} audio_effect_e;
 
 /**
- * @brief  Enumerations of 3D effect
- */ 
+ * @brief Enumerations of preset audio effect
+ */
 typedef enum{
-	AUDIO_EFFECT_3D_WIDE =1, /**< Wide mode */
-	AUDIO_EFFECT_3D_DYNAMIC, /**< Dynamic mode */
-	AUDIO_EFFECT_3D_SURROUND, /**< Surround mode */
-} audio_effect_3d_e;
+	AUDIO_EFFECT_PRESET_AUTO = 0,				/**< Auto */
+	AUDIO_EFFECT_PRESET_NONE,	/**< None */
+	AUDIO_EFFECT_PRESET_POP,					/**< POP */
+	AUDIO_EFFECT_PRESET_ROCK,				/**< Rock */
+	AUDIO_EFFECT_PRESET_DANCE,				/**< Dance */
+	AUDIO_EFFECT_PRESET_JAZZ,				/**< Jazz */
+	AUDIO_EFFECT_PRESET_CLASSIC,			/**< Classic */
+	AUDIO_EFFECT_PRESET_VOCAL,				/**< Vocal */
+	AUDIO_EFFECT_PRESET_BASS_BOOST, /**< Bass boost */
+	AUDIO_EFFECT_PRESET_TREBLE_BOOST, /**< Treble boost */
+	AUDIO_EFFECT_PRESET_MTHEATER, 	/**< Theater */
+	AUDIO_EFFECT_PRESET_EXTERNALIZATION, /**< Externalization */
+	AUDIO_EFFECT_PRESET_CAFE,				 /**< Cafe */
+	AUDIO_EFFECT_PRESET_CONCERT_HALL, /**< Concert Hall */
+	AUDIO_EFFECT_PRESET_VOICE,				/**< Voice */
+	AUDIO_EFFECT_PRESET_MOVIE, 			/**< Movie */
+	AUDIO_EFFECT_PRESET_VIRTUAL_5_1, /**<  Virtual 5.1 */
+} audio_effect_preset_e;
 
 /**
- * @brief
- * Enumerations of equalizer effect
- */ 
-typedef enum{
-	AUDIO_EFFECT_EQ_ROCK =1, /**< Rock mode */
-	AUDIO_EFFECT_EQ_JAZZ,	 /**<  Jazz mode*/
-	AUDIO_EFFECT_EQ_LIVE,	/**<  Live mode*/
-	AUDIO_EFFECT_EQ_CLASSIC, /**<  Classic mode*/
-	AUDIO_EFFECT_EQ_FULL_BASS, /**<  Bass mode*/
-	AUDIO_EFFECT_EQ_FULL_BASS_AND_TREBLE, /**<  Bass and Treble mode*/
-	AUDIO_EFFECT_EQ_DANCE,	/**<  Dance mode*/
-	AUDIO_EFFECT_EQ_POP, /**<  Pop mode*/
-	AUDIO_EFFECT_EQ_FULL_TREBLE,	/**<  Treble mode*/
-	AUDIO_EFFECT_EQ_CLUB,	 /**<  Club mode*/
-	AUDIO_EFFECT_EQ_PARTY,	/**<  Party mode*/
-	AUDIO_EFFECT_EQ_LARGE_HALL, /**<  Large Hall mode*/
-	AUDIO_EFFECT_EQ_SOFT, /**<  Soft mode*/
-	AUDIO_EFFECT_EQ_SOFT_ROCK,	 /**<  Soft Rock mode*/
-} audio_effect_equalizer_e;
+ * @brief	Called once for each supported audio effect.
+ * @param[in] effect  The audio effect
+ * @param[in] user_data The user data passed from the foreach function
+ * @return	@c true to continue with the next iteration of the loop, \n @c false to break outsp of the loop.
+ * @pre	player_audio_effect_foreach_supported_effect() will invoke this callback.
+ * @see	player_audio_effect_foreach_supported_effect()
+ */
+typedef bool (*player_audio_effect_supported_effect_cb)(audio_effect_e effect, void *user_data);
 
 /**
- * @brief
- * Enumerations of reverberation effect
- */ 
-typedef enum{
-	AUDIO_EFFECT_REVERB_JAZZ_CLUB =1, /**< Jazz club mode */
-	AUDIO_EFFECT_REVERB_CONCERT_HALL, /**< Concert Hall mode*/
-	AUDIO_EFFECT_REVERB_STADIUM, /**< Stadium mode*/
-} audio_effect_reverb_e;
-
-/**
- * @brief
- * Enumerations of extra effect
- */ 
-typedef enum{
-	AUDIO_EFFECT_EX_BASE =1, /**<  Bass Enhancement effect */
-	AUDIO_EFFECT_EX_MUSIC_CLARITY, /**< Music clarity effect*/
-	AUDIO_EFFECT_EX_SURROUND, /**< 5.1 channel surround sound effect*/
-	AUDIO_EFFECT_EX_SOUND_EXTERNAL, /**< Sound externalization effect*/
-} audio_effect_extra_e;
+ * @brief	Called once for each supported preset audio effect.
+ * @param[in] preset  The preset audio effect
+ * @param[in] user_data The user data passed from the foreach function
+ * @return	@c true to continue with the next iteration of the loop, \n @c false to break outsp of the loop.
+ * @pre	player_audio_effect_foreach_supported_preset() will invoke this callback.
+ * @see	player_audio_effect_foreach_supported_preset()
+ */
+typedef bool (*player_audio_effect_supported_preset_cb)(audio_effect_preset_e preset, void *user_data);
 
 /**
  * @}
@@ -224,17 +246,17 @@ typedef enum{
  * @{
  */
 
+typedef void (*player_started_cb)(void *user_data);
+
 /**
- * @brief  Called when the media player is started.
+ * @brief  Called when the media player is prepared.
  * @details It will be invoked when player has reached the begin of stream
  * @param[in]   user_data  The user data passed from the callback registration function
- * @pre The player state should be #PLAYER_STATE_READY
- * @pre player_start() will cause this callback if you register this callback using player_set_started_cb()
- * @see player_start()
- * @see player_set_started_cb()
- * @see player_unset_started_cb()
+ * @pre player_prepare_async() will cause this callback
+ * @post The player state will be #PLAYER_STATE_READY
+ * @see player_prepare_async()
  */
-typedef void (*player_started_cb)(void *user_data);
+typedef void (*player_prepared_cb)(void *user_data);
 
 /**
  * @brief  Called when the media player is completed.
@@ -246,16 +268,15 @@ typedef void (*player_started_cb)(void *user_data);
  */
 typedef void (*player_completed_cb)(void *user_data);
 
+typedef void (*player_paused_cb)(void *user_data);
 
 /**
- * @brief  Called when the media player is paused.
+ * @brief  Called when the seek operation is completed.
  * @param[in]   user_data  The user data passed from the callback registration function
- * @pre player_pause() will cause this callback if you register this callback using player_set_paused_cb()
- * @see player_pause()
- * @see player_set_paused_cb()
- * @see player_unset_paused_cb()
+ * @see player_set_position()
+ * @see player_set_position_ratio()
  */
-typedef void (*player_paused_cb)(void *user_data);
+typedef void (*player_seek_completed_cb)(void *user_data);
 
 /**
  * @brief  Called when the media player is interrupted.
@@ -298,6 +319,14 @@ typedef void (*player_buffering_cb)(int percent, void *user_data);
 typedef void (*player_subtitle_updated_cb)(unsigned long duration, char *text, void *user_data);
 
 /**
+ * @brief  Called when the progressive download is started or completed.
+ * @param[in]   type	The message type of progressive download
+ * @param[in]   user_data	The user data passed from the callback registration function
+ * @see player_set_progressive_download_path()
+ */
+typedef void (*player_pd_message_cb)(player_pd_message_type_e type, void *user_data);
+
+/**
  * @brief  Called when the video is captured.
  * @remarks The color space format of the captured image is #IMAGE_UTIL_COLORSPACE_RGB888.
  * @param[in]   data	The captured image buffer 
@@ -311,6 +340,7 @@ typedef void (*player_video_captured_cb)(unsigned char *data, int width, int hei
 
 /**
  * @brief  Called when the video frame is decoded.
+ * @remarks The color space format of the captured image is #IMAGE_UTIL_COLORSPACE_RGB888.
  * @param[in]   data	The decoded video frame data 
  * @param[in]   width	The width of video frame
  * @param[in]   height The height of video frame
@@ -366,7 +396,6 @@ int player_create(player_h *player);
  */
 int player_destroy(player_h player);
 
-
 /**
  * @brief Prepares the media player for playback.
  * @param[in]	player The handle to media player
@@ -378,12 +407,33 @@ int player_destroy(player_h player);
  * @retval #PLAYER_ERROR_NOT_SUPPORTED_FILE Not supported file
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre	The player state should be #PLAYER_STATE_IDLE by player_create() or player_unprepare().. After that, call player_set_uri() to load the media content you want to play.
+ * @pre	The player state should be #PLAYER_STATE_IDLE by player_create() or player_unprepare(). After that, call player_set_uri() to load the media content you want to play.
  * @post The player state will be #PLAYER_STATE_READY.
+ * @see player_prepare_async()
  * @see player_unprepare()
  * @see player_set_uri()
  */
 int player_prepare(player_h player);
+
+/**
+ * @brief Prepares the media player for playback, asynchronously.
+ * @param[in]	player The handle to media player
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_URI Invalid URI
+ * @retval #PLAYER_ERROR_NO_SUCH_FILE File not found
+ * @retval #PLAYER_ERROR_NOT_SUPPORTED_FILE Not supported file
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre	The player state should be #PLAYER_STATE_IDLE by player_create() or player_unprepare().. After that, call player_set_uri() to load the media content you want to play..
+ * @post It invokes player_prepared_cb() when playback is prepare.
+ * @see player_prepare()
+ * @see player_prepared_cb()
+ * @see player_unprepare()
+ * @see player_set_uri()
+ */
+int player_prepare_async (player_h player, player_prepared_cb callback, void* user_data);
 
 /**
  * @brief Reset the media player.
@@ -517,7 +567,7 @@ int player_get_volume(player_h player, float *left, float *right);
 int player_set_sound_type(player_h player, sound_type_e type);
 
 /**
- * @brief Starts or resumes playback, asynchronously.
+ * @brief Starts or resumes playback.
  *
  * @details Plays current media content, or resumes play if paused.
  * 
@@ -532,15 +582,17 @@ int player_set_sound_type(player_h player, sound_type_e type);
  * @pre Call player_prepare() before calling this function.
  * @pre The player state must be #PLAYER_STATE_READY by player_prepare() or #PLAYER_STATE_PAUSED by player_pause().
  * @post The player state will be #PLAYER_STATE_PLAYING.
- * @post It invokes player_started_cb() when playback starts(not resume), if you set a callback with player_set_started_cb().
  * @post It invokes player_completed_cb() when playback completes, if you set a callback with player_set_completed_cb().
+ * @post It invokes player_pd_message_cb() when progressive download starts or completes, if you set a download path with player_set_progressive_download_path() and a callback with player_set_progressive_download_message_cb().
  * @see player_prepare()
+ * @see player_prepare_async()
  * @see player_stop()
  * @see player_pause()
- * @see player_set_started_cb()
- * @see player_started_cb()
  * @see player_set_completed_cb()
  * @see player_completed_cb()
+ * @see player_set_progressive_download_path()
+ * @see player_set_progressive_download_message_cb()
+ * @see player_pd_message_cb()
  */
 int player_start(player_h player);
 
@@ -556,13 +608,14 @@ int player_start(player_h player);
  * @retval #PLAYER_ERROR_SOUND_POLICY Sound policy error
  * @pre The player state must be either #PLAYER_STATE_PLAYING by player_start() or #PLAYER_STATE_PAUSED by player_pause().
  * @post The player state will be #PLAYER_STATE_READY.
+ * @post The downloading will be aborted if you use progressive download.
  * @see player_start()
  * @see player_pause()
  */
 int player_stop(player_h player);
 
 /**
- * @brief Pauses the player, asynchronously.
+ * @brief Pauses the player.
  *
  * @remarks	Playback can be resumed with player_start().
  *
@@ -575,46 +628,48 @@ int player_stop(player_h player);
  * @retval #PLAYER_ERROR_SOUND_POLICY Sound policy error
  * @pre The player state must be #PLAYER_STATE_PLAYING.
  * @post The player state will be #PLAYER_STATE_READY.
- * @post It invokes player_paused_cb() when playback is pauses, if you set a callback with player_set_paused_cb().
  * @see player_start()
- * @see player_set_paused_cb()
- * @see player_unset_paused_cb()
- * @see player_paused_cb()
  */
 int player_pause(player_h player);
 
 /**
- * @brief Sets the seek position for playback.
- * @param[in]   player The handle to media player
- * @param[in]   millisecond The position in milliseconds from the start to seek to 
+ * @brief Sets the seek position for playback, asynchronously.
+ * @param[in] player The handle to media player
+ * @param[in] millisecond The position in milliseconds from the start to seek to
+ * @param[in] callback	The callback function to register
+ * @param[in] user_data	The user data to be passed to the callback function
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_SEEK_FAILED Seek operation failure
  * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @post It invokes player_seek_completed_cb() when seek operation completes, if you set a callback.
  * @see player_get_position()
  * @see player_get_position_ratio()
  * @see player_set_position_ratio()
  */
-int player_set_position(player_h player, int millisecond);
+int player_set_position(player_h player, int millisecond, player_seek_completed_cb callback, void *user_data);
 
 
 /**
- * @brief Sets the playback position specified by percent of media content played.
- * @param[in]   player The handle to media player
- * @param[in]   percent The position in percentage from the start to seek to. \n The position is relative to content. (length, 0 = beginning, 100 = end)
+ * @brief Sets the playback position specified by percent of media content played, asynchronously.
+ * @param[in] player The handle to media player
+ * @param[in] percent The position in percentage from the start to seek to. \n The position is relative to content. (length, 0 = beginning, 100 = end)
+ * @param[in] callback	The callback function to register
+ * @param[in] user_data	The user data to be passed to the callback function
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_SEEK_FAILED Seek operation failure
  * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @post It invokes player_seek_completed_cb() when seek operation completes, if you set a callback.
  * @see player_get_position()
  * @see player_get_position_ratio()
  * @see player_set_position()
  */
-int player_set_position_ratio(player_h player, int percent);
+int player_set_position_ratio(player_h player, int percent, player_seek_completed_cb callback, void *user_data);
 
 /**
  * @brief Gets current position in milliseconds. 
@@ -719,6 +774,7 @@ int player_is_looping(player_h player, bool *looping);
 /**
  * @brief Gets the total running time of the associated media.
  * @remarks The media source is associated with the player, using either player_set_uri() or player_set_memory_buffer().
+ * @remarks  The playback type should be local playback or http streaming playback.
  * @param[in]   player The handle to media player
  * @param[out]  duration The duration is in milliseconds
  * @return 0 on success, otherwise a negative error value.
@@ -726,7 +782,7 @@ int player_is_looping(player_h player, bool *looping);
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  * @see player_get_position()
  * @see player_set_uri()
  * @see player_set_memory_buffer()
@@ -736,6 +792,7 @@ int player_get_duration(player_h player, int *duration);
 /**
  * @brief Sets the video display.
  * @remaks To get @a display to set, use #GET_DISPLAY().
+ * @remaks To use multiple surface display mode, use player_set_display() again with different display type.
  * @param[in]   player The handle to media player
  * @param[in]   type The display type
  * @param[in]   display The handle to display
@@ -744,9 +801,47 @@ int player_get_duration(player_h player, int *duration);
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be #PLAYER_STATE_IDLE by player_prepare() or player_unprepare().
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  */
 int player_set_display(player_h player, player_display_type_e type, player_display_h display);
+
+/**
+ * @brief Gets the availability of display mode change
+ * @remark The result can be changed by display setting.
+ * @param[in] player The handle to media player
+ * @param[out] changeable The cuurent availability of display mode change (@c true = changeable, @c false = non-changeable )
+ * @return 0 on success, otherwise a negative error value.
+ * @retval  #PLAYER_ERROR_NONE Successful
+ * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @see	player_set_display_mode()
+ */
+int player_is_display_mode_changeable(player_h player, bool* changeable);
+
+/**
+ * @brief Sets a video display mode
+ * @remarks If no display is not set, no operation is performed.
+ * @param[in] player   The handle to media player
+ * @param[in] mode The display mode
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @pre The player should be supported display mode changing. (player_is_display_mode_changeable())
+ * @see	player_get_display_mode()
+ */
+int player_set_display_mode(player_h player, player_display_mode_e mode);
+
+/**
+ * @brief Gets the video display mode
+ * @remarks If no display is not set, no operation is performed.
+ * @param[in] player The handle to media player
+ * @param[out] mode The current display mode
+ * @return 0 on success, otherwise a negative error value.
+ * @retval  #PLAYER_ERROR_NONE Successful
+ * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @see	player_set_display_mode()
+ */
+int player_get_display_mode(player_h player, player_display_mode_e *mode);
 
 /**
  * @brief Sets the playback rate 
@@ -826,125 +921,401 @@ int player_set_x11_display_visible(player_h player, bool visible);
 int player_is_x11_display_visible(player_h player, bool* visible);
 
 /**
- * @brief Sets a x surface video display mode
+ * @brief Sets the zoom level of the x surface video display
  * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
  * @param[in] player   The handle to media player
- * @param[in] mode The display mode
+ * @param[in] level The level of zoom [1~9]
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
- * @see	player_get_x11_display_mode()
+ * @see  player_get_x11_display_zoom()
  */
-int player_set_x11_display_mode(player_h player, player_display_mode_e mode);
+int player_set_x11_display_zoom(player_h player, int level);
 
 /**
- * @brief Gets the x surface video display mode
+ * @brief Gets a zoom level of the x surface video display
  * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
  * @param[in] player The handle to media player
- * @param[out] mode The current display mode
+ * @param[out] level The level of zoom [1~9]
  * @return 0 on success, otherwise a negative error value.
  * @retval  #PLAYER_ERROR_NONE Successful
  * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @see	player_set_x11_display_mode()
+ * @see	player_set_x11_display_zoom()
  */
-int player_get_x11_display_mode(player_h player, player_display_mode_e *mode);
+int player_get_x11_display_zoom( player_h player, int *level);
 
 /**
  * @}
  */
 
 /**
+ * @addtogroup CAPI_MEDIA_PLAYER_EVAS_DISPLAY_MODULE
+ * @{
+ */
+
+/**
+ * @brief Sets the evas surface video display scaling status.
+ * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_EVAS, no operation is performed.
+ * @remarks If the scaling status is @c false, player_is_display_mode_changeable() always return @a false.
+ * @param[in]   player The handle to media player
+ * @param[in]   enable New evas surface video display scaling status: (@c true = scaling, @c false = not scaled)
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_enable_evas_display_scaling(player_h player, bool enable);
+
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup CAPI_MEDIA_PLAYER_STREAM_INFO_MODULE
+ * @{
+ */
+
+ /**
+ * @brief Get the media content information
+ * @remarks @a value must be released with @c free() by you
+ * @remarks  The playback type should be local playback or http streaming playback.
+ * @param[in]  player The handle to media player
+ * @param[in] key The key attribute name to get
+ * @param[out] value The value of the key attribute. It can be empty string if there is no content information.
+ * @return 0 on success, otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER  Invalid parameter
+ * @retval #PLAYER_ERROR_OUT_OF_MEMORY Not enough memory is available
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_get_content_info(player_h player, player_content_info_e key, char ** value);
+
+/**
+ * @brief Gets the audio and video codec information
+ * @remarks @a audio_codec and @a video_codec must be released with @c free() by you
+ * @remarks  The playback type should be local playback or http streaming playback.
+ * @param[in] player The handle to media player
+ * @param[out] audio_codec The name of audio codec. It can be @c NULL if there is no audio codec.
+ * @param[out] video_codec The name of video codec. It can be @c NULL if there is no video codec.
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_get_codec_info(player_h player, char **audio_codec, char **video_codec);
+
+/**
+ * @brief Gets the audio stream information
+ * @remarks  The playback type should be local playback or http streaming playback.
+ * @param[in] player The handle to media player
+ * @param[out]  sample_rate The audio sample rate [Hz]. It can be invalid value if there is no audio stream information.
+ * @param[out]  channel The audio channel (1: mono, 2: stereo). It can be invalid value if there is no audio stream information.
+ * @param[out]  bit_rate The audio bit rate [Hz]. It can be invalid value if there is no audio stream information.
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_get_audio_stream_info(player_h player, int *sample_rate, int *channel, int *bit_rate);
+
+/**
+ * @brief Gets the video stream information
+ * @remarks  The playback type should be local playback or http streaming playback.
+ * @param[in] player The handle to media player
+ * @param[out]  fps The frame per second of video. It can be 0 if there is no video stream information.
+ * @param[out]  bit_rate The video bit rate [Hz]. It can be invalid value if there is no video stream information.
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_get_video_stream_info(player_h player, int *fps, int *bit_rate);
+
+/**
+ * @brief Gets the video display's height and width.
+ * @remarks  The playback type should be local playback or http streaming playback.
+ * @param[in] player The handle to media player
+ * @param[out] width The width of video. It can be invalid value if there is no video, no display was set.
+ * @param[out] height The height of video. It can be invalid value if there is no video, no display was set.
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_get_video_size(player_h player, int *width, int *height);
+
+/**
+ * @brief Gets the album art in media resource
+ * @remarks Do not release @a album_art. It will be released by framework when player destroys.
+ * @param[in] player The handle to media player
+ * @param [out] artwork encoded artwork image
+ * @param [out] size encoded artwork size
+ * @return 0 on success, otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_get_album_art(player_h player, void **album_art, int *size);
+
+/**
+ * @}
+ */
+
+
+/**
  * @addtogroup CAPI_MEDIA_PLAYER_AUDIO_EFFECT_MODULE
  * @{
  */
- 
+
 /**
- * @brief Sets a audio effect output device.
- * @remarks Both #SOUND_DEVICE_OUT_RECEIVER and #SOUND_DEVICE_OUT_BT_SCO output devices are not supported. It occurs #PLAYER_ERROR_INVALID_OPERATION.
- * @param[in]   player The handle to media player
- * @param[in]   output The output device to apply audio effect
+ * @brief Sets an audio effect value.
+ * @param[in] player The handle to media player
+ * @param[in] effect The audio effect type
+ * @param[in] value The value of given effect type
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_get_value()
+ * @see player_audio_effect_clear()
+ * @see player_audio_effect_get_value_range()
  */
-int player_set_audio_effect_output(player_h player,  sound_device_out_e output);
+int player_audio_effect_set_value(player_h player, audio_effect_e effect, int value);
 
 /**
- * @brief Sets a 3D audio effect.
- * @remarks Equalizer, 3D and reverberation effects can be used together
- * @param[in]   player The handle to media player
- * @param[in]   effect The 3D audio effect
+ * @brief Gets an audio effect value.
+ * @param[in] player The handle to media player
+ * @param[in] effect The audio effect type
+ * @param[out] value The value of given effect type
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_set_value()
+ */
+int player_audio_effect_get_value(player_h player, audio_effect_e effect, int *value);
+
+/**
+ * @brief Clears audio effect.
+ * @param[in] player The handle to media player
+ * @param[in] effect The audio effect type
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_set_value()
  */
-int player_set_audio_effect_3d(player_h player, audio_effect_3d_e effect);
+int player_audio_effect_clear(player_h player, audio_effect_e effect);
 
 /**
- * @brief Sets an equalizer audio effect.
- * @remarks Equalizer, 3D and reverberation effects can be used together
- * @param[in]   player The handle to media player
- * @param[in]   effect The equalizer audio effect
+ * @brief Gets the range of audio effect value.
+ * @param[in] player The handle to media player
+ * @param[in] effect The audio effect type
+ * @param[out] min The minumum value to be set
+ * @param[out] max The maximum value to be set
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_set_value()
+ */
+int player_audio_effect_get_value_range(player_h player, audio_effect_e effect, int* min, int* max);
+
+/**
+ * @brief Checks whether the given effect is avaliable or not.
+ * @param[in] player The handle to media player
+ * @param[in] effect The audio effect to be checked
+ * @param[out] available @c true if the specified audio effect is available, else @c false
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_audio_effect_is_available(player_h player, audio_effect_e effect, bool *available);
+
+/**
+ * @brief Retrieves all supported audio effects by invoking callback function once for each supported audio effect.
+ * @param[in] player The handle to media player
+ * @param[in] callback    The callback function to invoke
+ * @param[in] user_data	The user data to be passed to the callback function
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @post	This function invokes player_audio_effect_supported_effect_cb() repeatly to retrieve each supported audio effect.
+ * @see	player_audio_effect_set_value()
+ * @see	player_audio_effect_get_value()
+ * @see	player_audio_effect_foreach_supported_effect()
+ */
+int player_audio_effect_foreach_supported_effect(player_h player, player_audio_effect_supported_effect_cb callback, void *user_data);
+
+/**
+ * @brief Sets an preset audio effect.
+ * @remarks Audio effects or equalizer which is set be ignored.
+ * @param[in] player The handle to media player
+ * @param[in] preset The preset audio effect
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_preset_is_available()
+ * @see player_audio_effect_foreach_supported_preset()
  */
-int player_set_audio_effect_equalizer(player_h player, audio_effect_equalizer_e effect);
+int player_audio_effect_set_preset(player_h player, audio_effect_preset_e preset);
 
 /**
- * @brief Sets an reverberation audio effect.
- * @remarks Equalizer, 3D and reverberation effects can be used together
- * @param[in]   player The handle to media player
- * @param[in]   effect The reverberation audio effect
+ * @brief Checks whether the given preset is avaliable or not.
+ * @param[in] player The handle to media player
+ * @param[in] preset The preset to be checked
+ * @param[out] available @c true if the specified preset is available, else @c false
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_audio_effect_preset_is_available(player_h player, audio_effect_preset_e preset, bool *available);
+
+/**
+ * @brief Retrieves all supported presets by invoking callback function once for each supported preset audio effect.
+ * @param[in] player The handle to media player
+ * @param[in] callback    The callback function to invoke
+ * @param[in] user_data	The user data to be passed to the callback function
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @post	This function invokes player_audio_effect_supported_preset_cb() repeatly to retrieve each supported preset audio effect.
+ * @see	player_audio_effect_set_preset()
+ * @see	player_audio_effect_supported_preset_cb()
+ */
+int player_audio_effect_foreach_supported_preset(player_h player, player_audio_effect_supported_preset_cb callback, void *user_data);
+
+/**
+ * @brief Gets the bands number of equalizer.
+ * @param[in] player The handle to media player
+ * @param[out] count The number of equalizer bands
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_set_equalizer_band_level()
+ * @see player_audio_effect_set_equalizer_all_bands()
+ */
+int player_audio_effect_get_equalizer_bands_count (player_h player, int *count);
+
+/**
+ * @brief Sets the all bands of equalizer.
+ * @param[in] player The handle to media player
+ * @param[in] band_levels The list of band level to be set
+ * @param[in] length The length of the band level
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_get_equalizer_bands_count()
+ * @see player_audio_effect_get_equalizer_level_range()
+ * @see player_audio_effect_set_equalizer_band_level()
  */
-int player_set_audio_effect_reverb(player_h player, audio_effect_reverb_e effect);
-
+int player_audio_effect_set_equalizer_all_bands(player_h player, int *band_levels, int length);
 
 /**
- * @brief Sets an extra(Bass Enhancement, AEQ, Music clarity, 5.1 SRS circle surround, Wow HD, and Sound externalization) audio effect.
- * @remarks Previous applied other effects(equalizer, 3D, reverberation) should be ignored.
- * @param[in]   player The handle to media player
- * @param[in]   effect The extra audio effect
+ * @brief Sets the gain set for the given equalizer band.
+ * @param[in] player The handle to media player
+ * @param[in] index The index of qualizer band to be set
+ * @param[in] level New gain in decibel that will be set to the given band.[dB]
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_get_equalizer_bands_count()
+ * @see player_audio_effect_get_equalizer_level_range()
+ * @see player_audio_effect_get_equalizer_band_level()
+ * @see player_audio_effect_set_equalizer_all_bands()
  */
-int player_set_audio_effect_extra(player_h player, audio_effect_extra_e effect);
+int player_audio_effect_set_equalizer_band_level(player_h player, int index, int level);
 
 /**
- * @brief Clears all audio effects.
+ * @brief Gets the gain set for the given equalizer band.
  * @param[in]   player The handle to media player
+ * @param[in]   index The index of qualizer band which is requested
+ * @param[out]   level The gain in decibel of the given band [dB]
  * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_set_equalizer_band_level()
+ */
+int player_audio_effect_get_equalizer_band_level(player_h player, int index, int *level);
+
+/**
+ * @brief Gets the valid level range of equalizer.
+ * @param[in] player The handle to media player
+ * @param[out] min The minumum value to be set [dB]
+ * @param[out] max The maximum value to be set [dB]
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_set_equalizer_band_level()
+ * @see player_audio_effect_set_equalizer_all_bands()
+ */
+int player_audio_effect_get_equalizer_level_range(player_h player, int* min, int* max);
+
+/**
+ * @brief Clears the equalizer effect.
+ * @param[in] player The handle to media player
+ * @param[in] effect The audio effect type
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @see player_set_audio_effect_3d()
- * @see player_set_audio_effect_equalizer()
- * @see player_set_audio_effect_reverb()
- * @see player_set_audio_effect_extra()
+ * @see player_audio_effect_set_equalizer_band_level()
+ * @see player_audio_effect_set_equalizer_all_bands()
  */
-int player_clear_audio_effect(player_h player);
+int player_audio_effect_equalizer_clear(player_h player);
+
+/**
+ * @brief Checks whether the custom equilizer effect is avaliable or not.
+ * @param[in] player The handle to media player
+ * @param[out] available @c true if the specified audio effect is available, else @c false
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_audio_effect_set_equalizer_band_level()
+ * @see player_audio_effect_set_equalizer_all_bands()
+ */
+int player_audio_effect_equalizer_is_available(player_h player, bool *available);
 
 /**
  * @}
@@ -954,20 +1325,6 @@ int player_clear_audio_effect(player_h player);
  * @addtogroup CAPI_MEDIA_PLAYER_MODULE
  * @{
  */
-
-/**
- * @brief Gets the video display's height and width.
- * @param[in] player The handle to media player
- * @param[out] width The width of video. It can be invalid value if there is no video, no display was set.
- * @param[out] height The height of video. It can be invalid value if there is no video, no display was set.
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be #PLAYER_STATE_READY by player_prepare() .
- */
-int player_get_video_size(player_h player, int *width, int *height);
 
 /**
  * @brief Sets a subtitle path.
@@ -981,7 +1338,53 @@ int player_get_video_size(player_h player, int *width, int *height);
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @pre The player state should be #PLAYER_STATE_IDLE by player_prepare() or player_unprepare().
  */
-int player_set_subtitle_path(player_h player, char* path);
+int player_set_subtitle_path(player_h player,const char *path);
+
+/**
+ * @brief Sets the seek position for subtitle.
+ * @remarks Only MicroDVD/SubViewer(*.sub), SAMI(*.smi), and SubRip(*.srt) subtitle formats are supported.
+ * @param[in]  player The handle to media player
+ * @param[in]  millisecond The position in milliseconds from the start to seek to
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The subtitle must be set by player_set_subtitle_path().
+ * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_set_subtitle_position(player_h player, int millisecond);
+
+/**
+ * @brief Sets a path to download, progressively.
+ * @remarks Progressive download will be started when you invoke player_start().
+ * @param[in]   player The handle to media player
+ * @param[in]   path The absolute path to download
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state should be #PLAYER_STATE_IDLE by player_prepare() or player_unprepare().
+ * @see player_set_progressive_download_message_cb()
+ * @see player_unset_progressive_download_message_cb()
+ */
+int player_set_progressive_download_path(player_h player, const char *path);
+
+/**
+ * @brief Gets the staus of progressive download.
+ * @param[in] player The handle to media player
+ * @param[out] current The current download position (bytes)
+ * @param[out] total_size The total size of file (bytes)
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The progressive download path must be set by player_set_progressive_download_path().
+ * @pre The player state must be either #PLAYER_STATE_PLAYING by player_start() or #PLAYER_STATE_PAUSED by player_pause().
+ */
+int player_get_progressive_download_status(player_h player, unsigned long *current, unsigned long *total_size);
 
 /**
  * @brief Captures the video frame, asynchronously.
@@ -1028,15 +1431,6 @@ int player_set_streaming_cookie(player_h player, const char *cookie, int size);
  */
 int player_set_started_cb(player_h player, player_started_cb callback, void *user_data);
 
-/**
- * @brief	Unregisters the callback function.
- * @param[in] player The handle to media player
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @see player_set_started_cb()
- */
 int player_unset_started_cb(player_h player);
 
 /**
@@ -1066,33 +1460,9 @@ int player_set_completed_cb(player_h player, player_completed_cb callback, void 
  */
 int player_unset_completed_cb(player_h player);
 
-/**
- * @brief Registers a callback function to be invoked when the playback is paused.
- * @param[in] player	The handle to media player
- * @param[in] callback	The callback function to register
- * @param[in] user_data	The user data to be passed to the callback function
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @post  player_paused_cb() will be invoked
- * @see player_unset_paused_cb()
- * @see player_paused_cb()
- * @see player_pause()
- */
 int player_set_paused_cb(player_h player, player_paused_cb callback, void *user_data);
 
-/**
- * @brief Unregisters the callback function.
- * @param[in] player The handle to media player
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @see player_set_paused_cb()
- */
 int player_unset_paused_cb(player_h player);
-
 
 /**
  * @brief Registers a callback function to be invoked when the playback is interrupted or interrupt completed.
@@ -1177,6 +1547,33 @@ int player_set_buffering_cb(player_h player, player_buffering_cb callback, void 
 int player_unset_buffering_cb(player_h player);
 
 /**
+ * @brief Registers a callback function to be invoked when progressive download is starts or completes.
+ * @param[in] player	The handle to media player
+ * @param[in] callback	The callback function to register
+ * @param[in] user_data	The user data to be passed to the callback function
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @pre The path to download must be set by player_set_progressive_download_path().
+ * @post  player_pd_message_cb() will be invoked
+ * @see player_unset_progressive_download_message_cb()
+ * @see player_set_progressive_download_path()
+ */
+int player_set_progressive_download_message_cb(player_h player, player_pd_message_cb callback, void *user_data);
+
+/**
+ * @brief Unregisters the callback function.
+ * @param[in] player The handle to media player
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @see player_set_progressive_download_message_cb()
+ */
+int player_unset_progressive_download_message_cb(player_h player);
+
+/**
  * @brief Registers a callback function to be invoked when subtitle updates.
  * @param[in] player	The handle to media player
  * @param[in] callback	The callback function to register
@@ -1185,7 +1582,7 @@ int player_unset_buffering_cb(player_h player);
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @pre The subtile must be set by player_set_subtitle_path().
+ * @pre The subtitle must be set by player_set_subtitle_path().
  * @post  player_subtitle_updated_cb() will be invoked
  * @see player_unset_subtitle_updated_cb()
  * @see player_subtitle_updated_cb()

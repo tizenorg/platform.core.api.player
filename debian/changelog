@@ -1,29 +1,215 @@
+capi-media-player (0.1.0-23) unstable; urgency=low
+
+  * Use DISPLAY_TYPE_NONE(MM_DISPLAY_SURFACE_NULL) as default
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-23
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Mon, 23 Jul 2012 14:59:34 +0900
+
+capi-media-player (0.1.0-22) unstable; urgency=low
+
+  * Additional stream information APIs and Zooming APIS have been added
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-22 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Mon, 16 Jul 2012 20:40:46 +0900
+
+capi-media-player (0.1.0-21) unstable; urgency=low
+
+  * Renew audio effect apis (sound alive support)
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-21
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Wed, 04 Jul 2012 21:44:11 +0900
+
+capi-media-player (0.1.0-20) unstable; urgency=low
+
+  * Support to evas surface display scaling mode
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-20
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Thu, 28 Jun 2012 15:32:36 +0900
+
+capi-media-player (0.1.0-19) unstable; urgency=low
+
+  * add mmta to check API performance
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-19
+
+ -- Younghwan Ahn <younghwan_.an@samsung.com>  Thu, 14 Jun 2012 17:12:21 +0900
+
+capi-media-player (0.1.0-18) unstable; urgency=low
+
+  * bug fix to seek
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-18
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Tue, 05 Jun 2012 10:20:14 +0900
+
+capi-media-player (0.1.0-17) unstable; urgency=low
+
+  * Stream Inforamtion APIs have been added.
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-17
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Tue, 29 May 2012 13:23:36 +0900
+
+capi-media-player (0.1.0-16) unstable; urgency=low
+
+  * Fix bugs & Add the player_set_subtitle_position.
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-16
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Mon, 21 May 2012 18:58:57 +0900
+
+capi-media-player (0.1.0-15) unstable; urgency=low
+
+  * Patches for player state when interrputed
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-15
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Thu, 17 May 2012 10:10:11 +0900
+
+capi-media-player (0.1.0-14) unstable; urgency=low
+
+  * Support to the progressive download.
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-14
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Thu, 10 May 2012 21:28:37 +0900
+
+capi-media-player (0.1.0-13) unstable; urgency=low
+
+  * Remove duplicated enum
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-13
+
+ -- Seungbae Shin <seungbae.shin@samsung.com>  Fri, 27 Apr 2012 11:20:33 +0900
+
 capi-media-player (0.1.0-12) unstable; urgency=low
 
-  * capture video callback updated 
+  * Resolve the video capture issue
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-12
 
- -- Kangho Hur <kangho.hur@samsung.com>  Mon, 26 Mar 2012 23:01:54 +0900
+ -- Kangho Hur <kangho.hur@samsung.com>  Mon, 26 Mar 2012 22:43:13 +0900
 
 capi-media-player (0.1.0-11) unstable; urgency=low
 
-  * Add the new features (playback rate, video/audio frame decoded, audio effects and so on.) 
+  * Add the new features (playback rate, video/audio frame decoded, audio effects and so on.)
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-11
+ 
+ -- Kangho Hur <kangho.hur@samsung.com>  Wed, 14 Mar 2012 18:43:47 +0900
 
- -- Kangho Hur <kangho.hur@samsung.com>  Mon, 19 Mar 2012 17:40:35 +0900
+capi-media-player (0.1.0-10) unstable; urgency=low
+
+  * Fix the bug ( state doesn't changed to PAUSED when user unplug earjack while playing the music)
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-10
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Wed, 07 Mar 2012 19:10:46 +0900
+
+capi-media-player (0.1.0-9) unstable; urgency=low
+
+  * fix typo
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-9
+
+ -- Seungkeun Lee <sngn.lee@samsung.com>  Tue, 28 Feb 2012 15:27:39 +0900
+
+capi-media-player (0.1.0-8) unstable; urgency=low
+
+  * Fix package dependancy
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-8 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Mon, 27 Feb 2012 20:02:53 +0900
 
 capi-media-player (0.1.0-7) unstable; urgency=low
 
-  * Use 'static' to local function which is limited to the current source file. 
+  * Use 'static' to local function which is limited to the current source file.
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-7 
 
- -- Kangho Hur <kangho.hur@samsung.com>  Tue, 21 Feb 2012 10:23:22 +0900
+ -- Kangho Hur <kangho.hur@samsung.com>  Tue, 21 Feb 2012 10:04:25 +0900
 
 capi-media-player (0.1.0-6) unstable; urgency=low
 
-  * Apply the SOVERSION 
+  * Apply the SOVERSION
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-6 
 
- -- Kangho Hur <kangho.hur@samsung.com>  Tue, 14 Feb 2012 18:21:11 +0900
+ -- Kangho Hur <kangho.hur@samsung.com>  Tue, 14 Feb 2012 16:36:42 +0900
 
 capi-media-player (0.1.0-5) unstable; urgency=low
 
-  * Initial release.
+  * Add the video capture 
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-5
 
- -- Kangho Hur <kangho.hur@samsung.com> Wed, 07 Dec 2011 12:54:23 +0900
+ -- Kangho Hur <kangho.hur@samsung.com>  Tue, 06 Dec 2011 19:06:03 +0900
+
+capi-media-player (0.1.0-4) unstable; urgency=low
+
+  * Changes the value of ERROR_NONE
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-4 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Mon, 05 Dec 2011 11:24:40 +0900
+
+capi-media-player (0.1.0-3) unstable; urgency=low
+
+  * Apply the Tizen
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-3
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Wed, 23 Nov 2011 15:39:20 +0900
+
+capi-media-player (0.1.0-2) unstable; urgency=low
+
+  * Apply the error messages 
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-2 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Fri, 07 Oct 2011 21:02:37 +0900
+
+capi-media-player (0.1.0-1) unstable; urgency=low
+
+  * Alpha Release
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.1.0-1 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Tue, 27 Sep 2011 19:47:58 +0900
+
+capi-media-player (0.0.1-4) unstable; urgency=low
+
+  * Fix TC failed and debian control.
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.0.1-4 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Mon, 19 Sep 2011 19:06:00 +0900
+
+capi-media-player (0.0.1-3) unstable; urgency=low
+
+  * Add the player_set_sound_type()
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.0.1-3 
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Wed, 14 Sep 2011 19:43:05 +0900
+
+capi-media-player (0.0.1-2) unstable; urgency=low
+
+  * Support various diplay type api and add subtilte api
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.0.1-2
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Fri, 26 Aug 2011 14:39:24 +0900
+
+capi-media-player (0.0.1-1) unstable; urgency=low
+
+  * Initial Upload
+  * Git: slp-source.sec.samsung.net:slp/api/player
+  * Tag: capi-media-player_0.0.1-1
+
+ -- Kangho Hur <kangho.hur@samsung.com>  Thu, 04 Aug 2011 17:32:41 +0900

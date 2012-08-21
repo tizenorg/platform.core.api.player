@@ -127,7 +127,10 @@ static void buffering_cb(int percent, void *user_data)
 	g_print("[Player_Test] buffering_cb!!!! percent : %d\n", percent);
 }
 
-
+static void seek_completed_cb(void *user_data)
+{
+	g_print("[Player_Test] seek_completed_cb!!! \n");
+}
 
 static void completed_cb(void *user_data)
 {
@@ -296,7 +299,7 @@ static void get_position()
 
 static void set_position(int position)
 {
-	if ( player_set_position(g_player,  position) != PLAYER_ERROR_NONE )
+	if ( player_set_position(g_player,  position, seek_completed_cb, g_player) != PLAYER_ERROR_NONE )
 	{
 		g_print("failed to set position\n");
 	}
@@ -304,7 +307,7 @@ static void set_position(int position)
 
 static void set_position_ratio(int percent)
 {
-	if ( player_set_position_ratio(g_player, percent) != PLAYER_ERROR_NONE )
+	if ( player_set_position_ratio(g_player, percent, seek_completed_cb, g_player) != PLAYER_ERROR_NONE )
 	{
 		g_print("failed to set position ratio\n");
 	}
@@ -319,10 +322,48 @@ static void get_duration()
 	g_print("                                                            ==> [Player_Test] Duration: [%d ] msec\n",duration);
 }
 
-static void get_video_size()
+static void get_stream_info()
 {
 	int w = 0;
 	int h = 0;
+	char *value = NULL;
+	player_get_content_info(g_player, PLAYER_CONTENT_INFO_ALBUM,  &value);
+	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_ALBUM: [%s ] \n",value);
+	player_get_content_info(g_player, PLAYER_CONTENT_INFO_ARTIST,  &value);
+	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_ARTIST: [%s ] \n",value);
+	player_get_content_info(g_player, PLAYER_CONTENT_INFO_AUTHOR,  &value);
+	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_AUTHOR: [%s ] \n",value);
+	player_get_content_info(g_player, PLAYER_CONTENT_INFO_GENRE,  &value);
+	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_GENRE: [%s ] \n",value);
+	player_get_content_info(g_player, PLAYER_CONTENT_INFO_TITLE,  &value);
+	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_TITLE: [%s ] \n",value);
+	if(value!=NULL)
+	{
+		free(value);
+		value = NULL;
+	}
+
+	int sample_rate;
+	int channel;
+	int bit_rate;
+	player_get_audio_stream_info(g_player, &sample_rate, &channel, &bit_rate);
+	g_print("                                                            ==> [Player_Test] Sample Rate: [%d ] , Channel: [%d ] , Bit Rate: [%d ] \n",sample_rate,channel,bit_rate);
+	
+	char *audio_codec = NULL;
+	char *video_codec = NULL;
+	player_get_codec_info(g_player, &audio_codec, &video_codec);
+	if(audio_codec!=NULL)
+	{
+		g_print("                                                            ==> [Player_Test] Audio Codec: [%s ] \n",audio_codec);
+		free(audio_codec);
+		audio_codec = NULL;
+	}
+	if(video_codec!=NULL)
+	{
+		g_print("                                                            ==> [Player_Test] Video Codec: [%s ] \n",video_codec);
+		free(video_codec);
+		video_codec = NULL;
+	}
 	player_get_video_size(g_player, &w, &h);
 	g_print("                                                            ==> [Player_Test] Width: [%d ] , Height: [%d ] \n",w,h);
 }
@@ -343,17 +384,17 @@ static void get_looping(bool *looping)
 
 static void set_display_mode(int mode)
 {
-	if ( player_set_x11_display_mode(g_player, mode) != PLAYER_ERROR_NONE )
+	if ( player_set_display_mode(g_player, mode) != PLAYER_ERROR_NONE )
 	{
-		g_print("failed to player_set_x11_display_mode\n");
+		g_print("failed to player_set_display_mode\n");
 	}
 }
 
 static void get_display_mode()
 {
 	player_display_mode_e mode;
-	player_get_x11_display_mode(g_player, &mode);
-	g_print("                                                            ==> [Player_Test] X11 Display mode: [%d ] \n",mode);
+	player_get_display_mode(g_player, &mode);
+	g_print("                                                            ==> [Player_Test] Display mode: [%d ] \n",mode);
 }
 
 static void set_display_rotation(int rotation)
@@ -520,7 +561,7 @@ void _interpret_main_menu(char *cmd)
 		}
 		else if (strncmp(cmd, "n", 1) == 0 )
 		{
-				get_video_size();
+				get_stream_info();
 		}
 		else if (strncmp(cmd, "o", 1) == 0 )
 		{
@@ -609,7 +650,7 @@ void display_sub_basic()
 	g_print("k. Set Position (%%)\t");
 	g_print("l. Get Position\n");
 	g_print("[duration] m. Get Duration\n");
-	g_print("[video size] n. Get Video Size\n");
+	g_print("[Stream Info] n. Get stream info (Video Size, codec, audio stream info, and tag info)\n");
 	g_print("[Looping] o. Set Looping\t");
 	g_print("p. Get Looping\n");
 	g_print("[x display] r. Set display mode\t");

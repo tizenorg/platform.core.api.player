@@ -24,7 +24,8 @@ extern "C" {
 #endif
 
 typedef enum {
-	_PLAYER_EVENT_TYPE_BEGIN,	
+	_PLAYER_EVENT_TYPE_BEGIN,
+	_PLAYER_EVENT_TYPE_PREPARE,
 	_PLAYER_EVENT_TYPE_COMPLETE,
 	_PLAYER_EVENT_TYPE_PAUSE,
 	_PLAYER_EVENT_TYPE_INTERRUPT,
@@ -32,8 +33,12 @@ typedef enum {
 	_PLAYER_EVENT_TYPE_BUFFERING,
 	_PLAYER_EVENT_TYPE_SUBTITLE,
 	_PLAYER_EVENT_TYPE_CAPTURE,
+	_PLAYER_EVENT_TYPE_SEEK,
 	_PLAYER_EVENT_TYPE_VIDEO_FRAME,
 	_PLAYER_EVENT_TYPE_AUDIO_FRAME,
+	_PLAYER_EVENT_TYPE_PD,
+	_PLAYER_SUPPORTED_AUDIO_EFFECT_TYPE,
+	_PLAYER_SUPPORTED_AUDIO_EFFECT_PRESET,
 	_PLAYER_EVENT_TYPE_NUM
 }_player_event_e;
 
@@ -44,6 +49,7 @@ typedef struct _player_s{
 	void* display_handle;
 	player_display_type_e display_type;
 	int state;
+	int is_prepare_sync;
 } player_s;
 
 #ifdef __cplusplus
