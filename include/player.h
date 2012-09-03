@@ -174,6 +174,15 @@ typedef enum
 } player_content_info_e;
 
 /**
+ * @brief  Enumerations of media stream content information
+ */
+typedef enum
+{
+  PLAYER_TRACK_TYPE_AUDIO,		/**< Audio Track */
+  PLAYER_TRACK_TYPE_VIDEO,		/**< Video Track */
+  PLAYER_TRACK_TYPE_TEXT,	/**< Text Track */
+} player_track_type_e;
+/**
  * @}
  */
 
@@ -1072,6 +1081,20 @@ int player_get_video_size(player_h player, int *width, int *height);
 int player_get_album_art(player_h player, void **album_art, int *size);
 
 /**
+ * @brief Gets the track count
+ * @param[in] player The handle to media player
+ * @param [in] type The track type
+ * @param [out] count The count of track
+ * @return 0 on success, otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ */
+int player_get_track_count(player_h player, player_track_type_e type, int *count);
+
+/**
  * @}
  */
 
@@ -1415,7 +1438,21 @@ int player_capture_video(player_h player, player_video_captured_cb callback, voi
  */
 int player_set_streaming_cookie(player_h player, const char *cookie, int size);
 
-/** 
+/**
+ * @brief Gets the download progress for streaming playback.
+ * @param[in] player The handle to media player
+ * @param[out] start The starting position in percent [0, 100]
+ * @param[out] current The current position in percent [0, 100]
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be either #PLAYER_STATE_PLAYING by player_start() or #PLAYER_STATE_PAUSED by player_pause().
+ */
+int player_get_streaming_download_progress(player_h player, int *start, int *current);
+
+/**
  * @brief Registers a callback function to be invoked when the playback starts.
  * @param[in] player	The handle to media player
  * @param[in] callback	The callback function to register

@@ -47,9 +47,12 @@ typedef struct _player_s{
 	const void* user_cb[_PLAYER_EVENT_TYPE_NUM];
 	void* user_data[_PLAYER_EVENT_TYPE_NUM];
 	void* display_handle;
+	void* second_display_handle;
 	player_display_type_e display_type;
+	player_display_type_e second_display_type;
 	int state;
 	int is_prepare_sync;
+	bool is_stopped;
 } player_s;
 
 #ifdef __cplusplus

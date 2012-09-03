@@ -240,7 +240,7 @@ static int __msg_callback(int message, void *param, void *user_data)
 
 			if(handle->state == PLAYER_STATE_PLAYING && msg->state.current == MM_PLAYER_STATE_PAUSED &&  handle->user_cb[_PLAYER_EVENT_TYPE_PAUSE] )
 			{
-				LOGE("Invoke the paused callback");
+				LOGE("[%s] Invoke the paused callback", __FUNCTION__);
 				((player_paused_cb)handle->user_cb[_PLAYER_EVENT_TYPE_PAUSE])(handle->user_data[_PLAYER_EVENT_TYPE_PAUSE]);
 			}
 			break;
@@ -261,14 +261,21 @@ static int __msg_callback(int message, void *param, void *user_data)
 			}
 			else
 			{
-				handle->state=PLAYER_STATE_READY;
-				if(handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE]) // asyc && prepared cb has been set
+				if(handle->state!=PLAYER_STATE_IDLE)
 				{
-					mm_player_pause(handle->mm_handle);
-					mm_player_set_mute(handle->mm_handle,0);
-					((player_prepared_cb)handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE])(handle->user_data[_PLAYER_EVENT_TYPE_PREPARE]);
-					handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
-					handle->user_data[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
+					LOGE("[%s] Nothing to happen in BOS [current state : %d] - (prepared_cb should be called when user invoke prepare()).  ", __FUNCTION__, handle->state);
+				}
+				else
+				{
+					handle->state=PLAYER_STATE_READY;
+					if(handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE]) // asyc && prepared cb has been set
+					{
+						mm_player_pause(handle->mm_handle);
+						mm_player_set_mute(handle->mm_handle,0);
+						((player_prepared_cb)handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE])(handle->user_data[_PLAYER_EVENT_TYPE_PREPARE]);
+						handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
+						handle->user_data[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
+					}
 				}
 			}
 			break;
@@ -494,6 +501,7 @@ int player_create (player_h *player)
 		*player = (player_h)handle;
 		handle->state = PLAYER_STATE_IDLE;
 		handle->display_type = MM_DISPLAY_SURFACE_NULL; // means DISPLAY_TYPE_NONE(3)
+		handle->second_display_type = MM_DISPLAY_SURFACE_NULL;
 		LOGE("[%s] End", __FUNCTION__);
 		return PLAYER_ERROR_NONE;
 	}
@@ -659,6 +667,7 @@ int 	player_unprepare (player_h player)
 	{
 		handle->state = PLAYER_STATE_IDLE;
 		handle->display_type = MM_DISPLAY_SURFACE_NULL; // means DISPLAY_TYPE_NONE(3)
+		handle->second_display_type = MM_DISPLAY_SURFACE_NULL; // means DISPLAY_TYPE_NONE(3)
 		LOGE("[%s] End", __FUNCTION__);
 		return PLAYER_ERROR_NONE;
 	}
@@ -786,7 +795,14 @@ int 	player_start (player_h player)
 			//TODO: fix it !
 			ret = mm_player_pause(handle->mm_handle);
 		}
-		ret = mm_player_resume(handle->mm_handle);
+		if(handle->is_stopped)
+		{
+			ret = mm_player_start(handle->mm_handle);
+			handle->is_stopped = FALSE;
+			LOGE("[%s] stop -> start() ",__FUNCTION__);
+		}
+		else
+			ret = mm_player_resume(handle->mm_handle);
 	}
 	else
 	{
@@ -821,6 +837,7 @@ int 	player_stop (player_h player)
 		else
 		{
 			handle->state = PLAYER_STATE_READY;
+			handle->is_stopped = TRUE;
 			LOGE("[%s] End", __FUNCTION__);
 			return PLAYER_ERROR_NONE;
 		}
@@ -1084,34 +1101,74 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
+
+	int ret;
+	// in case of multi surface
+	if(handle->second_display_type!=(int)MM_DISPLAY_SURFACE_NULL)
+	{
+		if (handle->state != PLAYER_STATE_PLAYING && handle->state != PLAYER_STATE_PAUSED)
+		{
+			LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
+			return PLAYER_ERROR_INVALID_STATE;
+		}
+		LOGE("[%s] Change Type : %d",__FUNCTION__, type);
+
+		ret = mm_player_set_attribute(handle->mm_handle, NULL,"display_surface_type", type,(char*)NULL);
+		if(ret != MM_ERROR_NONE)
+		{
+			return __convert_error_code(ret,(char*)__FUNCTION__);
+		}
+
+		else  if(type!=handle->display_type)
+		{
+			//do swap
+			player_display_type_e temp_type = handle->display_type;
+			handle->display_type = handle->second_display_type;
+			handle->second_display_type = temp_type;
+			LOGE("[%s]change surface - main Type : %d, main display addr : %x , second Type : %d, seconds display addr : %x ",__FUNCTION__,handle->display_type, handle->display_handle,  handle->second_display_type, handle->second_display_handle );
+			return PLAYER_ERROR_NONE;
+		}
+		else
+		{
+			LOGE("[%s] Skip change display : same type");
+			return PLAYER_ERROR_NONE;
+		}
+	}
+
+	// normal case
 	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
 	}
 
-	int ret;
-	if(handle->display_type == (int)MM_DISPLAY_SURFACE_NULL)
+	if (type == handle->display_type) // same type
+	{
+		handle->display_handle = display;
+		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_overlay" , type == PLAYER_DISPLAY_TYPE_X11 ? &handle->display_handle : display, sizeof(display), (char*)NULL);
+	} else	if(handle->display_type == (int)MM_DISPLAY_SURFACE_NULL) // first
 	{
 		handle->display_handle = display;
 		handle->display_type = type;
 		LOGE("[%s] video display has been set initailly - type :%d",__FUNCTION__,type);
+		LOGE("[%s] main Type : %d, main display addr : %x",__FUNCTION__,handle->display_type, handle->display_handle);
 		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_use_multi",0,"display_surface_type", type, "display_overlay" , type == PLAYER_DISPLAY_TYPE_X11 ? &handle->display_handle : display, sizeof(display), (char*)NULL);
 	}
-	else
+	else //secondary
 	{
-		LOGE("[%s] video display has been set again- type :%d",__FUNCTION__,type);
-		player_display_type_e prev_type = handle->display_type;
-		player_display_h prev = handle->display_handle;
+		handle->second_display_handle = handle->display_handle;
+		handle->second_display_type = handle->display_type;
 		handle->display_handle = display;
 		handle->display_type = type;
-		LOGE("[%s] Type : %d, display addr : %x (%d) , Prev Type : %d, Prev display addr : %x (%d)",__FUNCTION__,type, handle->display_handle, handle->display_handle, prev_type, prev, prev);
-		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_use_multi",1,"display_surface_type", type, "display_overlay" , type == PLAYER_DISPLAY_TYPE_X11 ? &handle->display_handle : display, sizeof(display), "display_overlay_ext",prev_type == PLAYER_DISPLAY_TYPE_X11 ? &prev : prev, sizeof(prev) ,(char*)NULL);
+		LOGE("[%s] video display has been set again- type :%d",__FUNCTION__,type);
+		LOGE("[%s] main Type : %d, main display addr : %x , second Type : %d, seconds display addr : %x ",__FUNCTION__,handle->display_type, handle->display_handle,  handle->second_display_type, handle->second_display_handle);
+		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_use_multi",1,"display_surface_type", type, "display_overlay" , type == PLAYER_DISPLAY_TYPE_X11 ? &handle->display_handle : display, sizeof(display), "display_overlay_ext",handle->second_display_type == PLAYER_DISPLAY_TYPE_X11 ? &handle->second_display_handle: handle->second_display_handle, sizeof(handle->second_display_handle) ,(char*)NULL);
 	}
 
 	if(ret != MM_ERROR_NONE)
 	{
 		handle->display_type = MM_DISPLAY_SURFACE_NULL;
+		handle->second_display_type = MM_DISPLAY_SURFACE_NULL;
 		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
@@ -1520,6 +1577,40 @@ int player_get_album_art(player_h player, void **album_art, int *size)
 	return PLAYER_ERROR_NONE;
 }
 
+int player_get_track_count(player_h player, player_track_type_e type, int *count)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(count);
+	player_s * handle = (player_s *) player;
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+
+	int value=0;
+	char* attr_name = NULL;
+	switch(type)
+	{
+		case PLAYER_TRACK_TYPE_AUDIO:
+			attr_name = "content_audio_found";
+			break;
+		case PLAYER_TRACK_TYPE_VIDEO:
+			attr_name = "content_video_found";
+			break;
+		case PLAYER_TRACK_TYPE_TEXT:
+			//TODO
+			break;
+	}
+	int ret = mm_player_get_attribute(handle->mm_handle, NULL,attr_name,&value,(char*)NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	*count = value;
+	return PLAYER_ERROR_NONE;
+}
+
 int player_audio_effect_set_value(player_h player, audio_effect_e effect, int value)
 {
 	PLAYER_INSTANCE_CHECK(player);
@@ -1875,6 +1966,32 @@ int player_set_streaming_cookie(player_h player, const char *cookie, int size)
 	}
 	else
 		return PLAYER_ERROR_NONE;
+}
+
+int player_get_streaming_download_progress(player_h player, int *start, int *current)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(start);
+	PLAYER_NULL_ARG_CHECK(current);
+	player_s * handle = (player_s *) player;
+	if (handle->state != PLAYER_STATE_PLAYING && handle->state != PLAYER_STATE_PAUSED)
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+	int _current;
+	int _start;
+	int ret = mm_player_get_buffer_position(handle->mm_handle,MM_PLAYER_POS_FORMAT_PERCENT,&_start,&_current);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		*start = _start;
+		*current = _current;
+		return PLAYER_ERROR_NONE;
+	}
 }
 
 int 	player_set_started_cb (player_h player, player_started_cb callback, void *user_data)
