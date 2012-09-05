@@ -1587,27 +1587,11 @@ int player_get_track_count(player_h player, player_track_type_e type, int *count
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
 	}
-
-	int value=0;
-	char* attr_name = NULL;
-	switch(type)
-	{
-		case PLAYER_TRACK_TYPE_AUDIO:
-			attr_name = "content_audio_found";
-			break;
-		case PLAYER_TRACK_TYPE_VIDEO:
-			attr_name = "content_video_found";
-			break;
-		case PLAYER_TRACK_TYPE_TEXT:
-			//TODO
-			break;
-	}
-	int ret = mm_player_get_attribute(handle->mm_handle, NULL,attr_name,&value,(char*)NULL);
+	int ret = mm_player_get_track_count(handle->mm_handle, type, count);
 	if(ret != MM_ERROR_NONE)
 	{
 		return __convert_error_code(ret,(char*)__FUNCTION__);
 	}
-	*count = value;
 	return PLAYER_ERROR_NONE;
 }
 
