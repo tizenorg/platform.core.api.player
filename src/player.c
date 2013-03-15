@@ -157,6 +157,19 @@ static int __convert_error_code(int code, char* func_name)
 			ret = PLAYER_ERROR_SOUND_POLICY;
 			msg = "PLAYER_ERROR_SOUND_POLICY";
 			break;
+		case MM_ERROR_PLAYER_DRM_EXPIRED:
+			ret = PLAYER_ERROR_DRM_EXPIRED;
+			msg = "PLAYER_ERROR_DRM_EXPIRED";
+			break;
+		case MM_ERROR_PLAYER_DRM_NOT_AUTHORIZED:
+		case MM_ERROR_PLAYER_DRM_NO_LICENSE:
+			ret = PLAYER_ERROR_DRM_NO_LICENSE;
+			msg = "PLAYER_ERROR_DRM_NO_LICENSE";
+			break;
+		case MM_ERROR_PLAYER_DRM_FUTURE_USE:
+			ret = PLAYER_ERROR_DRM_FUTURE_USE;
+			msg = "PLAYER_ERROR_DRM_FUTURE_USE";
+			break;
 	}
 	LOGE("[%s] %s(0x%08x) : core fw error(0x%x)",func_name,msg, ret, code);
 	return ret;	
@@ -195,6 +208,7 @@ static player_interrupted_code_e __convert_interrupted_code(int code)
 			ret = PLAYER_INTERRUPTED_BY_RESOURCE_CONFLICT;
 			break;
 	}
+	LOGE("[%s] incoming(0x%08x) => ret(%d)",__FUNCTION__,code, ret);
 	return ret;
 }
 
@@ -238,7 +252,7 @@ static int __msg_callback(int message, void *param, void *user_data)
 {
 	player_s * handle = (player_s*)user_data;
 	MMMessageParamType *msg = (MMMessageParamType*)param;
-	LOGI("[%s] Start : Got message type : 0x%x" ,__FUNCTION__, message);
+	LOGE("[%s] Start : Got message type : 0x%x" ,__FUNCTION__, message);
 	player_error_e err_code = PLAYER_ERROR_NONE;
 	switch(message)
 	{
@@ -340,10 +354,6 @@ static int __msg_callback(int message, void *param, void *user_data)
 			LOGE("[%s] PLAYER_ERROR_NOT_SUPPORTED_FILE (0x%08x) : FILE_NOT_FOUND" ,__FUNCTION__, PLAYER_ERROR_NOT_SUPPORTED_FILE);
 			err_code = PLAYER_ERROR_NOT_SUPPORTED_FILE;
 			break;
-		case MM_MESSAGE_DRM_NOT_AUTHORIZED: //0x111
-			LOGE("[%s] PLAYER_ERROR_NOT_SUPPORTED_FILE (0x%08x) : DRM_NOT_AUTHORIZED" ,__FUNCTION__, PLAYER_ERROR_NOT_SUPPORTED_FILE);
-			err_code = PLAYER_ERROR_NOT_SUPPORTED_FILE;
-			break;
 		case MM_MESSAGE_SEEK_COMPLETED: //0x114
 			if (handle->display_type != ((int)MM_DISPLAY_SURFACE_NULL) && handle->state == PLAYER_STATE_READY)
 			{
@@ -371,7 +381,6 @@ static int __msg_callback(int message, void *param, void *user_data)
 		case MM_MESSAGE_CONNECTED: //0x101
 		case MM_MESSAGE_BLUETOOTH_ON: //0x106
 		case MM_MESSAGE_BLUETOOTH_OFF: //0x107
-		case MM_MESSAGE_RESUMED_BY_REW: //0x108
 		case MM_MESSAGE_RTP_SENDER_REPORT: //0x10a
 		case MM_MESSAGE_RTP_RECEIVER_REPORT: //0x10b
 		case MM_MESSAGE_RTP_SESSION_STATUS: //0x10c
@@ -639,10 +648,10 @@ int 	player_prepare (player_h player)
 	else
 	{
 		ret = mm_player_set_attribute(handle->mm_handle, NULL,"display_visible" , 0, (char*)NULL);
-                if(ret != MM_ERROR_NONE)
-                {
-                        LOGW("[%s] Failed to set display visible (0x%x)" ,__FUNCTION__, ret);
-                }
+		if(ret != MM_ERROR_NONE)
+		{
+			LOGW("[%s] Failed to set display display visible '0' (0x%x)" ,__FUNCTION__, ret);
+		}
 	}
 
 	ret = mm_player_realize(handle->mm_handle);
@@ -1868,9 +1877,14 @@ int player_audio_effect_set_equalizer_all_bands(player_h player, int *band_level
 	player_s * handle = (player_s *) player;
 	int ret = mm_player_audio_effect_custom_set_level_eq_from_list(handle->mm_handle, band_levels, length);
 	if(ret != MM_ERROR_NONE)
+	{
 		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
 	else
-		return PLAYER_ERROR_NONE;
+	{
+		ret = mm_player_audio_effect_custom_apply(handle->mm_handle);
+		return (ret==MM_ERROR_NONE)?PLAYER_ERROR_NONE:__convert_error_code(ret,(char*)__FUNCTION__);
+	}
 }
 
 int player_audio_effect_set_equalizer_band_level(player_h player, int index, int level)
@@ -1969,7 +1983,7 @@ int player_set_subtitle_path(player_h player,const char* path)
 	player_s * handle = (player_s *) player;
 	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);
 
-	int ret = mm_player_set_attribute(handle->mm_handle, NULL,"subtitle_uri" , path, strlen(path),"subtitle_silent", 0, (char*)NULL);
+	int ret = mm_player_set_attribute(handle->mm_handle, NULL,"subtitle_uri" , path, strlen(path), (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
 		return __convert_error_code(ret,(char*)__FUNCTION__);

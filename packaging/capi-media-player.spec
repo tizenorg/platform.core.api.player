@@ -1,7 +1,7 @@
 Name:       capi-media-player
 Summary:    A Media Player library in Tizen Native API
 Version:    0.1.0
-Release:    51
+Release:    52
 Group:      TO_BE/FILLED_IN
 License:    TO BE FILLED IN
 Source0:    %{name}-%{version}.tar.gz
@@ -38,7 +38,7 @@ make %{?jobs:-j%jobs}
 %install
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/license
-cp LICENSE %{buildroot}/usr/share/license/%{name}
+cp LICENSE.APLv2 %{buildroot}/usr/share/license/%{name}
 %make_install
 
 %post -p /sbin/ldconfig

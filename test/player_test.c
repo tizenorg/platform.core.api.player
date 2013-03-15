@@ -385,7 +385,7 @@ static void get_stream_info()
 	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_GENRE: [%s ] \n",value);
 	player_get_content_info(g_player, PLAYER_CONTENT_INFO_TITLE,  &value);
 	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_TITLE: [%s ] \n",value);
-    	void *album;
+    void *album;
 	int size;
 	player_get_album_art(g_player, &album, &size);
 	g_print("                                                            ==> [Player_Test] Album art : [ data : 0x%x, size : %d ]\n",album, size);

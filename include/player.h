@@ -72,7 +72,10 @@ typedef enum
 		PLAYER_ERROR_INVALID_URI	    = PLAYER_ERROR_CLASS | 0x04	,		    			/**< Invalid URI */
 		PLAYER_ERROR_SOUND_POLICY	    = PLAYER_ERROR_CLASS | 0x05	,		    		/**< Sound policy error */
 		PLAYER_ERROR_CONNECTION_FAILED	= PLAYER_ERROR_CLASS | 0x06,    /**< Streaming connection failed */
-		PLAYER_ERROR_VIDEO_CAPTURE_FAILED = PLAYER_ERROR_CLASS | 0x07    /**< Video capture failure */
+		PLAYER_ERROR_VIDEO_CAPTURE_FAILED = PLAYER_ERROR_CLASS | 0x07,    /**< Video capture failure */
+		PLAYER_ERROR_DRM_EXPIRED = PLAYER_ERROR_CLASS | 0x08,			/**< Expired license */
+		PLAYER_ERROR_DRM_NO_LICENSE = PLAYER_ERROR_CLASS | 0x09,			/**< No license */
+		PLAYER_ERROR_DRM_FUTURE_USE = PLAYER_ERROR_CLASS | 0x0a		/**< License for future use */
 } player_error_e;
 
 /**
@@ -112,7 +115,8 @@ typedef enum
 /**
  * @brief Enumerations of audio latency mode
  */
-typedef enum{
+typedef enum
+{
 	AUDIO_LATENCY_MODE_LOW = 0, 	/**< Low audio latency mode*/
 	AUDIO_LATENCY_MODE_MID,	 	/**< Middle audio latency mode*/
 	AUDIO_LATENCY_MODE_HIGH,		/**< High audio latency mode*/
