@@ -11,7 +11,7 @@
 * distributed under the License is distributed on an "AS IS" BASIS,
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
-* limitations under the License. 
+* limitations under the License.
 */
 
 #ifndef __TIZEN_MEDIA_PLAYER_H__
@@ -75,7 +75,8 @@ typedef enum
 		PLAYER_ERROR_VIDEO_CAPTURE_FAILED = PLAYER_ERROR_CLASS | 0x07,    /**< Video capture failure */
 		PLAYER_ERROR_DRM_EXPIRED = PLAYER_ERROR_CLASS | 0x08,			/**< Expired license */
 		PLAYER_ERROR_DRM_NO_LICENSE = PLAYER_ERROR_CLASS | 0x09,			/**< No license */
-		PLAYER_ERROR_DRM_FUTURE_USE = PLAYER_ERROR_CLASS | 0x0a		/**< License for future use */
+		PLAYER_ERROR_DRM_FUTURE_USE = PLAYER_ERROR_CLASS | 0x0a,		/**< License for future use */
+		PLAYER_ERROR_DRM_NOT_PERMITTED = PLAYER_ERROR_CLASS | 0x0b		/**< Not permitted format */
 } player_error_e;
 
 /**
@@ -105,7 +106,7 @@ typedef enum
 /**
  * @brief
  * Enumerations of display type
- */ 
+ */
 typedef enum
 {
   PLAYER_DISPLAY_TYPE_X11 = 0,			/**< X surface display */
@@ -157,7 +158,7 @@ typedef enum
 
 /**
  * @brief  Enumerations of x surface display aspect ratio
- */ 
+ */
 typedef enum
 {
 	PLAYER_DISPLAY_MODE_LETTER_BOX = 0,	/**< Letter box*/
@@ -354,7 +355,7 @@ typedef void (*player_error_cb)(int error_code, void *user_data);
 
 /**
  * @brief  Called when the buffering percentage of media playback is updated.
- * @details If the buffer is full, it will return 100%. 
+ * @details If the buffer is full, it will return 100%.
  * @param[in]   percent	The percentage of buffering completed (0~100)
  * @param[in]   user_data	The user data passed from the callback registration function
  * @see player_set_buffering_cb()
@@ -384,7 +385,7 @@ typedef void (*player_pd_message_cb)(player_pd_message_type_e type, void *user_d
 /**
  * @brief  Called when the video is captured.
  * @remarks The color space format of the captured image is #IMAGE_UTIL_COLORSPACE_RGB888.
- * @param[in]   data	The captured image buffer 
+ * @param[in]   data	The captured image buffer
  * @param[in]   width	The width of captured image
  * @param[in]   height The height of captured image
  * @param[in]   size	The size of captured image
@@ -396,7 +397,7 @@ typedef void (*player_video_captured_cb)(unsigned char *data, int width, int hei
 /**
  * @brief  Called when the video frame is decoded.
  * @remarks The color space format of the captured image is #IMAGE_UTIL_COLORSPACE_RGB888.
- * @param[in]   data	The decoded video frame data 
+ * @param[in]   data	The decoded video frame data
  * @param[in]   width	The width of video frame
  * @param[in]   height The height of video frame
  * @param[in]   size	The size of video frame
@@ -408,7 +409,7 @@ typedef void (*player_video_frame_decoded_cb)(unsigned char *data, int width, in
 
 /**
  * @brief  Called when the audio frame is decoded.
- * @param[in]   data	The decoded audio frame data 
+ * @param[in]   data	The decoded audio frame data
  * @param[in]   size	The size of audio frame
  * @param[in]   user_data	The user data passed from the callback registration function
  * @see player_set_audio_frame_decoded_cb()
@@ -419,7 +420,7 @@ typedef void (*player_audio_frame_decoded_cb)(unsigned char *data, unsigned int 
 /**
  * @brief Creates a player handle for playing multimedia content.
  * @remarks @a player must be released player_destroy() by you.
- * @remarks  
+ * @remarks
  *  Although you can create multiple player handles at the same time,
  *  the player cannot guarantee proper operation because of limited resources, such as
  *  audio or display device.
@@ -495,14 +496,14 @@ int player_prepare_async (player_h player, player_prepared_cb callback, void* us
  * @details
  *	The most recently used media is reset and no longer associated with the player.
  * Playback is no longer possible. If you want to use the player again, you will have to set the data URI and call
- * player_prepare() again. 
+ * player_prepare() again.
  * @param[in]		player The handle to media player
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre	The player state should be #PLAYER_STATE_READY by player_prepare() or player_stop(). 
+ * @pre	The player state should be #PLAYER_STATE_READY by player_prepare() or player_stop().
  * @post The player state will be #PLAYER_STATE_IDLE.
  * @see player_prepare()
  */
@@ -512,15 +513,15 @@ int player_unprepare(player_h player);
  * @brief Sets the data source (file-path, http or rtsp URI) to use.
  *
  * @details
- *	Associates media contents, referred to by the URI, with the player. 
+ *	Associates media contents, referred to by the URI, with the player.
  * If the function call is successful, subsequent calls to player_prepare() and player_start() will start playing the media.
  *
- * @remarks 
+ * @remarks
  * If you use http or rtsp, URI should start with "http://" or "rtsp://". The default protocol is "file://".
  * If you provide an invalid URI, you won't receive an error message until you call player_start().
  *
  * @param[in]   player The handle to media player
- * @param[in]   uri Specifies the content location, such as the file path, the URI of the http or rtsp stream you want to play  
+ * @param[in]   uri Specifies the content location, such as the file path, the URI of the http or rtsp stream you want to play
  *
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
@@ -539,11 +540,11 @@ int player_set_uri(player_h player, const char * uri);
  * Associates media content, cached in memory, with the player. Unlike the case of player_set_uri(), the media resides in memory.
  * If the function call is successful, subsequent calls to player_prepare() and player_start() will start playing the media.
  *
- * @remarks 
+ * @remarks
  * If you provide an invalid data, you won't receive an error message until you call player_start().
  *
- * 
- * @param[in]   player The handle to media player  
+ *
+ * @param[in]   player The handle to media player
  * @param[in]   data The memory pointer of media data
  * @param[in]   size The size of media data
  * @return 0 on success, otherwise a negative error value.
@@ -573,7 +574,7 @@ int  player_get_state(player_h player, player_state_e *state);
  *
  * @details
  *	The range of @a left and @c right is from 0 to 1.0, inclusive (1.0 = 100%). Default value is 1.0.
- *	Setting this volume adjusts the player volume, not the system volume. 
+ *	Setting this volume adjusts the player volume, not the system volume.
  * To change system volume, use the @ref CAPI_MEDIA_SOUND_MANAGER_MODULE API.
  *
  * @param[in]   player The handle to media player
@@ -591,7 +592,7 @@ int player_set_volume(player_h player, float left, float right);
 /**
  * @brief Gets the player's current volume factor.
  *
- * @details The range of @a left and @a right is from 0 to 1.0, inclusive (1.0 = 100%). This function gets the player volume, not the system volume. 
+ * @details The range of @a left and @a right is from 0 to 1.0, inclusive (1.0 = 100%). This function gets the player volume, not the system volume.
  * To get the system volume, use the @ref CAPI_MEDIA_SOUND_MANAGER_MODULE API.
  *
  * @param[in]   player The handle to media player
@@ -617,6 +618,7 @@ int player_get_volume(player_h player, float *left, float *right);
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @pre The player state must be #PLAYER_STATE_IDLE by player_create().
  * @see sound_manager_get_current_sound_type()
  */
 int player_set_sound_type(player_h player, sound_type_e type);
@@ -656,7 +658,7 @@ int player_get_audio_latency_mode(player_h player, audio_latency_mode_e *latency
  * @brief Starts or resumes playback.
  *
  * @details Plays current media content, or resumes play if paused.
- * 
+ *
  * @param[in]   player The handle to media player
  * @return 0 on success, otherwise a negative error value.
  * @retval #PLAYER_ERROR_NONE Successful
@@ -758,7 +760,7 @@ int player_set_position(player_h player, int millisecond, player_seek_completed_
 int player_set_position_ratio(player_h player, int percent, player_seek_completed_cb callback, void *user_data);
 
 /**
- * @brief Gets current position in milliseconds. 
+ * @brief Gets current position in milliseconds.
  * @param[in]   player The handle to media player
  * @param[out]  millisecond The current position in milliseconds
  * @return 0 on success, otherwise a negative error value.
@@ -844,7 +846,7 @@ int player_set_looping(player_h player, bool looping);
  * @brief Gets the player's looping status.
  *
  * @details  If the looping status is @c true, playback will automatically restart upon finishing. If @c false, it won't.
- * 
+ *
  * @param[in]   player The handle to media player
  * @param[out]  looping The looping status: (@c true = looping, @c false = non-looping )
  * @return 0 on success, otherwise a negative error value.
@@ -930,10 +932,10 @@ int player_set_display_mode(player_h player, player_display_mode_e mode);
 int player_get_display_mode(player_h player, player_display_mode_e *mode);
 
 /**
- * @brief Sets the playback rate 
+ * @brief Sets the playback rate
  * @details The default value is 1.0.
  * @remarks #PLAYER_ERROR_INVALID_OPERATION occured if streaming playbak.
- * @remarks No operation is performed, if @a rate is 0. 
+ * @remarks No operation is performed, if @a rate is 0.
  * @remarks The sound is muted, when playback rate is under 0.0 and over 2.0.
  * @param[in]   player The handle to media player
  * @param[in]   rate The playback rate (-5.0x ~ 5.0x)
@@ -943,6 +945,7 @@ int player_get_display_mode(player_h player, player_display_mode_e *mode);
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @pre The player state must be #PLAYER_STATE_PLAYING by player_start().
+ * @pre The player state must be #PLAYER_STATE_READY by player_prepare() or #PLAYER_STATE_PLAYING by player_start() or #PLAYER_STATE_PAUSED by player_pause().
  */
 int player_set_playback_rate(player_h player, float rate);
 
@@ -1697,7 +1700,7 @@ int player_unset_error_cb(player_h player);
  * @post  player_buffering_cb() will be invoked
  * @see player_unset_buffering_cb()
  * @see player_set_uri()
- * @see player_buffering_cb() 
+ * @see player_buffering_cb()
  */
 int player_set_buffering_cb(player_h player, player_buffering_cb callback, void *user_data);
 

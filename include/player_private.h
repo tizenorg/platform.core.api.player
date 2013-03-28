@@ -11,7 +11,7 @@
 * distributed under the License is distributed on an "AS IS" BASIS,
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
-* limitations under the License. 
+* limitations under the License.
 */
 
 #ifndef __TIZEN_MEDIA_PLAYER_PRIVATE_H__
@@ -27,7 +27,7 @@ typedef enum {
 	_PLAYER_EVENT_TYPE_PREPARE,
 	_PLAYER_EVENT_TYPE_COMPLETE,
 	_PLAYER_EVENT_TYPE_INTERRUPT,
-	_PLAYER_EVENT_TYPE_ERROR,	
+	_PLAYER_EVENT_TYPE_ERROR,
 	_PLAYER_EVENT_TYPE_BUFFERING,
 	_PLAYER_EVENT_TYPE_SUBTITLE,
 	_PLAYER_EVENT_TYPE_CAPTURE,
@@ -52,6 +52,7 @@ typedef struct _player_s{
 	bool is_stopped;
 	bool is_display_visible;
 	bool is_progressive_download;
+	pthread_t prepare_async_thread;
 } player_s;
 
 #ifdef __cplusplus
