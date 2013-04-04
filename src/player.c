@@ -62,6 +62,10 @@ static int __convert_error_code(int code, char* func_name)
 			ret = PLAYER_ERROR_NONE;
 			msg = "PLAYER_ERROR_NONE";
 			break;
+		case MM_ERROR_INVALID_ARGUMENT:
+			ret = PLAYER_ERROR_INVALID_PARAMETER;
+			msg = "PLAYER_ERROR_INVALID_PARAMETER";
+			break;
 		case MM_ERROR_PLAYER_CODEC_NOT_FOUND:
 		case MM_ERROR_PLAYER_AUDIO_CODEC_NOT_FOUND:
 		case MM_ERROR_PLAYER_VIDEO_CODEC_NOT_FOUND:
