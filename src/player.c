@@ -942,13 +942,20 @@ int player_stop (player_h player)
 		{
 			return __convert_error_code(ret,(char*)__FUNCTION__);
 		}
-		else
+		if(handle->display_type == PLAYER_DISPLAY_TYPE_X11 || handle->display_type == PLAYER_DISPLAY_TYPE_EVAS)
 		{
-			handle->state = PLAYER_STATE_READY;
-			handle->is_stopped = TRUE;
-			LOGE("[%s] End", __FUNCTION__);
-			return PLAYER_ERROR_NONE;
+			ret = mm_player_set_attribute(handle->mm_handle, NULL,"display_visible" , 0, (char*)NULL);
+			if(ret != MM_ERROR_NONE)
+			{
+				return __convert_error_code(ret,(char*)__FUNCTION__);
+			}
+			LOGE("[%s] show video display : %d",__FUNCTION__, ret);
 		}
+
+		handle->state = PLAYER_STATE_READY;
+		handle->is_stopped = TRUE;
+		LOGE("[%s] End", __FUNCTION__);
+		return PLAYER_ERROR_NONE;
 	}
 	else
 	{
