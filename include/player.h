@@ -739,6 +739,25 @@ int player_pause(player_h player);
  */
 int player_set_position(player_h player, int millisecond, player_seek_completed_cb callback, void *user_data);
 
+/**
+ * @brief Sets the seek position for playback, asynchronously.
+ * @param[in] player The handle to media player
+ * @param[in] millisecond The position in milliseconds from the start to seek to
+ * @param[in] accurate if true, the position selected will be returned but, this might be considerably slow.
+ * @param[in] callback	The callback function to register
+ * @param[in] user_data	The user data to be passed to the callback function
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_SEEK_FAILED Seek operation failure
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @post It invokes player_seek_completed_cb() when seek operation completes, if you set a callback.
+ * @see player_get_position()
+ * @see player_get_position_ratio()
+ * @see player_set_position_ratio()
+ */
+int player_seek(player_h player, int millisecond, bool accurate, player_seek_completed_cb callback, void *user_data);
 
 /**
  * @brief Sets the playback position specified by percent of media content played, asynchronously.
