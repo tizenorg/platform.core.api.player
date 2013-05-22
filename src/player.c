@@ -303,6 +303,10 @@ static int __msg_callback(int message, void *param, void *user_data)
 			if( handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT] )
 			{
 				handle->state = __convert_player_state(msg->state.current);
+				if (handle->state == PLAYER_STATE_READY)
+				{
+					handle->is_stopped = TRUE;
+				}
 				((player_interrupted_cb)handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT])(__convert_interrupted_code(msg->code),handle->user_data[_PLAYER_EVENT_TYPE_INTERRUPT]);
 			}
 			break;
@@ -469,9 +473,9 @@ static bool __supported_audio_effect_type (int  filter, int type, void *user_dat
 		return TRUE;
 	}
 
-	if( handle->user_cb[_PLAYER_SUPPORTED_AUDIO_EFFECT_TYPE] )
+	if( handle->user_cb[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT] )
 	{
-		return ((player_audio_effect_supported_effect_cb)handle->user_cb[_PLAYER_SUPPORTED_AUDIO_EFFECT_TYPE])(type, handle->user_data[_PLAYER_SUPPORTED_AUDIO_EFFECT_TYPE]);
+		return ((player_audio_effect_supported_effect_cb)handle->user_cb[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT])(type, handle->user_data[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT]);
 	}
 	return FALSE;
 }
@@ -485,9 +489,9 @@ static bool __supported_audio_effect_preset (int  filter, int type, void *user_d
 		return TRUE;
 	}
 
-	if( handle->user_cb[_PLAYER_SUPPORTED_AUDIO_EFFECT_PRESET] )
+	if( handle->user_cb[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT_PRESET] )
 	{
-		return ((player_audio_effect_supported_effect_cb)handle->user_cb[_PLAYER_SUPPORTED_AUDIO_EFFECT_PRESET])(type, handle->user_data[_PLAYER_SUPPORTED_AUDIO_EFFECT_PRESET]);
+		return ((player_audio_effect_supported_effect_cb)handle->user_cb[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT_PRESET])(type, handle->user_data[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT_PRESET]);
 	}
 	return FALSE;
 }
@@ -784,7 +788,7 @@ int player_get_state (player_h player, player_state_e *state)
 	*state = handle->state;
 	MMPlayerStateType currentStat = MM_PLAYER_STATE_NULL;
 	mm_player_get_state(handle->mm_handle, &currentStat);
-	LOGE("[%s] State : %d (FW state : %d)", __FUNCTION__,handle->state, currentStat);
+	LOGI("[%s] State : %d (FW state : %d)", __FUNCTION__,handle->state, currentStat);
 	return PLAYER_ERROR_NONE;
 }
 
@@ -990,6 +994,12 @@ int player_set_position (player_h player, int millisecond, player_seek_completed
 	PLAYER_CHECK_CONDITION(millisecond>=0  ,PLAYER_ERROR_INVALID_PARAMETER ,"PLAYER_ERROR_INVALID_PARAMETER" );
 
 	player_s * handle = (player_s *) player;
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+
 	if(handle->user_cb[_PLAYER_EVENT_TYPE_SEEK])
 	{
 		LOGE("[%s] PLAYER_ERROR_SEEK_FAILED (0x%08x) : seeking... we can't do any more " ,__FUNCTION__, PLAYER_ERROR_SEEK_FAILED);
@@ -997,12 +1007,56 @@ int player_set_position (player_h player, int millisecond, player_seek_completed
 	}
 	else
 	{
-		LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_SEEK);
+		LOGE("[%s] Event type : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_SEEK);
 		handle->user_cb[_PLAYER_EVENT_TYPE_SEEK] = callback;
 		handle->user_data[_PLAYER_EVENT_TYPE_SEEK] = user_data;
 	}
+	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "accurate_seek", 1, (char*)NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
 
-	int ret = mm_player_set_position(handle->mm_handle, MM_PLAYER_POS_FORMAT_TIME, millisecond);
+	ret = mm_player_set_position(handle->mm_handle, MM_PLAYER_POS_FORMAT_TIME, millisecond);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		return PLAYER_ERROR_NONE;
+	}
+}
+
+int player_seek (player_h player, int millisecond, bool accurate, player_seek_completed_cb callback, void *user_data)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_CHECK_CONDITION(millisecond>=0  ,PLAYER_ERROR_INVALID_PARAMETER ,"PLAYER_ERROR_INVALID_PARAMETER" );
+	player_s * handle = (player_s *) player;
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+
+	if(handle->user_cb[_PLAYER_EVENT_TYPE_SEEK])
+	{
+		LOGE("[%s] PLAYER_ERROR_SEEK_FAILED (0x%08x) : seeking... we can't do any more " ,__FUNCTION__, PLAYER_ERROR_SEEK_FAILED);
+		return PLAYER_ERROR_SEEK_FAILED;
+	}
+	else
+	{
+		LOGE("[%s] Event type : %d, pos : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_SEEK, millisecond);
+		handle->user_cb[_PLAYER_EVENT_TYPE_SEEK] = callback;
+		handle->user_data[_PLAYER_EVENT_TYPE_SEEK] = user_data;
+	}
+	int accurated = accurate?1:0;
+	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "accurate_seek", accurated, (char*)NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	ret = mm_player_set_position(handle->mm_handle, MM_PLAYER_POS_FORMAT_TIME, millisecond);
 	if(ret != MM_ERROR_NONE)
 	{
 		return __convert_error_code(ret,(char*)__FUNCTION__);
@@ -1206,7 +1260,7 @@ int player_get_duration (player_h player, int *duration)
 	else
 	{
 		*duration = _duration;
-		LOGE("[%s] duration : %d",__FUNCTION__,_duration);
+		LOGI("[%s] duration : %d",__FUNCTION__,_duration);
 		return PLAYER_ERROR_NONE;
 	}
 }
@@ -1858,9 +1912,9 @@ int player_audio_effect_foreach_supported_effect(player_h player, player_audio_e
 	PLAYER_NULL_ARG_CHECK(callback);
 	player_s * handle = (player_s *) player;
 
-	LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_SUPPORTED_AUDIO_EFFECT_TYPE);
-	handle->user_cb[_PLAYER_SUPPORTED_AUDIO_EFFECT_TYPE] = callback;
-	handle->user_data[_PLAYER_SUPPORTED_AUDIO_EFFECT_TYPE] = user_data;
+	LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT);
+	handle->user_cb[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT] = callback;
+	handle->user_data[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT] = user_data;
 	int ret = mm_player_get_foreach_present_supported_effect_type(handle->mm_handle, MM_AUDIO_EFFECT_TYPE_CUSTOM, __supported_audio_effect_type, (void*)handle);
 	if(ret != MM_ERROR_NONE)
 		return __convert_error_code(ret,(char*)__FUNCTION__);
@@ -1898,9 +1952,9 @@ int player_audio_effect_foreach_supported_preset(player_h player, player_audio_e
 	PLAYER_NULL_ARG_CHECK(callback);
 	player_s * handle = (player_s *) player;
 
-	LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_SUPPORTED_AUDIO_EFFECT_PRESET);
-	handle->user_cb[_PLAYER_SUPPORTED_AUDIO_EFFECT_PRESET] = callback;
-	handle->user_data[_PLAYER_SUPPORTED_AUDIO_EFFECT_PRESET] = user_data;
+	LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT_PRESET);
+	handle->user_cb[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT_PRESET] = callback;
+	handle->user_data[_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT_PRESET] = user_data;
 	int ret = mm_player_get_foreach_present_supported_effect_type(handle->mm_handle, MM_AUDIO_EFFECT_TYPE_PRESET, __supported_audio_effect_preset, (void*)handle);
 	if(ret != MM_ERROR_NONE)
 		return __convert_error_code(ret,(char*)__FUNCTION__);
@@ -2199,8 +2253,8 @@ int player_get_streaming_download_progress(player_h player, int *start, int *cur
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
 	}
-	int _current;
-	int _start;
+	int _current=0;
+	int _start=0;
 	int ret = mm_player_get_buffer_position(handle->mm_handle,MM_PLAYER_POS_FORMAT_PERCENT,&_start,&_current);
 	if(ret != MM_ERROR_NONE)
 	{
@@ -2338,8 +2392,8 @@ int player_unset_audio_frame_decoded_cb(player_h player)
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "pcm_extraction",FALSE, NULL);
 	if(ret != MM_ERROR_NONE)
 		return __convert_error_code(ret,(char*)__FUNCTION__);
-	
-	ret = mm_player_set_audio_buffer_callback(handle->mm_handle, NULL, NULL);
+
+	ret = mm_player_set_audio_stream_callback(handle->mm_handle, NULL, NULL);
 	if(ret != MM_ERROR_NONE)
 		return __convert_error_code(ret,(char*)__FUNCTION__);
 	else
