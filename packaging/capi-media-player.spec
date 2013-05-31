@@ -2,9 +2,8 @@ Name:       capi-media-player
 Summary:    A Media Player library in Tizen Native API
 Version:    0.1.1
 Release:    0
-Group:      TO_BE/FILLED_IN
-License:    TO BE FILLED IN
-Source0:    %{name}-%{version}.tar.gz
+Group:      Multimedia/API
+License:    Apache-2.0
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(mm-player)
@@ -21,14 +20,16 @@ Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
 %description
+A Media Player library in Tizen Native API.
 
 
 %package devel
 Summary:  A Media Player library in Tizen Native API (Development)
-Group:    TO_BE/FILLED_IN
+Group:    Development/Multimedia
 Requires: %{name} = %{version}-%{release}
 
 %description devel
+%devel_desc
 
 %prep
 %setup -q
@@ -55,6 +56,7 @@ cp test/player_test %{buildroot}/usr/bin
 
 
 %files
+%license LICENSE.APLv2
 %manifest capi-media-player.manifest
 %{_libdir}/libcapi-media-player.so.*
 %{_datadir}/license/%{name}
