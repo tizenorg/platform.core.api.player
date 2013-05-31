@@ -48,7 +48,6 @@ rm -rf %{buildroot}
 %license LICENSE.APLv2
 %manifest capi-media-player.manifest
 %{_libdir}/libcapi-media-player.so.*
-%{_datadir}/license/%{name}
 
 %files devel
 %{_includedir}/media/*.h
