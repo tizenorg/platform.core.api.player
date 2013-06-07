@@ -11,7 +11,7 @@
 * distributed under the License is distributed on an "AS IS" BASIS,
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
-* limitations under the License. 
+* limitations under the License.
 */
  
 #include <player.h>
@@ -35,7 +35,8 @@ enum
 	CURRENT_STATUS_FILENAME,
 	CURRENT_STATUS_VOLUME,
 	CURRENT_STATUS_MUTE,
-	CURRENT_STATUS_POSITION_TIME,
+	CURRENT_STATUS_REAL_POSITION_TIME,
+	CURRENT_STATUS_KEY_FRAME_POSITION_TIME,
 	CURRENT_STATUS_POSITION_PERCENT,
 	CURRENT_STATUS_LOOPING,
 	CURRENT_STATUS_DISPLAY_MODE,
@@ -104,7 +105,7 @@ static int app_terminate(void *data)
 
 struct appcore_ops ops = {
 		.create = app_create,
-		.terminate = app_terminate, 	
+		.terminate = app_terminate,
 };
 
 struct appdata ad;
@@ -121,16 +122,6 @@ static void prepared_cb(void *user_data)
 static void progress_down_cb(player_pd_message_type_e type, void *user_data)
 {
 	g_print("[Player_Test] progress_down_cb!!!! type : %d\n", type);
-}
-
-static void paused_cb(void *user_data)
-{
-	g_print("[Player_Test] paused_cb!!!!\n");
-}
-
-static void started_cb(void *user_data)
-{
-	g_print("[Player_Test] started_cb!!!!\n");
 }
 
 static void buffering_cb(int percent, void *user_data)
@@ -224,7 +215,7 @@ static void input_filename(char *filename)
 	g_print("1. After player_create() - Current State : %d \n", state);
 }
 
-static void _player_prepare()
+static void _player_prepare(bool async)
 {
 	int ret = FALSE;
 	int slen = strlen(g_subtitle_uri);
@@ -236,14 +227,17 @@ static void _player_prepare()
 		player_set_subtitle_updated_cb(g_player, subtitle_updated_cb, (void*)g_player);
 	}
 	player_set_display(g_player,PLAYER_DISPLAY_TYPE_X11,GET_DISPLAY(ad.xid));
-
 	player_set_buffering_cb(g_player, buffering_cb, (void*)g_player);
 	player_set_completed_cb(g_player, completed_cb, (void*)g_player);
-
 	player_set_uri(g_player, g_uri);
 	
-	ret = player_prepare(g_player);
-	//ret = player_prepare_async(g_player,prepared_cb, (void*) g_player);
+	if ( async )
+	{
+		ret = player_prepare_async(g_player, prepared_cb, (void*) g_player);
+	}
+	else
+		ret = player_prepare(g_player);
+
 	if ( ret != PLAYER_ERROR_NONE )
 	{
 		g_print("prepare is failed (errno = %d) \n", ret);
@@ -345,9 +339,9 @@ static void get_position()
 	g_print("                                                            ==> [Player_Test] Pos: [%d] percent\n", percent);
 }
 
-static void set_position(int position)
+static void set_position(int position, bool flag)
 {
-	if ( player_set_position(g_player,  position, seek_completed_cb, g_player) != PLAYER_ERROR_NONE )
+	if ( player_seek(g_player,  position, flag, seek_completed_cb, g_player) != PLAYER_ERROR_NONE )
 	{
 		g_print("failed to set position\n");
 	}
@@ -385,10 +379,10 @@ static void get_stream_info()
 	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_GENRE: [%s ] \n",value);
 	player_get_content_info(g_player, PLAYER_CONTENT_INFO_TITLE,  &value);
 	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_TITLE: [%s ] \n",value);
-    void *album;
+	void *album;
 	int size;
 	player_get_album_art(g_player, &album, &size);
-	g_print("                                                            ==> [Player_Test] Album art : [ data : 0x%x, size : %d ]\n",album, size);
+	g_print("                                                            ==> [Player_Test] Album art : [ data : %p, size : %d ]\n", (unsigned int *)album, size);
 	if(value!=NULL)
 	{
 		free(value);
@@ -400,7 +394,7 @@ static void get_stream_info()
 	int bit_rate;
 	player_get_audio_stream_info(g_player, &sample_rate, &channel, &bit_rate);
 	g_print("                                                            ==> [Player_Test] Sample Rate: [%d ] , Channel: [%d ] , Bit Rate: [%d ] \n",sample_rate,channel,bit_rate);
-	
+
 	char *audio_codec = NULL;
 	char *video_codec = NULL;
 	player_get_codec_info(g_player, &audio_codec, &video_codec);
@@ -618,7 +612,7 @@ void _interpret_main_menu(char *cmd)
 		}
 		else if (strncmp(cmd, "j", 1) == 0 )
 		{
-				g_menu_state = CURRENT_STATUS_POSITION_TIME;
+				g_menu_state = CURRENT_STATUS_REAL_POSITION_TIME;
 		}
 		else if (strncmp(cmd, "k", 1) == 0 )
 		{
@@ -700,7 +694,11 @@ void _interpret_main_menu(char *cmd)
 	{
 	    if (strncmp(cmd, "pr", 2) == 0)
 		{
-			_player_prepare();
+			_player_prepare(FALSE); // sync
+		}
+		else if (strncmp(cmd, "pa", 2) == 0)
+		{
+			_player_prepare(TRUE); // async
 		}
 		else if (strncmp(cmd, "un", 2) == 0)
 		{
@@ -709,6 +707,10 @@ void _interpret_main_menu(char *cmd)
 		else if (strncmp(cmd, "sp", 2) == 0)
 		{
 			_player_set_progressive_download();
+		}
+		else if (strncmp(cmd, "jj", 2) == 0 )
+		{
+				g_menu_state = CURRENT_STATUS_KEY_FRAME_POSITION_TIME;
 		}
 		else
 		{
@@ -738,6 +740,7 @@ void display_sub_basic()
 	g_print("-----------------------------------------------------------------------------------------\n");
 	g_print("[playback] a. Create\t");
 	g_print("pr. Prepare  \t");
+	g_print("pa. Prepare async \t");
 	g_print("b. Play  \t");
 	g_print("c. Stop  \t");
 	g_print("d. Resume\t");
@@ -748,7 +751,8 @@ void display_sub_basic()
 	g_print("g. Get Volume\n");
 	g_print("[ mute ] h. Set Mute\t");
 	g_print("i. Get Mute\n");
-	g_print("[position] j. Set Position (T)\t");
+	g_print("[position] j. Set Position (T, accurate)\t");
+	g_print("[position] jj. Set Position (T, key frame)\t");
 	g_print("k. Set Position (%%)\t");
 	g_print("l. Get Position\n");
 	g_print("[duration] m. Get Duration\n");
@@ -787,7 +791,8 @@ static void displaymenu()
 	{
 		g_print("*** input mute value.(0: Not Mute, 1: Mute) \n");
 	}
-	else if (g_menu_state == CURRENT_STATUS_POSITION_TIME)
+	else if (g_menu_state == CURRENT_STATUS_REAL_POSITION_TIME
+		|| g_menu_state == CURRENT_STATUS_KEY_FRAME_POSITION_TIME)
 	{
 		g_print("*** input position value(msec)\n");
 	}
@@ -869,10 +874,17 @@ static void interpret (char *cmd)
 			reset_menu_state();
 		}
 		break;
-		case CURRENT_STATUS_POSITION_TIME:
+		case CURRENT_STATUS_REAL_POSITION_TIME:
 		{
 			long position = atol(cmd);
-			set_position(position);
+			set_position(position, 1);
+			reset_menu_state();
+		}
+		break;
+		case CURRENT_STATUS_KEY_FRAME_POSITION_TIME:
+		{
+			long position = atol(cmd);
+			set_position(position, 0);
 			reset_menu_state();
 		}
 		break;
@@ -923,13 +935,15 @@ static void interpret (char *cmd)
 
 gboolean input (GIOChannel *channel)
 {
-    char buf[MAX_STRING_LEN + 3];
+    gchar buf[MAX_STRING_LEN];
     gsize read;
+    GError *error = NULL;
 
-    g_io_channel_read(channel, buf, MAX_STRING_LEN, &read);
+    g_io_channel_read_chars(channel, buf, MAX_STRING_LEN, &read, &error);
     buf[read] = '\0';
-	g_strstrip(buf);
+    g_strstrip(buf);
     interpret (buf);
+
     return TRUE;
 }
 
@@ -937,11 +951,13 @@ int main(int argc, char *argv[])
 {
 	GIOChannel *stdin_channel;
 	stdin_channel = g_io_channel_unix_new(0);
+	g_io_channel_set_flags (stdin_channel, G_IO_FLAG_NONBLOCK, NULL);
 	g_io_add_watch(stdin_channel, G_IO_IN, (GIOFunc)input, NULL);
+
 	displaymenu();
 	memset(&ad, 0x0, sizeof(struct appdata));
 	ops.data = &ad;
-	
+
 	return appcore_efl_main(PACKAGE, &argc, &argv, &ops);
 }
 

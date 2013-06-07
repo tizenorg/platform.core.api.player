@@ -59,6 +59,8 @@ static int __convert_error_code(int code, char* func_name)
 	switch(code)
 	{
 		case MM_ERROR_NONE:
+		case MM_ERROR_PLAYER_AUDIO_CODEC_NOT_FOUND:
+		case MM_ERROR_PLAYER_VIDEO_CODEC_NOT_FOUND:
 			ret = PLAYER_ERROR_NONE;
 			msg = "PLAYER_ERROR_NONE";
 			break;
@@ -67,8 +69,6 @@ static int __convert_error_code(int code, char* func_name)
 			msg = "PLAYER_ERROR_INVALID_PARAMETER";
 			break;
 		case MM_ERROR_PLAYER_CODEC_NOT_FOUND:
-		case MM_ERROR_PLAYER_AUDIO_CODEC_NOT_FOUND:
-		case MM_ERROR_PLAYER_VIDEO_CODEC_NOT_FOUND:
 		case MM_ERROR_PLAYER_STREAMING_UNSUPPORTED_AUDIO:
 		case MM_ERROR_PLAYER_STREAMING_UNSUPPORTED_VIDEO:
 		case MM_ERROR_PLAYER_STREAMING_UNSUPPORTED_MEDIA_TYPE:
@@ -506,7 +506,7 @@ int player_create (player_h *player)
 	LOGE("[%s] Start", __FUNCTION__);
 	PLAYER_INSTANCE_CHECK(player);
 	MMTA_INIT();
-	MMTA_ACUM_ITEM_BEGIN("[CAPI] player_create", 0);
+	MMTA_ACUM_ITEM_BEGIN("[CoreAPI] player_create", 0);
 	player_s * handle;
 	handle = (player_s*)malloc( sizeof(player_s));
 	if (handle != NULL) 
@@ -520,7 +520,7 @@ int player_create (player_h *player)
 		return PLAYER_ERROR_OUT_OF_MEMORY;
 	}
 	int ret = mm_player_create(&handle->mm_handle);
-	MMTA_ACUM_ITEM_END("[CAPI] player_create", 0);
+	MMTA_ACUM_ITEM_END("[CoreAPI] player_create", 0);
 	if( ret != MM_ERROR_NONE)
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_OPERATION(0x%08x)" ,__FUNCTION__,PLAYER_ERROR_INVALID_OPERATION);
@@ -662,7 +662,7 @@ int player_prepare (player_h player)
 {
 	LOGE("[%s] Start", __FUNCTION__);
 	PLAYER_INSTANCE_CHECK(player);
-	MMTA_ACUM_ITEM_BEGIN("[CAPI] player_prepare", 0);
+	MMTA_ACUM_ITEM_BEGIN("[CoreAPI] player_prepare", 0);
 	player_s * handle = (player_s *) player;
 	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);
 
@@ -686,7 +686,7 @@ int player_prepare (player_h player)
 		ret = mm_player_set_attribute(handle->mm_handle, NULL,"display_visible" , 0, (char*)NULL);
 		if(ret != MM_ERROR_NONE)
 		{
-			LOGW("[%s] Failed to set display display visible '0' (0x%x)" ,__FUNCTION__, ret);
+			LOGW("[%s] Failed to set display display_visible '0' (0x%x)" ,__FUNCTION__, ret);
 		}
 	}
 
@@ -700,7 +700,7 @@ int player_prepare (player_h player)
 	if (!handle->is_progressive_download)
 		ret = mm_player_pause(handle->mm_handle);
 
-	MMTA_ACUM_ITEM_END("[CAPI] player_prepare", 0);
+	MMTA_ACUM_ITEM_END("[CoreAPI] player_prepare", 0);
 	if(ret != MM_ERROR_NONE)
 	{
 		LOGE("[%s] Failed to pause - 0x%x", __FUNCTION__,ret);
@@ -2366,10 +2366,10 @@ int player_set_audio_frame_decoded_cb(player_h player, int start, int end, playe
 		return PLAYER_ERROR_INVALID_STATE;
 	}
 
-	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "pcm_extraction",TRUE, "pcm_extraction_start_msec", start, "pcm_extraction_end_msec", end, NULL);	
+	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "pcm_extraction",TRUE, "pcm_extraction_start_msec", start, "pcm_extraction_end_msec", end, NULL);
 	if(ret != MM_ERROR_NONE)
 		return __convert_error_code(ret,(char*)__FUNCTION__);
-	
+
 	ret = mm_player_set_audio_stream_callback(handle->mm_handle, __audio_stream_callback, (void*)handle);
 	if(ret != MM_ERROR_NONE)
 		return __convert_error_code(ret,(char*)__FUNCTION__);

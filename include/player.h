@@ -1220,7 +1220,7 @@ int player_get_album_art(player_h player, void **album_art, int *size);
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  */
 int player_get_track_count(player_h player, player_track_type_e type, int *count);
 
@@ -1832,7 +1832,7 @@ int player_unset_video_frame_decoded_cb(player_h player);
  * @see player_unset_audio_frame_decoded_cb()
  * @see player_audio_frame_decoded_cb()
  */
-int player_set_audio_frame_decoded_cb(player_h player, int start, int end ,player_audio_frame_decoded_cb callback, void *user_data);
+int player_set_audio_frame_decoded_cb(player_h player, int start, int end, player_audio_frame_decoded_cb callback, void *user_data);
 
 /**
  * @brief Unregisters the callback function.
