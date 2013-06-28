@@ -4,6 +4,8 @@ Version:    0.1.1
 Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
+Source0:    %{name}-%{version}.tar.gz
+Source1001: 	capi-media-player.manifest
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(mm-player)
@@ -33,6 +35,7 @@ Requires: %{name} = %{version}-%{release}
 
 %prep
 %setup -q
+cp %{SOURCE1001} .
 
 
 %build
@@ -56,6 +59,7 @@ cp test/player_test %{buildroot}/usr/bin
 
 
 %files
+%manifest %{name}.manifest
 %license LICENSE.APLv2
 %manifest capi-media-player.manifest
 %{_libdir}/libcapi-media-player.so.*
@@ -63,6 +67,7 @@ cp test/player_test %{buildroot}/usr/bin
 %{_bindir}/*
 
 %files devel
+%manifest %{name}.manifest
 %{_includedir}/media/*.h
 %{_libdir}/pkgconfig/*.pc
 %{_libdir}/libcapi-media-player.so
