@@ -2062,9 +2062,14 @@ int player_audio_effect_equalizer_clear(player_h player)
 	player_s * handle = (player_s *) player;
 	int ret = mm_player_audio_effect_custom_clear_eq_all(handle->mm_handle);
 	if(ret != MM_ERROR_NONE)
+	{
 		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
 	else
-		return PLAYER_ERROR_NONE;
+	{
+		ret = mm_player_audio_effect_custom_apply(handle->mm_handle);
+		return (ret==MM_ERROR_NONE)?PLAYER_ERROR_NONE:__convert_error_code(ret,(char*)__FUNCTION__);
+	}
 }
 
 int player_audio_effect_equalizer_is_available(player_h player, bool *available)
