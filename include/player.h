@@ -166,6 +166,7 @@ typedef enum
 	PLAYER_DISPLAY_MODE_FULL_SCREEN,		/**< full-screen*/
 	PLAYER_DISPLAY_MODE_CROPPED_FULL,	/**< Cropped full-screen*/
 	PLAYER_DISPLAY_MODE_ORIGIN_OR_LETTER,	/**< Origin size (if surface size is larger than video size(width/height)) or Letter box (if video size(width/height) is larger than surface size)*/
+	PLAYER_DISPLAY_MODE_ROI,			/**< ROI mode*/
 } player_display_mode_e;
 
 
@@ -1083,6 +1084,40 @@ int player_set_x11_display_pixmap (player_h player, player_x11_pixmap_updated_cb
  * @see player_set_x11_display_pixmap_error_cb()
  */
 int player_set_x11_display_pixmap_error_cb (player_h player, player_x11_pixmap_error_cb callback, void *user_data);
+
+/**
+ * @brief Sets information of ROI
+ * @remarks If current display mode is not #PLAYER_DISPLAY_MODE_ROI, #PLAYER_ERROR_INVALID_OPERATION will be returned.
+ * @param[in] player   The handle to media player
+ * @param[in] x The x coordinate of ROI
+ * @param[in] y The y coordinate of ROI
+ * @param[in] w The width of ROI
+ * @param[in] h The height of ROI
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @see  player_get_x11_display_roi()
+ */
+int player_set_x11_display_roi (player_h player, int x, int y, int w, int h);
+
+/**
+ * @brief Gets information of ROI
+ * @remarks If current display mode is not #PLAYER_DISPLAY_MODE_ROI, #PLAYER_ERROR_INVALID_OPERATION will be returned.
+ * @param[in] player   The handle to media player
+ * @param[out] x The x coordinate of ROI
+ * @param[out] y The y coordinate of ROI
+ * @param[out] w The width of ROI
+ * @param[out] h The height of ROI
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @see  player_set_x11_display_roi()
+ */
+int player_get_x11_display_roi (player_h player, int *x, int *y, int *w, int *h);
 
 /**
  * @}

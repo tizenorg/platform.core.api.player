@@ -1617,6 +1617,91 @@ int player_set_x11_display_pixmap_error_cb (player_h player, player_x11_pixmap_e
 	}
 }
 
+int player_set_x11_display_roi (player_h player, int x, int y, int w, int h)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_CHECK_CONDITION(x >= 0 && y >= 0 && w >= 0 && h >= 0,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
+
+	player_display_mode_e mode;
+	player_s * handle = (player_s *) player;
+
+	int ret = mm_player_get_attribute(handle->mm_handle, NULL,"display_method", &mode, (char*)NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	if (mode != PLAYER_DISPLAY_MODE_ROI)
+	{
+		ret = MM_ERROR_PLAYER_INTERNAL;
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+
+	ret = mm_player_set_attribute(handle->mm_handle, NULL,
+							"display_roi_x", x,
+							"display_roi_y", y,
+							"display_roi_width", w,
+							"display_roi_height", h,
+							(char*)NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		return PLAYER_ERROR_NONE;
+	}
+}
+
+int player_get_x11_display_roi (player_h player, int *x, int *y, int *w, int *h)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(x);
+	PLAYER_NULL_ARG_CHECK(y);
+	PLAYER_NULL_ARG_CHECK(w);
+	PLAYER_NULL_ARG_CHECK(h);
+
+	player_display_mode_e mode;
+	player_s * handle = (player_s *) player;
+	int _x = 0;
+	int _y = 0;
+	int _w = 0;
+	int _h = 0;
+
+	int ret = mm_player_get_attribute(handle->mm_handle, NULL,"display_method", &mode, (char*)NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	if (mode != PLAYER_DISPLAY_MODE_ROI)
+	{
+		ret = MM_ERROR_PLAYER_INTERNAL;
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+
+	ret = mm_player_get_attribute(handle->mm_handle, NULL,
+							"display_roi_x", &_x,
+							"display_roi_y", &_y,
+							"display_roi_width", &_w,
+							"display_roi_height", &_h,
+							(char*)NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		*x = _x = 0;
+		*y = _y = 0;
+		*w = _w = 0;
+		*h = _h = 0;
+		return __convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		*x = _x;
+		*y = _y;
+		*w = _w;
+		*h = _h;
+		return PLAYER_ERROR_NONE;
+	}
+}
+
 int player_enable_evas_display_scaling(player_h player, bool enable)
 {
 	PLAYER_INSTANCE_CHECK(player);

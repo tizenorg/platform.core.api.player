@@ -42,6 +42,7 @@ enum
 	CURRENT_STATUS_DISPLAY_MODE,
 	CURRENT_STATUS_DISPLAY_ROTATION,
 	CURRENT_STATUS_DISPLAY_VISIBLE,
+	CURRENT_STATUS_DISPLAY_ROI,
 	CURRENT_STATUS_SUBTITLE_FILENAME
 };
 
@@ -473,6 +474,30 @@ static void get_display_visible(bool *visible)
 	g_print("                                                            ==> [Player_Test] X11 Display Visible = %d\n", *visible);
 }
 
+static void set_display_roi(int x, int y, int w, int h)
+{
+	if ( player_set_x11_display_roi(g_player, x, y, w, h) != PLAYER_ERROR_NONE )
+	{
+		g_print("failed to player_set_x11_display_roi\n");
+	} else {
+		g_print("                                                            ==> [Player_Test] set X11 Display ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
+	}
+}
+
+static void get_display_roi()
+{
+	int x = 0;
+	int y = 0;
+	int w = 0;
+	int h = 0;
+	if ( player_get_x11_display_roi(g_player, &x, &y, &w, &h) != PLAYER_ERROR_NONE )
+	{
+		g_print("failed to player_get_x11_display_roi\n");
+	} else {
+		g_print("                                                            ==> [Player_Test] got X11 Display ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
+	}
+}
+
 static void input_subtitle_filename(char *subtitle_filename)
 {
 	int len = strlen(subtitle_filename);
@@ -664,9 +689,17 @@ void _interpret_main_menu(char *cmd)
 			bool visible;
 			get_display_visible(&visible);
 		}
+		else if (strncmp(cmd, "x", 1) == 0 )
+		{
+			g_menu_state = CURRENT_STATUS_DISPLAY_ROI;
+		}
+		else if (strncmp(cmd, "y", 1) == 0 )
+		{
+			get_display_roi();
+		}
 		else if (strncmp(cmd, "A", 1) == 0 )
 		{
-			g_menu_state=CURRENT_STATUS_SUBTITLE_FILENAME;
+			g_menu_state = CURRENT_STATUS_SUBTITLE_FILENAME;
 		}
 		else if (strncmp(cmd, "C", 1) == 0 )
 		{
@@ -764,7 +797,9 @@ void display_sub_basic()
 	g_print("t. Set display Rotation\t");
 	g_print("u. Get display Rotation\n");
 	g_print("[x display] v. Set display visible\t");
-	g_print("w. Get display visible\n");
+	g_print("w. Get display visible\t");
+	g_print("x. Set ROI\t");
+	g_print("y. Get ROI\n");
 	g_print("[subtitle] A. Set subtitle path\n");
 	g_print("[Video Capture] C. Capture \n");
 	g_print("[Audio Frame Decode] D. Decoding Audio Frame  E. Decoding Video Frame \n");
@@ -815,6 +850,10 @@ static void displaymenu()
 	else if (g_menu_state == CURRENT_STATUS_DISPLAY_VISIBLE)
 	{
 		g_print("*** input display visible value.(0: HIDE, 1: SHOW) \n");
+	}
+	else if (g_menu_state == CURRENT_STATUS_DISPLAY_ROI)
+	{
+		g_print("*** input display roi value sequencially.(x, y, w, h)\n");
 	}
 	else if (g_menu_state == CURRENT_STATUS_SUBTITLE_FILENAME)
 	{
@@ -921,6 +960,39 @@ static void interpret (char *cmd)
 			int visible = atoi(cmd);
 			set_display_visible(visible);
 			reset_menu_state();
+		}
+		break;
+		case CURRENT_STATUS_DISPLAY_ROI:
+		{
+			int value = atoi(cmd);
+			static int roi_x = 0;
+			static int roi_y = 0;
+			static int roi_w = 0;
+			static int roi_h = 0;
+			static int cnt = 0;
+			switch (cnt) {
+			case 0:
+				roi_x = value;
+				cnt++;
+				break;
+			case 1:
+				roi_y = value;
+				cnt++;
+				break;
+			case 2:
+				roi_w = value;
+				cnt++;
+				break;
+			case 3:
+				cnt = 0;
+				roi_h = value;
+				set_display_roi(roi_x, roi_y, roi_w, roi_h);
+				roi_x = roi_y = roi_w = roi_h = 0;
+				reset_menu_state();
+				break;
+			default:
+				break;
+			}
 		}
 		break;
 		case CURRENT_STATUS_SUBTITLE_FILENAME:
