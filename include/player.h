@@ -133,7 +133,8 @@ typedef void* player_display_h;
 /**
  * @brief Gets a display handle from x window id or evas object
  */
-#define GET_DISPLAY(x) (void*)(x)
+#include <stdint.h>
+#define GET_DISPLAY(x) ((void*)((intptr_t)(x)))
 #endif
 
 /**
