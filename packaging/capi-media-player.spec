@@ -1,3 +1,5 @@
+%bcond_with x
+
 Name:       capi-media-player
 Summary:    A Media Player library in Tizen Native API
 Version:    0.1.1
@@ -16,7 +18,9 @@ BuildRequires:  pkgconfig(appcore-efl)
 BuildRequires:  pkgconfig(elementary)
 BuildRequires:  pkgconfig(ecore)
 BuildRequires:  pkgconfig(evas)
+%if %{with x}
 BuildRequires:  pkgconfig(ecore-x)
+%endif
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
