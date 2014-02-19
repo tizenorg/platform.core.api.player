@@ -1,3 +1,6 @@
+%bcond_with wayland
+%bcond_with x
+
 Name:       capi-media-player
 Summary:    A Media Player library in Tizen Native API
 Version:    0.1.1
@@ -16,7 +19,12 @@ BuildRequires:  pkgconfig(appcore-efl)
 BuildRequires:  pkgconfig(elementary)
 BuildRequires:  pkgconfig(ecore)
 BuildRequires:  pkgconfig(evas)
+%if %{with x}
 BuildRequires:  pkgconfig(ecore-x)
+%endif
+%if %{with wayland}
+BuildRequires:  pkgconfig(ecore-wayland)
+%endif
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
@@ -40,7 +48,17 @@ cp %{SOURCE1001} .
 
 %build
 MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
-%cmake . -DFULLVER=%{version} -DMAJORVER=${MAJORVER}
+%cmake . -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
+%if %{with wayland}
+         -DWAYLAND_SUPPORT=On \
+%else
+         -DWAYLAND_SUPPORT=Off \
+%endif
+%if %{with x}
+         -DX11_SUPPORT=On
+%else
+         -DX11_SUPPORT=Off
+%endif
 
 
 make %{?jobs:-j%jobs}

@@ -13,14 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
- 
+
 #include <player.h>
 #include <pthread.h>
 #include <glib.h>
 #include <dlfcn.h>
 #include <appcore-efl.h>
 #include <Elementary.h>
+
+#ifdef HAVE_X11
 #include <Ecore_X.h>
+#endif
+#ifdef HAVE_WAYLAND
+#include <Ecore.h>
+#include <Ecore_Wayland.h>
+#endif
+
 
 #define PACKAGE "player_test"
 #define MAX_STRING_LEN		2048
@@ -53,7 +61,11 @@ struct appdata
 	Evas_Object *win;
 
 	Evas_Object *layout_main; /* layout widget based on EDJ */
+	#ifdef HAVE_X11
 	Ecore_X_Window xid;
+	#elif HAVE_WAYLAND
+	unsigned int xid;
+	#endif
 	/* add more variables here */
 };
 
@@ -74,7 +86,22 @@ static Evas_Object* create_win(const char *name)
 				elm_win_title_set(eo, name);
 				elm_win_borderless_set(eo, EINA_TRUE);
 				evas_object_smart_callback_add(eo, "delete,request",win_del, NULL);
-				ecore_x_window_size_get(ecore_x_window_root_first_get(),&w, &h);
+				#ifdef HAVE_X11
+				Ecore_X_Window xwin;
+				xwin = elm_win_xwindow_get(eo);
+				if (xwin != 0)
+				  ecore_x_window_size_get(ecore_x_window_root_first_get(), &w, &h);
+				else {
+				#endif
+				#ifdef HAVE_WAYLAND
+				Ecore_Wl_Window *wlwin;
+				wlwin = elm_win_wl_window_get(eo);
+				if (wlwin != NULL)
+				ecore_wl_screen_size_get(&w, &h);
+				#endif
+				#ifdef HAVE_X11
+				}
+				#endif
 				evas_object_resize(eo, w, h);
 		}
 
@@ -89,8 +116,8 @@ static int app_create(void *data)
 		win = create_win(PACKAGE);
 		if (win == NULL)
 				return -1;
-		ad->win = win; 
-		evas_object_show(win); 
+		ad->win = win;
+		evas_object_show(win);
 		return 0;
 }
 
@@ -227,11 +254,17 @@ static void _player_prepare(bool async)
 		player_set_subtitle_path(g_player,g_subtitle_uri);
 		player_set_subtitle_updated_cb(g_player, subtitle_updated_cb, (void*)g_player);
 	}
+	#ifdef HAVE_X11
 	player_set_display(g_player,PLAYER_DISPLAY_TYPE_X11,GET_DISPLAY(ad.xid));
+	#elif HAVE_WAYLAND
+	player_set_display(g_player,PLAYER_DISPLAY_TYPE_EVAS,GET_DISPLAY(ad.xid));
+	#endif
+
+
 	player_set_buffering_cb(g_player, buffering_cb, (void*)g_player);
 	player_set_completed_cb(g_player, completed_cb, (void*)g_player);
 	player_set_uri(g_player, g_uri);
-	
+
 	if ( async )
 	{
 		ret = player_prepare_async(g_player, prepared_cb, (void*) g_player);
