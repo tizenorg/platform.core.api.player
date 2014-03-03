@@ -61,7 +61,7 @@ struct appdata
 	Evas_Object *win;
 
 	Evas_Object *layout_main; /* layout widget based on EDJ */
-	#ifdef X11
+	#ifdef HAVE_X11
 	Ecore_X_Window xid;
 	#elif HAVE_WAYLAND
 	unsigned int xid;
@@ -86,10 +86,10 @@ static Evas_Object* create_win(const char *name)
 				elm_win_title_set(eo, name);
 				elm_win_borderless_set(eo, EINA_TRUE);
 				evas_object_smart_callback_add(eo, "delete,request",win_del, NULL);
-				#ifdef X11
-				Ecore_X_Window *xwin;
+				#ifdef HAVE_X11
+				Ecore_X_Window xwin;
 				xwin = elm_win_xwindow_get(eo);
-				if (xwin != NULL)
+				if (xwin != 0)
 				  ecore_x_window_size_get(ecore_x_window_root_first_get(), &w, &h);
 				else {
 				#endif
@@ -99,7 +99,7 @@ static Evas_Object* create_win(const char *name)
 				if (wlwin != NULL)
 				ecore_wl_screen_size_get(&w, &h);
 				#endif
-				#ifdef X11
+				#ifdef HAVE_X11
 				}
 				#endif
 				evas_object_resize(eo, w, h);
@@ -254,7 +254,7 @@ static void _player_prepare(bool async)
 		player_set_subtitle_path(g_player,g_subtitle_uri);
 		player_set_subtitle_updated_cb(g_player, subtitle_updated_cb, (void*)g_player);
 	}
-	#ifdef X11
+	#ifdef HAVE_X11
 	player_set_display(g_player,PLAYER_DISPLAY_TYPE_X11,GET_DISPLAY(ad.xid));
 	#elif HAVE_WAYLAND
 	player_set_display(g_player,PLAYER_DISPLAY_TYPE_EVAS,GET_DISPLAY(ad.xid));

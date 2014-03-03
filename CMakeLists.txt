@@ -25,9 +25,15 @@ SET(CMAKE_C_FLAGS_DEBUG "-O0 -g")
 IF("${ARCH}" STREQUAL "arm")
     ADD_DEFINITIONS("-DTARGET")
 ENDIF("${ARCH}" STREQUAL "arm")
-
+IF(WAYLAND_SUPPORT)
+ ADD_DEFINITIONS("-DHAVE_WAYLAND")
+ENDIF(WAYLAND_SUPPORT)
+IF(X11_SUPPORT)
+ ADD_DEFINITIONS("-DHAVE_X11")
+ENDIF(X11_SUPPORT)
 ADD_DEFINITIONS("-DPREFIX=\"${CMAKE_INSTALL_PREFIX}\"")
 ADD_DEFINITIONS("-DTIZEN_DEBUG")
+
 
 SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--rpath=${LIB_INSTALL_DIR}")
 
@@ -69,10 +75,10 @@ IF(UNIX)
 
 ADD_CUSTOM_TARGET (distclean @echo cleaning for source distribution)
 ADD_CUSTOM_COMMAND(
-        DEPENDS clean 
+        DEPENDS clean
         COMMENT "distribution clean"
         COMMAND find
-        ARGS    . 
+        ARGS    .
         -not -name config.cmake -and \(
         -name tester.c -or
         -name Testing -or
