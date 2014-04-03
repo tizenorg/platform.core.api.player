@@ -20,7 +20,14 @@
 #include <dlfcn.h>
 #include <appcore-efl.h>
 #include <Elementary.h>
-#include <Ecore_X.h>
+
+#ifdef HAVE_X
+# include <Ecore_X.h>
+#endif
+
+#ifdef HAVE_WAYLAND
+# include <Ecore_wayland.h>
+#endif
 
 #define PACKAGE "player_test"
 #define MAX_STRING_LEN		2048
@@ -65,7 +72,7 @@ static void win_del(void *data, Evas_Object *obj, void *event)
 static Evas_Object* create_win(const char *name)
 {
 		Evas_Object *eo;
-		int w, h;
+		int w=0, h=0;
 
 		printf ("[%s][%d] name=%s\n", __func__, __LINE__, name);
 
@@ -74,7 +81,14 @@ static Evas_Object* create_win(const char *name)
 				elm_win_title_set(eo, name);
 				elm_win_borderless_set(eo, EINA_TRUE);
 				evas_object_smart_callback_add(eo, "delete,request",win_del, NULL);
-				ecore_x_window_size_get(ecore_x_window_root_first_get(),&w, &h);
+#ifdef HAVE_WAYLAND
+				ecore_wl_screen_size_get(&w, &h)
+#elif defined HAVE_X
+				Ecore_X_Window win = ecore_x_window_root_first_get();
+				if ( win ) {
+					ecore_x_window_size_get(win,&w, &h);
+				}
+#endif
 				evas_object_resize(eo, w, h);
 		}
 
