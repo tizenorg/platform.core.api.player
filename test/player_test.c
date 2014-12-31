@@ -13,61 +13,88 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 #include <player.h>
 #include <pthread.h>
 #include <glib.h>
 #include <dlfcn.h>
 #include <appcore-efl.h>
 #include <Elementary.h>
-
-#ifdef HAVE_X11
 #include <Ecore_X.h>
+//#define _USE_X_DIRECT_
+#ifdef _USE_X_DIRECT_
+#include <X11/Xlib.h>
 #endif
-#ifdef HAVE_WAYLAND
-#include <Ecore.h>
-#include <Ecore_Wayland.h>
-#endif
-
-
 #define PACKAGE "player_test"
-#define MAX_STRING_LEN		2048
+#define MAX_STRING_LEN	2048
 #define MMTS_SAMPLELIST_INI_DEFAULT_PATH "/opt/etc/mmts_filelist.ini"
+#define PLAYER_TEST_DUMP_PATH_PREFIX   "/opt/usr/media/dump_pcm_"
 #define INI_SAMPLE_LIST_MAX 9
+#define DEFAULT_HTTP_TIMEOUT -1
+
 char g_uri[MAX_STRING_LEN];
 char g_subtitle_uri[MAX_STRING_LEN];
-
+FILE *g_pcm_fd;
 enum
 {
 	CURRENT_STATUS_MAINMENU,
+	CURRENT_STATUS_HANDLE_NUM,
 	CURRENT_STATUS_FILENAME,
 	CURRENT_STATUS_VOLUME,
+	CURRENT_STATUS_SOUND_TYPE,
 	CURRENT_STATUS_MUTE,
-	CURRENT_STATUS_REAL_POSITION_TIME,
-	CURRENT_STATUS_KEY_FRAME_POSITION_TIME,
-	CURRENT_STATUS_POSITION_PERCENT,
+	CURRENT_STATUS_POSITION_TIME,
 	CURRENT_STATUS_LOOPING,
+	CURRENT_STATUS_DISPLAY_SURFACE_CHANGE,
 	CURRENT_STATUS_DISPLAY_MODE,
 	CURRENT_STATUS_DISPLAY_ROTATION,
 	CURRENT_STATUS_DISPLAY_VISIBLE,
-	CURRENT_STATUS_DISPLAY_ROI,
-	CURRENT_STATUS_SUBTITLE_FILENAME
+	CURRENT_STATUS_DISPLAY_ROI_MODE,
+	CURRENT_STATUS_DISPLAY_DST_ROI,
+	CURRENT_STATUS_DISPLAY_SRC_CROP,
+	CURRENT_STATUS_SUBTITLE_FILENAME,
 };
+
+#define MAX_HANDLE 20
+
+/* for video display */
+#ifdef _USE_X_DIRECT_
+Window g_xid;
+Display *g_dpy;
+GC g_gc;
+#else
+Evas_Object* g_xid;
+#endif
+Evas_Object* g_eo_win;
+Evas_Object* g_eo[MAX_HANDLE] = {0};
+int g_current_surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
 
 struct appdata
 {
-	Evas *evas;
-	Ecore_Evas *ee;
+
 	Evas_Object *win;
+	Evas_Object *bg;
+	Evas_Object *rect;
 
 	Evas_Object *layout_main; /* layout widget based on EDJ */
-	#ifdef HAVE_X11
 	Ecore_X_Window xid;
-	#elif HAVE_WAYLAND
-	unsigned int xid;
-	#endif
 	/* add more variables here */
 };
+
+static Evas_Object *create_bg(Evas_Object *pParent)
+{
+	if(!pParent) {
+		return NULL;
+	}
+
+	Evas_Object *pObj = NULL;
+
+	pObj = elm_bg_add(pParent);
+	evas_object_size_hint_weight_set(pObj, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	elm_win_resize_object_add(pParent, pObj);
+	evas_object_color_set(pObj, 0, 0, 0, 0);
+	evas_object_show(pObj);
+	return pObj;
+}
 
 static void win_del(void *data, Evas_Object *obj, void *event)
 {
@@ -76,8 +103,7 @@ static void win_del(void *data, Evas_Object *obj, void *event)
 
 static Evas_Object* create_win(const char *name)
 {
-		Evas_Object *eo;
-		int w, h;
+	Evas_Object *eo = NULL;
 
 		printf ("[%s][%d] name=%s\n", __func__, __LINE__, name);
 
@@ -86,58 +112,115 @@ static Evas_Object* create_win(const char *name)
 				elm_win_title_set(eo, name);
 				elm_win_borderless_set(eo, EINA_TRUE);
 				evas_object_smart_callback_add(eo, "delete,request",win_del, NULL);
-				#ifdef HAVE_X11
-				Ecore_X_Window xwin;
-				xwin = elm_win_xwindow_get(eo);
-				if (xwin != 0)
-				  ecore_x_window_size_get(ecore_x_window_root_first_get(), &w, &h);
-				else {
-				#endif
-				#ifdef HAVE_WAYLAND
-				Ecore_Wl_Window *wlwin;
-				wlwin = elm_win_wl_window_get(eo);
-				if (wlwin != NULL)
-				ecore_wl_screen_size_get(&w, &h);
-				#endif
-				#ifdef HAVE_X11
-				}
-				#endif
-				evas_object_resize(eo, w, h);
+				elm_win_autodel_set(eo, EINA_TRUE);
 		}
-
 		return eo;
+}
+
+static Evas_Object *create_image_object(Evas_Object *eo_parent)
+{
+	if(!eo_parent) {
+		return NULL;
+	}
+	Evas *evas = evas_object_evas_get(eo_parent);
+	Evas_Object *eo = NULL;
+
+	eo = evas_object_image_add(evas);
+
+	return eo;
+}
+
+static Evas_Object *create_render_rect(Evas_Object *pParent)
+{
+	if(!pParent) {
+		return NULL;
+	}
+
+	Evas *pEvas = evas_object_evas_get(pParent);
+	Evas_Object *pObj = evas_object_rectangle_add(pEvas);
+	if(pObj == NULL) {
+		return NULL;
+	}
+
+	evas_object_size_hint_weight_set(pObj, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_color_set(pObj, 0, 0, 0, 0);
+	evas_object_render_op_set(pObj, EVAS_RENDER_COPY);
+	evas_object_show(pObj);
+	elm_win_resize_object_add(pParent, pObj);
+
+	return pObj;
 }
 
 static int app_create(void *data)
 {
-		struct appdata *ad = data;
-		Evas_Object *win;
-		/* create window */
-		win = create_win(PACKAGE);
-		if (win == NULL)
-				return -1;
-		ad->win = win;
-		evas_object_show(win);
-		return 0;
+	struct appdata *ad = data;
+	Evas_Object *win = NULL;
+
+	/* use gl backend */
+	elm_config_preferred_engine_set("opengl_x11");
+
+	/* create window */
+	win = create_win(PACKAGE);
+	if (win == NULL)
+			return -1;
+	ad->win = win;
+	g_eo_win = win;
+	ad->bg = create_bg(ad->win);
+	ad->rect = create_render_rect(ad->win);
+	g_xid = g_eo_win;
+	/* Create evas image object for EVAS surface */
+	g_eo[0] = create_image_object(ad->win);
+	evas_object_image_size_set(g_eo[0], 500, 500);
+	evas_object_image_fill_set(g_eo[0], 0, 0, 500, 500);
+	evas_object_resize(g_eo[0], 500, 500);
+
+	elm_win_activate(win);
+	evas_object_show(win);
+
+	return 0;
 }
 
 static int app_terminate(void *data)
 {
-		struct appdata *ad = data;
+	struct appdata *ad = data;
+	int i = 0;
 
-		if (ad->win)
-				evas_object_del(ad->win);
-
-		return 0;
+	for (i = 0 ; i < MAX_HANDLE; i++)
+	{
+		if (g_eo[i])
+		{
+			evas_object_del(g_eo[i]);
+			g_eo[i] = NULL;
+		}
+	}
+	if (g_eo_win) {
+		evas_object_del(g_eo_win);
+		g_eo_win = NULL;
+	}
+	ad->win = NULL;
+#ifdef _USE_X_DIRECT_
+	if(g_dpy)
+	{
+		if(g_gc)
+			XFreeGC (g_dpy, g_gc);
+		if(g_xid)
+			XDestroyWindow (g_dpy, g_xid);
+		XCloseDisplay (g_dpy);
+		g_xid = 0;
+		g_dpy = NULL;
+	}
+#endif
+	return 0;
 }
 
 struct appcore_ops ops = {
-		.create = app_create,
-		.terminate = app_terminate,
+	.create = app_create,
+	.terminate = app_terminate,
 };
 
 struct appdata ad;
-static player_h g_player = 0;
+static player_h g_player[MAX_HANDLE] = {0};
+int g_handle_num = 1;
 int g_menu_state = CURRENT_STATUS_MAINMENU;
 char g_file_list[9][256];
 gboolean quit_pushing;
@@ -167,19 +250,29 @@ static void completed_cb(void *user_data)
 	g_print("[Player_Test] completed_cb!!!!\n");
 }
 
+static void error_cb(int code, void *user_data)
+{
+	g_print("[Player_Test] error_cb!!!! code : %d\n", code);
+}
+
+static void interrupted_cb(player_interrupted_code_e code, void *user_data)
+{
+	g_print("[Player_Test] interrupted_cb!!!! code : %d\n", code);
+}
+
+#if 0
 static void audio_frame_decoded_cb(unsigned char *data, unsigned int size, void *user_data)
 {
 	int pos=0;
-	player_get_position(g_player, &pos);
+
+	if (data && g_pcm_fd)
+	{
+		fwrite(data, 1, size, g_pcm_fd);
+	}
+	player_get_play_position(g_player[0], &pos);
 	g_print("[Player_Test] audio_frame_decoded_cb [size: %d] --- current pos : %d!!!!\n", size, pos);
 }
-
-void video_frame_decoded_cb(unsigned char *data, int width, int height, unsigned int size, void *user_data)
-{
-	int pos=0;
-	player_get_position(g_player, &pos);
-	g_print("[Player_Test] video_frame_decoded_cb!!!! width: %d, height : %d, size :%d ---- current pos: %d  \n",width, height,size,pos);
-}
+#endif
 
 static void subtitle_updated_cb(unsigned long duration, char *text, void *user_data)
 {
@@ -191,22 +284,87 @@ static void video_captured_cb(unsigned char *data, int width, int height,unsigne
 	g_print("[Player_Test] video_captured_cb!!!! width: %d, height : %d, size : %d \n",width, height,size);
 }
 
+int	_save(unsigned char * src, int length)
+{	//unlink(CAPTUERD_IMAGE_SAVE_PATH);
+	FILE* fp;
+	char filename[256] = {0,};
+	static int WRITE_COUNT = 0;
+
+	//gchar *filename  = CAPTUERD_IMAGE_SAVE_PATH;
+	sprintf (filename, "ALBUM_ART_IMAGE_%d", WRITE_COUNT);
+	WRITE_COUNT++;
+	fp=fopen(filename, "w+");
+	if(fp==NULL)
+	{
+		g_print("file open error!!\n");
+		return FALSE;
+	}
+	else
+	{
+		g_print("open success\n");
+		if(fwrite(src, 1, length, fp )!=1)
+		{
+			g_print("file write error!!\n");
+			fclose(fp);
+			return FALSE;
+		}
+		g_print("write success(%s)\n", filename);
+		fclose(fp);
+	}
+
+	return TRUE;
+}
+
+static void reset_display()
+{
+	int i = 0;
+
+	/* delete evas window, if it is */
+	for (i = 0 ; i < MAX_HANDLE; i++)
+	{
+		if (g_eo[i])
+		{
+			evas_object_del(g_eo[i]);
+			g_eo[i] = NULL;
+		}
+	}
+
+#ifdef _USE_X_DIRECT_
+	/* delete x window, if it is */
+	if(g_dpy)
+	{
+		if(g_gc)
+			XFreeGC (g_dpy, g_gc);
+		if(g_xid)
+			XDestroyWindow (g_dpy, g_xid);
+		XCloseDisplay (g_dpy);
+		g_xid = 0;
+		g_dpy = NULL;
+	}
+#endif
+}
+
 static void input_filename(char *filename)
 {
 	int len = strlen(filename);
+	int i = 0;
 
 	if ( len < 0 || len > MAX_STRING_LEN )
 		return;
-	if(g_player!=NULL)
-	{
-		player_unprepare(g_player);
-		player_destroy(g_player);
-	}
-	g_player = 0;
 
-	if ( player_create(&g_player) != PLAYER_ERROR_NONE )
+	for (i = 0; i < g_handle_num; i++)
 	{
-		g_print("player create is failed\n");
+		if(g_player[i]!=NULL)
+		{
+			player_unprepare(g_player[i]);
+			player_destroy(g_player[i]);
+		}
+		g_player[i] = 0;
+
+		if ( player_create(&g_player[i]) != PLAYER_ERROR_NONE )
+		{
+			g_print("player create is failed\n");
+		}
 	}
 
 	strncpy (g_uri, filename,len);
@@ -228,21 +386,42 @@ static void input_filename(char *filename)
 	g_sprintf(uri, "mem://ext=%s,size=%d", ext ? ext : "", file_size);
 	g_print("[uri] = %s\n", uri);
 
-	mm_player_set_attribute(g_player,
+	mm_player_set_attribute(g_player[0],
 								&g_err_name,
 								"profile_uri", uri, strlen(uri),
 								"profile_user_param", g_media_mem, file_size
 								NULL);
 #else
-	//player_set_uri(g_player, filename);
+	//player_set_uri(g_player[0], filename);
 #endif /* APPSRC_TEST */
 
 	int ret;
 	player_state_e state;
-	ret = player_get_state(g_player, &state);
-	g_print("1. After player_create() - Current State : %d \n", state);
+	for (i = 0; i < g_handle_num; i++)
+	{
+		ret = player_get_state(g_player[i], &state);
+		g_print("player_get_state returned [%d]", ret);
+		g_print("1. After player_create() - Current State : %d \n", state);
+	}
 }
+#if 0
+// use this API instead of player_set_uri
+static void player_set_memory_buffer_test()
+{
+	if(!g_uri)
+		g_print("g_uri is NULL\n");
+	GMappedFile *file;
+    gsize file_size;
+    guint8* g_media_mem = NULL;
 
+	file = g_mapped_file_new (g_uri, FALSE, NULL);
+    file_size = g_mapped_file_get_length (file);
+    g_media_mem = (guint8 *) g_mapped_file_get_contents (file);
+
+    int ret = player_set_memory_buffer(g_player[0], (void*)g_media_mem, file_size);
+    g_print("player_set_memory_buffer ret : %d\n", ret);
+}
+#endif
 static void _player_prepare(bool async)
 {
 	int ret = FALSE;
@@ -251,90 +430,270 @@ static void _player_prepare(bool async)
 	if ( slen > 0 && slen < MAX_STRING_LEN )
 	{
 		g_print("0. set subtile path() (size : %d) - %s  \n", slen, g_subtitle_uri);
-		player_set_subtitle_path(g_player,g_subtitle_uri);
-		player_set_subtitle_updated_cb(g_player, subtitle_updated_cb, (void*)g_player);
+		player_set_subtitle_path(g_player[0],g_subtitle_uri);
+		player_set_subtitle_updated_cb(g_player[0], subtitle_updated_cb, (void*)g_player[0]);
 	}
-	#ifdef HAVE_X11
-	player_set_display(g_player,PLAYER_DISPLAY_TYPE_X11,GET_DISPLAY(ad.xid));
-	#elif HAVE_WAYLAND
-	player_set_display(g_player,PLAYER_DISPLAY_TYPE_EVAS,GET_DISPLAY(ad.xid));
-	#endif
-
-
-	player_set_buffering_cb(g_player, buffering_cb, (void*)g_player);
-	player_set_completed_cb(g_player, completed_cb, (void*)g_player);
-	player_set_uri(g_player, g_uri);
-
-	if ( async )
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
 	{
-		ret = player_prepare_async(g_player, prepared_cb, (void*) g_player);
+		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(g_xid));
+		player_set_buffering_cb(g_player[0], buffering_cb, (void*)g_player[0]);
+		player_set_completed_cb(g_player[0], completed_cb, (void*)g_player[0]);
+		player_set_interrupted_cb(g_player[0], interrupted_cb, (void*)g_player[0]);
+		player_set_error_cb(g_player[0], error_cb, (void*)g_player[0]);
+		player_set_uri(g_player[0], g_uri);
+		//player_set_memory_buffer_test();
 	}
 	else
-		ret = player_prepare(g_player);
+	{
+		int i = 0;
+		for (i = 0; i < g_handle_num; i++)
+		{
+			player_set_display(g_player[i], g_current_surface_type, g_eo[i]);
+			player_set_buffering_cb(g_player[i], buffering_cb, (void*)g_player[i]);
+			player_set_completed_cb(g_player[i], completed_cb, (void*)g_player[i]);
+			player_set_interrupted_cb(g_player[i], interrupted_cb, (void*)g_player[i]);
+			player_set_error_cb(g_player[i], error_cb, (void*)g_player[i]);
+			player_set_uri(g_player[i], g_uri);
+			//player_set_memory_buffer_test();
+		}
+	}
+
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
+	{
+		if ( async )
+		{
+			ret = player_prepare_async(g_player[0], prepared_cb, (void*) g_player[0]);
+		}
+		else
+			ret = player_prepare(g_player[0]);
+	}
+	else
+	{
+		int i = 0;
+		for (i = 0; i < g_handle_num; i++)
+		{
+			if ( async )
+			{
+				ret = player_prepare_async(g_player[i], prepared_cb, (void*) g_player[i]);
+			}
+			else
+				ret = player_prepare(g_player[i]);
+		}
+	}
 
 	if ( ret != PLAYER_ERROR_NONE )
 	{
 		g_print("prepare is failed (errno = %d) \n", ret);
 	}
 	player_state_e state;
-	ret = player_get_state(g_player, &state);
-	g_print("After player_prepare() - Current State : %d \n", state);
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
+	{
+		ret = player_get_state(g_player[0], &state);
+		g_print("After player_prepare() - Current State : %d \n", state);
+	}
+	else
+	{
+		int i = 0;
+		for (i = 0; i < g_handle_num; i++)
+		{
+			ret = player_get_state(g_player[i], &state);
+			g_print("After player_prepare() - Current State : %d \n", state);
+		}
+	}
+
 }
 
 static void _player_unprepare()
 {
 	int ret = FALSE;
-	ret = player_unprepare(g_player);
-	if ( ret != PLAYER_ERROR_NONE )
+	int i = 0;
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
 	{
-		g_print("unprepare is failed (errno = %d) \n", ret);
+		ret = player_unprepare(g_player[0]);
+		if ( ret != PLAYER_ERROR_NONE )
+		{
+			g_print("unprepare is failed (errno = %d) \n", ret);
+		}
+		ret = player_unset_subtitle_updated_cb(g_player[0]);
+		g_print("player_unset_subtitle_updated_cb ret %d\n", ret);
+
+		ret = player_unset_buffering_cb(g_player[0]);
+		g_print("player_unset_buffering_cb ret %d\n", ret);
+
+		ret = player_unset_completed_cb(g_player[0]);
+		g_print("player_unset_completed_cb ret %d\n", ret);
+
+		ret = player_unset_interrupted_cb(g_player[0]);
+		g_print("player_unset_interrupted_cb ret %d\n", ret);
+
+		ret = player_unset_error_cb(g_player[0]);
+		g_print("player_unset_error_cb ret %d\n", ret);
+
 	}
+	else
+	{
+		for (i = 0; i < g_handle_num ; i++)
+		{
+			if(g_player[i]!=NULL)
+			{
+				ret = player_unprepare(g_player[i]);
+				if ( ret != PLAYER_ERROR_NONE )
+				{
+					g_print("unprepare is failed (errno = %d) \n", ret);
+				}
+				ret = player_unset_subtitle_updated_cb(g_player[i]);
+				g_print("player_unset_subtitle_updated_cb [%d] ret %d\n", i, ret);
+
+				ret = player_unset_buffering_cb(g_player[i]);
+				g_print("player_unset_buffering_cb [%d] ret %d\n", i, ret);
+
+				ret = player_unset_completed_cb(g_player[i]);
+				g_print("player_unset_completed_cb [%d] ret %d\n", i, ret);
+
+				ret = player_unset_interrupted_cb(g_player[i]);
+				g_print("player_unset_interrupted_cb [%d] ret %d\n", i, ret);
+
+				ret = player_unset_error_cb(g_player[i]);
+				g_print("player_unset_error_cb [%d] ret %d\n", i, ret);
+			}
+		}
+	}
+	reset_display();
 	memset(g_subtitle_uri, 0 , sizeof(g_subtitle_uri));
 	player_state_e state;
-	ret = player_get_state(g_player, &state);
-	g_print(" After player_unprepare() - Current State : %d \n", state);
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
+	{
+		ret = player_get_state(g_player[0], &state);
+		g_print(" After player_unprepare() - Current State : %d \n", state);
+	}
+	else
+	{
+		for (i = 0; i < g_handle_num ; i++)
+		{
+			ret = player_get_state(g_player[i], &state);
+			g_print(" After player_unprepare() - Current State : %d \n", state);
+		}
+	}
+}
+
+static void _player_destroy()
+{
+	int i = 0;
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
+	{
+		player_unprepare(g_player[0]);
+		for (i = 0; i < g_handle_num ; i++)
+		{
+			player_destroy(g_player[i]);
+			g_player[i] = 0;
+		}
+	}
+	else
+	{
+		for (i = 0; i < g_handle_num ; i++)
+		{
+			if(g_player[i]!=NULL)
+			{
+				player_unprepare(g_player[i]);
+				player_destroy(g_player[i]);
+				g_player[i] = 0;
+			}
+		}
+	}
 }
 
 static void _player_play()
 {
 	int bRet = FALSE;
-	bRet = player_start(g_player);
+	int i = 0;
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
+	{
+		bRet = player_start(g_player[0]);
+		g_print("player_start returned [%d]", bRet);
+	}
+	else
+	{
+		for (i = 0; i < g_handle_num ; i++)
+		{
+			bRet = player_start(g_player[i]);
+			g_print("player_start returned [%d]", bRet);
+		}
+	}
 }
 
 static void _player_stop()
 {
 	int bRet = FALSE;
-	bRet = player_stop(g_player);
+	int i = 0;
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
+	{
+		bRet = player_stop(g_player[0]);
+		g_print("player_stop returned [%d]", bRet);
+	}
+	else
+	{
+		for (i = 0; i < g_handle_num ; i++)
+		{
+			bRet = player_stop(g_player[i]);
+			g_print("player_stop returned [%d]", bRet);
+		}
+	}
 }
 
 static void _player_resume()
 {
 	int bRet = FALSE;
-	bRet = player_start(g_player);
+	int i = 0;
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
+	{
+		bRet = player_start(g_player[0]);
+		g_print("player_start returned [%d]", bRet);
+	}
+	else
+	{
+		for (i = 0; i < g_handle_num ; i++)
+		{
+			bRet = player_start(g_player[i]);
+			g_print("player_start returned [%d]", bRet);
+		}
+	}
 }
 
 static void _player_pause()
 {
 	int bRet = FALSE;
-	bRet = player_pause(g_player);
+	int i = 0;
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
+	{
+		bRet = player_pause(g_player[0]);
+		g_print("player_pause returned [%d]", bRet);
+	}
+	else
+	{
+		for (i = 0; i < g_handle_num ; i++)
+		{
+			bRet = player_pause(g_player[i]);
+			g_print("player_pause returned [%d]", bRet);
+		}
+	}
 }
 
 static void _player_state()
 {
 	player_state_e state;
-	player_get_state(g_player, &state);
+	player_get_state(g_player[0], &state);
 	g_print("                                                            ==> [Player_Test] Current Player State : %d\n", state);
 }
 
 static void _player_set_progressive_download()
 {
-	player_set_progressive_download_path(g_player, "/opt/test.pd");
-	player_set_progressive_download_message_cb(g_player, progress_down_cb, (void*)g_player);
+	player_set_progressive_download_path(g_player[0], "/opt/test.pd");
+	player_set_progressive_download_message_cb(g_player[0], progress_down_cb, (void*)g_player[0]);
 }
 
 static void set_volume(float volume)
 {
-	if ( player_set_volume(g_player, volume, volume) != PLAYER_ERROR_NONE )
+	if ( player_set_volume(g_player[0], volume, volume) != PLAYER_ERROR_NONE )
 	{
 		g_print("failed to set volume\n");
 	}
@@ -342,13 +701,13 @@ static void set_volume(float volume)
 
 static void get_volume(float* left, float* right)
 {
-	player_get_volume(g_player, left, right);
+	player_get_volume(g_player[0], left, right);
 	g_print("                                                            ==> [Player_Test] volume - left : %f, right : %f\n", *left, *right);
 }
 
 static void set_mute(bool mute)
 {
-	if ( player_set_mute(g_player, mute) != PLAYER_ERROR_NONE )
+	if ( player_set_mute(g_player[0], mute) != PLAYER_ERROR_NONE )
 	{
 		g_print("failed to set_mute\n");
 	}
@@ -356,36 +715,33 @@ static void set_mute(bool mute)
 
 static void get_mute(bool *mute)
 {
-	player_is_muted(g_player, mute);
+	player_is_muted(g_player[0], mute);
 	g_print("                                                            ==> [Player_Test] mute = %d\n", *mute);
+}
+
+static void set_sound_type(sound_type_e type)
+{
+	if ( player_set_sound_type(g_player[0], type) != PLAYER_ERROR_NONE )
+	{
+		g_print("failed to set sound type(%d)\n", type);
+	}
+	else
+		g_print("set sound type(%d) success", type);
 }
 
 static void get_position()
 {
 	int position = 0;
-	int percent = 0;
 	int ret;
-	ret = player_get_position(g_player, &position);
-	g_print("                                                            ==> [Player_Test] player_get_position() return : %d\n",ret);
-	ret = player_get_position_ratio(g_player, &percent);
-	g_print("                                                            ==> [Player_Test] player_get_position_ratio() return : %d\n",ret);
-	g_print("                                                            ==> [Player_Test] Pos: [%d ] msec\n", position);
-	g_print("                                                            ==> [Player_Test] Pos: [%d] percent\n", percent);
+	ret = player_get_play_position(g_player[0], &position);
+	g_print("                                                            ==> [Player_Test] player_get_play_position()%d return : %d\n", ret, position);
 }
 
-static void set_position(int position, bool flag)
+static void set_position(int position)
 {
-	if ( player_seek(g_player,  position, flag, seek_completed_cb, g_player) != PLAYER_ERROR_NONE )
+	if ( player_set_play_position(g_player[0],  position, TRUE, seek_completed_cb, g_player[0]) != PLAYER_ERROR_NONE )
 	{
 		g_print("failed to set position\n");
-	}
-}
-
-static void set_position_ratio(int percent)
-{
-	if ( player_set_position_ratio(g_player, percent, seek_completed_cb, g_player) != PLAYER_ERROR_NONE )
-	{
-		g_print("failed to set position ratio\n");
 	}
 }
 
@@ -393,7 +749,7 @@ static void get_duration()
 {
 	int duration = 0;
 	int ret;
-	ret = player_get_duration(g_player, &duration);
+	ret = player_get_duration(g_player[0], &duration);
 	g_print("                                                            ==> [Player_Test] player_get_duration() return : %d\n",ret);
 	g_print("                                                            ==> [Player_Test] Duration: [%d ] msec\n",duration);
 }
@@ -402,20 +758,21 @@ static void get_stream_info()
 {
 	int w = 0;
 	int h = 0;
+
 	char *value = NULL;
-	player_get_content_info(g_player, PLAYER_CONTENT_INFO_ALBUM,  &value);
+	player_get_content_info(g_player[0], PLAYER_CONTENT_INFO_ALBUM,  &value);
 	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_ALBUM: [%s ] \n",value);
-	player_get_content_info(g_player, PLAYER_CONTENT_INFO_ARTIST,  &value);
+	player_get_content_info(g_player[0], PLAYER_CONTENT_INFO_ARTIST,  &value);
 	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_ARTIST: [%s ] \n",value);
-	player_get_content_info(g_player, PLAYER_CONTENT_INFO_AUTHOR,  &value);
+	player_get_content_info(g_player[0], PLAYER_CONTENT_INFO_AUTHOR,  &value);
 	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_AUTHOR: [%s ] \n",value);
-	player_get_content_info(g_player, PLAYER_CONTENT_INFO_GENRE,  &value);
+	player_get_content_info(g_player[0], PLAYER_CONTENT_INFO_GENRE,  &value);
 	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_GENRE: [%s ] \n",value);
-	player_get_content_info(g_player, PLAYER_CONTENT_INFO_TITLE,  &value);
+	player_get_content_info(g_player[0], PLAYER_CONTENT_INFO_TITLE,  &value);
 	g_print("                                                            ==> [Player_Test] PLAYER_CONTENT_INFO_TITLE: [%s ] \n",value);
 	void *album;
 	int size;
-	player_get_album_art(g_player, &album, &size);
+	player_get_album_art(g_player[0], &album, &size);
 	g_print("                                                            ==> [Player_Test] Album art : [ data : %p, size : %d ]\n", (unsigned int *)album, size);
 	if(value!=NULL)
 	{
@@ -426,12 +783,16 @@ static void get_stream_info()
 	int sample_rate;
 	int channel;
 	int bit_rate;
-	player_get_audio_stream_info(g_player, &sample_rate, &channel, &bit_rate);
+	int fps, v_bit_rate;
+	player_get_audio_stream_info(g_player[0], &sample_rate, &channel, &bit_rate);
 	g_print("                                                            ==> [Player_Test] Sample Rate: [%d ] , Channel: [%d ] , Bit Rate: [%d ] \n",sample_rate,channel,bit_rate);
+
+	player_get_video_stream_info(g_player[0], &fps, &v_bit_rate);
+	g_print("                                                            ==> [Player_Test] fps: [%d ] , Bit Rate: [%d ] \n",fps,v_bit_rate);
 
 	char *audio_codec = NULL;
 	char *video_codec = NULL;
-	player_get_codec_info(g_player, &audio_codec, &video_codec);
+	player_get_codec_info(g_player[0], &audio_codec, &video_codec);
 	if(audio_codec!=NULL)
 	{
 		g_print("                                                            ==> [Player_Test] Audio Codec: [%s ] \n",audio_codec);
@@ -444,27 +805,130 @@ static void get_stream_info()
 		free(video_codec);
 		video_codec = NULL;
 	}
-	player_get_video_size(g_player, &w, &h);
+	player_get_video_size(g_player[0], &w, &h);
 	g_print("                                                            ==> [Player_Test] Width: [%d ] , Height: [%d ] \n",w,h);
-}
+ }
 
 static void set_looping(bool looping)
 {
-	if ( player_set_looping(g_player, looping) != PLAYER_ERROR_NONE )
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
 	{
-		g_print("failed to set_looping\n");
+		if ( player_set_looping(g_player[0], looping) != PLAYER_ERROR_NONE )
+		{
+			g_print("failed to set_looping\n");
+		}
+	}
+	else
+	{
+		int i = 0;
+		for (i = 0; i < g_handle_num; i++)
+		{
+			if ( player_set_looping(g_player[i], looping) != PLAYER_ERROR_NONE )
+			{
+				g_print("failed to set_looping\n");
+			}
+		}
 	}
 }
 
 static void get_looping(bool *looping)
 {
-	player_is_looping(g_player, looping);
+	player_is_looping(g_player[0], looping);
 	g_print("                                                            ==> [Player_Test] looping = %d\n", *looping);
+}
+
+static void change_surface(int option)
+{
+	player_display_type_e surface_type = 0;
+	int ret = PLAYER_ERROR_NONE;
+
+	switch (option)
+	{
+	case 0: /* X surface */
+		surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
+		g_print("change surface type to X\n");
+		break;
+	case 1: /* EVAS surface */
+		surface_type = PLAYER_DISPLAY_TYPE_EVAS;
+		g_print("change surface type to EVAS\n");
+		break;
+	default:
+		g_print("invalid surface type\n");
+		return;
+	}
+
+	if (surface_type == g_current_surface_type)
+	{
+		g_print("same with the previous surface type(%d)\n", g_current_surface_type);
+		return;
+	}
+	else
+	{
+		player_state_e player_state = PLAYER_STATE_NONE;
+		ret = player_get_state(g_player[0], &player_state);
+		if (ret)
+		{
+			g_print("failed to player_get_state(), ret(0x%x)\n", ret);
+		}
+		/* state check */
+		if (player_state == PLAYER_STATE_NONE || player_state == PLAYER_STATE_IDLE )
+		{
+			reset_display();
+
+			if (surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
+			{
+#ifdef _USE_X_DIRECT_
+				/* Create xwindow for X surface */
+				if(!g_dpy)
+				{
+					g_dpy = XOpenDisplay (NULL);
+					g_xid = create_window (g_dpy, 0, 0, 500, 500);
+					g_gc = XCreateGC (g_dpy, g_xid, 0, 0);
+				}
+				g_print("create x window dpy(%p), gc(%x), xid(%d)\n", g_dpy, (unsigned int)g_gc, (int)g_xid);
+				XImage *xim = make_transparent_image (g_dpy, 500, 500);
+				XPutImage (g_dpy, g_xid, g_gc, xim, 0, 0, 0, 0, 500, 500);
+				XSync (g_dpy, False);
+#else
+				g_xid = g_eo_win;
+#endif
+				ret = player_set_display(g_player[0], surface_type, GET_DISPLAY(g_xid));
+			}
+			else
+			{
+				int i = 0;
+				for (i = 0; i < g_handle_num ; i++)
+				{
+					/* Create evas image object for EVAS surface */
+					if (!g_eo[i])
+					{
+						g_eo[i] = create_image_object(g_eo_win);
+						evas_object_image_size_set(g_eo[i], 500, 500);
+						evas_object_image_fill_set(g_eo[i], 0, 0, 500, 500);
+						evas_object_resize(g_eo[i], 500, 500);
+						evas_object_move(g_eo[i], i*20, i*20);
+					}
+					ret = player_set_display(g_player[i], surface_type, g_eo[i]);
+				}
+			}
+			if (ret)
+			{
+				g_print("failed to set display, surface_type(%d)\n", surface_type);
+				return;
+			}
+			g_current_surface_type = surface_type;
+		}
+		else
+		{
+			g_print("could not change surface type, current_state(%d)\n", player_state);
+		}
+	}
+	return;
 }
 
 static void set_display_mode(int mode)
 {
-	if ( player_set_display_mode(g_player, mode) != PLAYER_ERROR_NONE )
+	if ( player_set_display_mode(g_player[0], mode) != PLAYER_ERROR_NONE )
 	{
 		g_print("failed to player_set_display_mode\n");
 	}
@@ -473,13 +937,13 @@ static void set_display_mode(int mode)
 static void get_display_mode()
 {
 	player_display_mode_e mode;
-	player_get_display_mode(g_player, &mode);
+	player_get_display_mode(g_player[0], &mode);
 	g_print("                                                            ==> [Player_Test] Display mode: [%d ] \n",mode);
 }
 
 static void set_display_rotation(int rotation)
 {
-	if ( player_set_x11_display_rotation(g_player, rotation) != PLAYER_ERROR_NONE )
+	if ( player_set_display_rotation(g_player[0], rotation) != PLAYER_ERROR_NONE )
 	{
 		g_print("failed to set_display_rotation\n");
 	}
@@ -488,14 +952,14 @@ static void set_display_rotation(int rotation)
 static void get_display_rotation()
 {
 	player_display_rotation_e rotation = 0;
-	player_get_x11_display_rotation(g_player, &rotation);
+	player_get_display_rotation(g_player[0], &rotation);
 	g_print("                                                            ==> [Player_Test] X11 Display rotation: [%d ] \n",rotation);
 }
 
 
 static void set_display_visible(bool visible)
 {
-	if ( player_set_x11_display_visible(g_player, visible) != PLAYER_ERROR_NONE )
+	if ( player_set_display_visible(g_player[0], visible) != PLAYER_ERROR_NONE )
 	{
 		g_print("failed to player_set_x11_display_visible\n");
 	}
@@ -503,32 +967,91 @@ static void set_display_visible(bool visible)
 
 static void get_display_visible(bool *visible)
 {
-	player_is_x11_display_visible(g_player, visible);
+	player_is_display_visible(g_player[0], visible);
 	g_print("                                                            ==> [Player_Test] X11 Display Visible = %d\n", *visible);
 }
 
-static void set_display_roi(int x, int y, int w, int h)
+static void set_display_dst_roi(int x, int y, int w, int h)
 {
-	if ( player_set_x11_display_roi(g_player, x, y, w, h) != PLAYER_ERROR_NONE )
+#if 0
+	if ( player_set_x11_display_dst_roi(g_player[0], x, y, w, h) != PLAYER_ERROR_NONE )
 	{
-		g_print("failed to player_set_x11_display_roi\n");
+		g_print("failed to player_set_x11_display_dst_roi\n");
 	} else {
-		g_print("                                                            ==> [Player_Test] set X11 Display ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
+		g_print("                                                            ==> [Player_Test] set X11 Display DST ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
 	}
+#endif
 }
 
-static void get_display_roi()
+static void get_display_dst_roi()
 {
+#if 0
 	int x = 0;
 	int y = 0;
 	int w = 0;
 	int h = 0;
-	if ( player_get_x11_display_roi(g_player, &x, &y, &w, &h) != PLAYER_ERROR_NONE )
+
+	if ( player_get_x11_display_dst_roi(g_player[0], &x, &y, &w, &h) != PLAYER_ERROR_NONE )
 	{
-		g_print("failed to player_get_x11_display_roi\n");
+		g_print("failed to player_get_x11_display_dst_roi\n");
 	} else {
-		g_print("                                                            ==> [Player_Test] got X11 Display ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
+		g_print("                                                            ==> [Player_Test] got X11 Display DST ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
 	}
+#endif
+}
+
+static void set_display_roi_mode(int mode)
+{
+#if 0
+	if ( player_set_x11_display_roi_mode(g_player[0], (player_display_roi_mode_e)mode) != PLAYER_ERROR_NONE )
+	{
+		g_print("failed to player_set_x11_display_roi_mode\n");
+	} else {
+		g_print("                                                            ==> [Player_Test] set X11 Display ROI mode (%d)\n", mode);
+	}
+#endif
+}
+
+static void get_display_roi_mode()
+{
+#if 0
+	player_display_roi_mode_e mode;
+	if ( player_get_x11_display_roi_mode(g_player[0], &mode) != PLAYER_ERROR_NONE )
+	{
+		g_print("failed to player_get_x11_display_roi_mode\n");
+	} else {
+		g_print("                                                            ==> [Player_Test] got X11 Display ROI mode (%d)\n", mode);
+	}
+#endif
+}
+
+static void set_display_src_crop(int x, int y, int w, int h)
+{
+#if 0
+	if ( player_set_x11_display_src_crop(g_player[0], x, y, w, h) != PLAYER_ERROR_NONE )
+	{
+		g_print("failed to player_set_x11_display_src_crop\n");
+	} else {
+		g_print("                                                            ==> [Player_Test] set X11 Display SRC CROP (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
+	}
+#endif
+}
+
+static void get_display_src_crop()
+{
+#if 0
+	int x = 0;
+	int y = 0;
+	int w = 0;
+	int h = 0;
+
+	if ( player_get_x11_display_src_crop(g_player[0], &x, &y, &w, &h) != PLAYER_ERROR_NONE )
+	{
+		g_print("failed to player_get_x11_display_src_crop\n");
+	} else {
+		g_print("                                                            ==> [Player_Test] got X11 Display SRC CROP (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
+	}
+#endif
 }
 
 static void input_subtitle_filename(char *subtitle_filename)
@@ -540,11 +1063,12 @@ static void input_subtitle_filename(char *subtitle_filename)
 
 	strncpy (g_subtitle_uri, subtitle_filename,len);
 	g_print("subtitle uri is set to %s\n", g_subtitle_uri);
+	player_set_subtitle_path (g_player[0], g_subtitle_uri);
 }
 
 static void capture_video()
 {
-	if( player_capture_video(g_player,video_captured_cb,NULL)!=PLAYER_ERROR_NONE)
+	if( player_capture_video(g_player[0],video_captured_cb,NULL)!=PLAYER_ERROR_NONE)
 	{
 		g_print("failed to player_capture_video\n");
 	}
@@ -552,29 +1076,47 @@ static void capture_video()
 
 static void decoding_audio()
 {
+#if 0
 	int ret;
-	ret =player_set_audio_frame_decoded_cb(g_player, 0,0,audio_frame_decoded_cb, (void*)g_player);
+        char *suffix, *dump_path;
+        GDateTime *time = g_date_time_new_now_local();
+
+        suffix = g_date_time_format(time, "%Y%m%d_%H%M%S.pcm");
+        dump_path = g_strjoin(NULL, PLAYER_TEST_DUMP_PATH_PREFIX, suffix, NULL);
+        g_pcm_fd = fopen(dump_path, "w+");
+        g_free(dump_path);
+        g_free(suffix);
+        g_date_time_unref(time);
+        if(!g_pcm_fd) {
+            g_print("Can not create debug dump file");
+        }
+
+	ret =player_set_audio_frame_decoded_cb(g_player[0], 0, 0,audio_frame_decoded_cb, (void*)g_player[0]);
 	if ( ret != PLAYER_ERROR_NONE )
 	{
 		g_print("player_set_audio_frame_decoded_cb is failed (errno = %d) \n", ret);
 	}
-}
-
-static void decoding_video()
-{
-	int ret;
-	ret =player_set_video_frame_decoded_cb(g_player, video_frame_decoded_cb, (void*)g_player);
-	if ( ret != PLAYER_ERROR_NONE )
-	{
-		g_print("player_set_video_frame_decoded_cb is failed (errno = %d) \n", ret);
-	}
+#endif
 }
 
 void quit_program()
 {
-	player_unprepare(g_player);
-	player_destroy(g_player);
-	g_player = 0;
+	int i = 0;
+
+	if(g_pcm_fd)
+	{
+		fclose(g_pcm_fd);
+	}
+
+	for (i = 0; i < g_handle_num; i++)
+	{
+		if(g_player[i]!=NULL)
+		{
+			player_unprepare(g_player[i]);
+			player_destroy(g_player[i]);
+			g_player[i] = 0;
+		}
+	}
 	elm_exit();
 }
 
@@ -651,7 +1193,7 @@ void _interpret_main_menu(char *cmd)
 		}
 		else if (strncmp(cmd, "f", 1) == 0)
 		{
-				g_menu_state = CURRENT_STATUS_VOLUME;
+			g_menu_state = CURRENT_STATUS_VOLUME;
 		}
 		else if (strncmp(cmd, "g", 1) == 0)
 		{
@@ -659,9 +1201,13 @@ void _interpret_main_menu(char *cmd)
 			float right;
 			get_volume(&left, &right);
 		}
+		else if (strncmp(cmd, "z", 1) == 0)
+		{
+			g_menu_state = CURRENT_STATUS_SOUND_TYPE;
+		}
 		else if (strncmp(cmd, "h", 1) == 0 )
 		{
-				g_menu_state = CURRENT_STATUS_MUTE;
+			g_menu_state = CURRENT_STATUS_MUTE;
 		}
 		else if (strncmp(cmd, "i", 1) == 0 )
 		{
@@ -670,23 +1216,19 @@ void _interpret_main_menu(char *cmd)
 		}
 		else if (strncmp(cmd, "j", 1) == 0 )
 		{
-				g_menu_state = CURRENT_STATUS_REAL_POSITION_TIME;
-		}
-		else if (strncmp(cmd, "k", 1) == 0 )
-		{
-				g_menu_state = CURRENT_STATUS_POSITION_PERCENT;
+			g_menu_state = CURRENT_STATUS_POSITION_TIME;
 		}
 		else if (strncmp(cmd, "l", 1) == 0 )
 		{
-				get_position();
+			get_position();
 		}
 		else if (strncmp(cmd, "m", 1) == 0 )
 		{
-				get_duration();
+			get_duration();
 		}
 		else if (strncmp(cmd, "n", 1) == 0 )
 		{
-				get_stream_info();
+			get_stream_info();
 		}
 		else if (strncmp(cmd, "o", 1) == 0 )
 		{
@@ -694,8 +1236,8 @@ void _interpret_main_menu(char *cmd)
 		}
 		else if (strncmp(cmd, "p", 1) == 0 )
 		{
-				bool looping;
-				get_looping(&looping);
+			bool looping;
+			get_looping(&looping);
 		}
 		else if (strncmp(cmd, "r", 1) == 0 )
 		{
@@ -724,17 +1266,33 @@ void _interpret_main_menu(char *cmd)
 		}
 		else if (strncmp(cmd, "x", 1) == 0 )
 		{
-			g_menu_state = CURRENT_STATUS_DISPLAY_ROI;
+			g_menu_state = CURRENT_STATUS_DISPLAY_DST_ROI;
 		}
 		else if (strncmp(cmd, "y", 1) == 0 )
 		{
-			get_display_roi();
+			get_display_dst_roi();
+		}
+		else if (strncmp(cmd, "M", 1) == 0 )
+		{
+			g_menu_state = CURRENT_STATUS_DISPLAY_ROI_MODE;
+		}
+		else if (strncmp(cmd, "N", 1) == 0 )
+		{
+			get_display_roi_mode();
+		}
+		else if (strncmp(cmd, "F", 1) == 0 )
+		{
+			g_menu_state = CURRENT_STATUS_DISPLAY_SRC_CROP;
+		}
+		else if (strncmp(cmd, "G", 1) == 0 )
+		{
+			get_display_src_crop();
 		}
 		else if (strncmp(cmd, "A", 1) == 0 )
 		{
 			g_menu_state = CURRENT_STATUS_SUBTITLE_FILENAME;
 		}
-		else if (strncmp(cmd, "C", 1) == 0 )
+ 		else if (strncmp(cmd, "C", 1) == 0 )
 		{
 			capture_video();
 		}
@@ -742,18 +1300,14 @@ void _interpret_main_menu(char *cmd)
 		{
 			decoding_audio();
 		}
-		else if (strncmp(cmd, "E", 1) == 0 )
-		{
-			decoding_video();
-		}
 		else if (strncmp(cmd, "q", 1) == 0)
 		{
-				quit_pushing = TRUE;
-				quit_program();
+			quit_pushing = TRUE;
+			quit_program();
 		}
 		else
 		{
-				g_print("unknown menu \n");
+			g_print("unknown menu \n");
 		}
 	}
 	else if(len == 2)
@@ -762,7 +1316,7 @@ void _interpret_main_menu(char *cmd)
 		{
 			_player_prepare(FALSE); // sync
 		}
-		else if (strncmp(cmd, "pa", 2) == 0)
+  		else if (strncmp(cmd, "pa", 2) == 0)
 		{
 			_player_prepare(TRUE); // async
 		}
@@ -770,20 +1324,28 @@ void _interpret_main_menu(char *cmd)
 		{
 			_player_unprepare();
 		}
+		else if (strncmp(cmd, "dt", 2) == 0)
+		{
+			_player_destroy();
+		}
 		else if (strncmp(cmd, "sp", 2) == 0)
 		{
 			_player_set_progressive_download();
 		}
-		else if (strncmp(cmd, "jj", 2) == 0 )
+   		else if (strncmp(cmd, "ds", 2) == 0 )
 		{
-				g_menu_state = CURRENT_STATUS_KEY_FRAME_POSITION_TIME;
+			g_menu_state = CURRENT_STATUS_DISPLAY_SURFACE_CHANGE;
 		}
-		else
+		else if (strncmp(cmd, "nb", 2) == 0 )
 		{
-				g_print("unknown menu \n");
+			g_menu_state = CURRENT_STATUS_HANDLE_NUM;
+		}
+  		else
+		{
+			g_print("unknown menu \n");
 		}
 	}
-	else
+ 	else
 	{
 		g_print("unknown menu \n");
 	}
@@ -796,8 +1358,8 @@ void display_sub_basic()
 	g_print("=========================================================================================\n");
 	g_print("                          Player Test (press q to quit) \n");
 	g_print("-----------------------------------------------------------------------------------------\n");
-	g_print("*. Sample List in [%s]\n", MMTS_SAMPLELIST_INI_DEFAULT_PATH);
-
+	g_print("*. Sample List in [%s]      \t", MMTS_SAMPLELIST_INI_DEFAULT_PATH);
+	g_print("nb. num. of handles \n");
 	for( idx = 1; idx <= INI_SAMPLE_LIST_MAX ; idx++ )
 	{
 		if (strlen (g_file_list[idx-1]) > 0)
@@ -811,31 +1373,29 @@ void display_sub_basic()
 	g_print("c. Stop  \t");
 	g_print("d. Resume\t");
 	g_print("e. Pause \t");
-	g_print("un. Unprepare \n");
-	g_print("[State] S. Player State \n");
+	g_print("un. Unprepare \t");
+	g_print("dt. Destroy \n");
+ 	g_print("[State] S. Player State \n");
 	g_print("[ volume ] f. Set Volume\t");
-	g_print("g. Get Volume\n");
+	g_print("g. Get Volume\t");
+	g_print("z. Set Sound type\t");
 	g_print("[ mute ] h. Set Mute\t");
 	g_print("i. Get Mute\n");
-	g_print("[position] j. Set Position (T, accurate)\t");
-	g_print("[position] jj. Set Position (T, key frame)\t");
-	g_print("k. Set Position (%%)\t");
+ 	g_print("[position] j. Set Position \t");
 	g_print("l. Get Position\n");
 	g_print("[duration] m. Get Duration\n");
 	g_print("[Stream Info] n. Get stream info (Video Size, codec, audio stream info, and tag info)\n");
 	g_print("[Looping] o. Set Looping\t");
 	g_print("p. Get Looping\n");
+	g_print("[display] v. Set display visible\t");
+	g_print("w. Get display visible\n");
+	g_print("[display] ds. Change display surface type\n");
 	g_print("[x display] r. Set display mode\t");
-	g_print("s. Get display mode\t");
-	g_print("t. Set display Rotation\t");
-	g_print("u. Get display Rotation\n");
-	g_print("[x display] v. Set display visible\t");
-	g_print("w. Get display visible\t");
-	g_print("x. Set ROI\t");
-	g_print("y. Get ROI\n");
-	g_print("[subtitle] A. Set subtitle path\n");
+	g_print("s. Get display mode\n");
+	g_print("[x display] t. Set display Rotation\t");
+	g_print("[Track] tl. Get Track language info(single only)\n");
+	g_print("[subtitle] A. Set(or change) subtitle path\n");
 	g_print("[Video Capture] C. Capture \n");
-	g_print("[Audio Frame Decode] D. Decoding Audio Frame  E. Decoding Video Frame \n");
 	g_print("[etc] sp. Set Progressive Download\n");
 	g_print("\n");
 	g_print("=========================================================================================\n");
@@ -847,6 +1407,10 @@ static void displaymenu()
 	{
 		display_sub_basic();
 	}
+	else if (g_menu_state == CURRENT_STATUS_HANDLE_NUM)
+	{
+		g_print("*** input number of handles.(recommended only for EVAS surface)\n");
+	}
 	else if (g_menu_state == CURRENT_STATUS_FILENAME)
 	{
 		g_print("*** input mediapath.\n");
@@ -855,28 +1419,30 @@ static void displaymenu()
 	{
 		g_print("*** input volume value.(0~1.0)\n");
 	}
+	else if (g_menu_state == CURRENT_STATUS_SOUND_TYPE)
+	{
+		g_print("*** input sound type.(0:SYSTEM 1:NOTIFICATION 2:ALARM 3:RINGTONE 4:MEDIA 5:CALL 6:VOIP 7:FIXED)\n");
+	}
 	else if (g_menu_state == CURRENT_STATUS_MUTE)
 	{
 		g_print("*** input mute value.(0: Not Mute, 1: Mute) \n");
 	}
-	else if (g_menu_state == CURRENT_STATUS_REAL_POSITION_TIME
-		|| g_menu_state == CURRENT_STATUS_KEY_FRAME_POSITION_TIME)
+ 	else if (g_menu_state == CURRENT_STATUS_POSITION_TIME)
 	{
 		g_print("*** input position value(msec)\n");
-	}
-	else if (g_menu_state == CURRENT_STATUS_POSITION_PERCENT)
-	{
-		g_print("*** input position percent(%%)\n");
 	}
 	else if (g_menu_state == CURRENT_STATUS_LOOPING)
 	{
 		g_print("*** input looping value.(0: Not Looping, 1: Looping) \n");
 	}
+	else if (g_menu_state == CURRENT_STATUS_DISPLAY_SURFACE_CHANGE) {
+		g_print("*** input display surface type.(0: X surface, 1: EVAS surface) \n");
+	}
 	else if (g_menu_state == CURRENT_STATUS_DISPLAY_MODE)
 	{
-		g_print("*** input display mode value.(0: LETTER BOX, 1: ORIGIN SIZE, 2: FULL_SCREEN, 3: CROPPED_FULL) \n");
+		g_print("*** input display mode value.(0: LETTER BOX, 1: ORIGIN SIZE, 2: FULL_SCREEN, 3: CROPPED_FULL, 4: ORIGIN_OR_LETTER, 5: ROI) \n");
 	}
-	else if (g_menu_state == CURRENT_STATUS_DISPLAY_ROTATION)
+ 	else if (g_menu_state == CURRENT_STATUS_DISPLAY_ROTATION)
 	{
 		g_print("*** input display rotation value.(0: NONE, 1: 90, 2: 180, 3: 270, 4:F LIP_HORZ, 5: FLIP_VERT ) \n");
 	}
@@ -884,15 +1450,23 @@ static void displaymenu()
 	{
 		g_print("*** input display visible value.(0: HIDE, 1: SHOW) \n");
 	}
-	else if (g_menu_state == CURRENT_STATUS_DISPLAY_ROI)
+	else if (g_menu_state == CURRENT_STATUS_DISPLAY_ROI_MODE)
 	{
-		g_print("*** input display roi value sequencially.(x, y, w, h)\n");
+		g_print("*** input display roi mode.(0: FULL_SCREEN, 1: LETTER BOX)\n");
 	}
-	else if (g_menu_state == CURRENT_STATUS_SUBTITLE_FILENAME)
+	else if (g_menu_state == CURRENT_STATUS_DISPLAY_DST_ROI)
+	{
+		g_print("*** input display roi value sequentially.(x, y, w, h)\n");
+	}
+	else if (g_menu_state == CURRENT_STATUS_DISPLAY_SRC_CROP)
+	{
+		g_print("*** input display source crop value sequentially.(x, y, w, h)\n");
+	}
+ 	else if (g_menu_state == CURRENT_STATUS_SUBTITLE_FILENAME)
 	{
 		g_print(" *** input  subtitle file path.\n");
 	}
-	else
+ 	else
 	{
 		g_print("*** unknown status.\n");
 		quit_program();
@@ -926,6 +1500,20 @@ static void interpret (char *cmd)
 			_interpret_main_menu(cmd);
 		}
 		break;
+		case CURRENT_STATUS_HANDLE_NUM:
+		{
+			int num_handle = atoi(cmd);
+			if (0 >= num_handle || num_handle > MAX_HANDLE)
+			{
+				g_print("not supported this number for handles(%d)\n", num_handle);
+			}
+			else
+			{
+				g_handle_num = num_handle;
+			}
+			reset_menu_state();
+		}
+		break;
 		case CURRENT_STATUS_FILENAME:
 		{
 			input_filename(cmd);
@@ -939,6 +1527,13 @@ static void interpret (char *cmd)
 			reset_menu_state();
 		}
 		break;
+		case CURRENT_STATUS_SOUND_TYPE:
+		{
+			int type = atoi(cmd);
+			set_sound_type(type);
+			reset_menu_state();
+		}
+		break;
 		case CURRENT_STATUS_MUTE:
 		{
 			int mute = atoi(cmd);
@@ -946,24 +1541,10 @@ static void interpret (char *cmd)
 			reset_menu_state();
 		}
 		break;
-		case CURRENT_STATUS_REAL_POSITION_TIME:
+		case CURRENT_STATUS_POSITION_TIME:
 		{
 			long position = atol(cmd);
-			set_position(position, 1);
-			reset_menu_state();
-		}
-		break;
-		case CURRENT_STATUS_KEY_FRAME_POSITION_TIME:
-		{
-			long position = atol(cmd);
-			set_position(position, 0);
-			reset_menu_state();
-		}
-		break;
-		case CURRENT_STATUS_POSITION_PERCENT:
-		{
-			long percent = atol(cmd);
-			set_position_ratio(percent);
+			set_position(position);
 			reset_menu_state();
 		}
 		break;
@@ -974,6 +1555,13 @@ static void interpret (char *cmd)
 			reset_menu_state();
 		}
 		break;
+		case CURRENT_STATUS_DISPLAY_SURFACE_CHANGE:
+		{
+			int type = atoi(cmd);
+			change_surface(type);
+			reset_menu_state();
+		}
+		break;
 		case CURRENT_STATUS_DISPLAY_MODE:
 		{
 			int mode = atoi(cmd);
@@ -981,7 +1569,7 @@ static void interpret (char *cmd)
 			reset_menu_state();
 		}
 		break;
-		case CURRENT_STATUS_DISPLAY_ROTATION:
+ 		case CURRENT_STATUS_DISPLAY_ROTATION:
 		{
 			int rotation = atoi(cmd);
 			set_display_rotation(rotation);
@@ -995,7 +1583,7 @@ static void interpret (char *cmd)
 			reset_menu_state();
 		}
 		break;
-		case CURRENT_STATUS_DISPLAY_ROI:
+		case CURRENT_STATUS_DISPLAY_DST_ROI:
 		{
 			int value = atoi(cmd);
 			static int roi_x = 0;
@@ -1019,7 +1607,7 @@ static void interpret (char *cmd)
 			case 3:
 				cnt = 0;
 				roi_h = value;
-				set_display_roi(roi_x, roi_y, roi_w, roi_h);
+				set_display_dst_roi(roi_x, roi_y, roi_w, roi_h);
 				roi_x = roi_y = roi_w = roi_h = 0;
 				reset_menu_state();
 				break;
@@ -1028,13 +1616,53 @@ static void interpret (char *cmd)
 			}
 		}
 		break;
-		case CURRENT_STATUS_SUBTITLE_FILENAME:
+		case CURRENT_STATUS_DISPLAY_SRC_CROP:
+		{
+			int value = atoi(cmd);
+			static int crop_x = 0;
+			static int crop_y = 0;
+			static int crop_w = 0;
+			static int crop_h = 0;
+			static int crop_cnt = 0;
+			switch (crop_cnt) {
+			case 0:
+				crop_x = value;
+				crop_cnt++;
+				break;
+			case 1:
+				crop_y = value;
+				crop_cnt++;
+				break;
+			case 2:
+				crop_w = value;
+				crop_cnt++;
+				break;
+			case 3:
+				crop_cnt = 0;
+				crop_h = value;
+				set_display_src_crop(crop_x, crop_y, crop_w, crop_h);
+				crop_x = crop_y = crop_w = crop_h = 0;
+				reset_menu_state();
+				break;
+			default:
+				break;
+			}
+		}
+		break;
+		case CURRENT_STATUS_DISPLAY_ROI_MODE:
+		{
+			int value = atoi(cmd);
+			set_display_roi_mode(value);
+			reset_menu_state();
+		}
+		break;
+ 		case CURRENT_STATUS_SUBTITLE_FILENAME:
 		{
 			input_subtitle_filename(cmd);
 			reset_menu_state();
 		}
 		break;
-	}
+ 	}
 	g_timeout_add(100, timeout_menu_display, 0);
 }
 
@@ -1065,4 +1693,3 @@ int main(int argc, char *argv[])
 
 	return appcore_efl_main(PACKAGE, &argc, &argv, &ops);
 }
-
