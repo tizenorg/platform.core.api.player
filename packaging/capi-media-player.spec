@@ -3,8 +3,8 @@
 
 Name:       capi-media-player
 Summary:    A Media Player library in Tizen Native API
-Version:    0.1.1
-Release:    1
+Version:    0.1.2
+Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
