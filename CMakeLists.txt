@@ -10,8 +10,8 @@ SET(PREFIX ${CMAKE_INSTALL_PREFIX})
 SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
-SET(dependents "dlog mm-player capi-base-common capi-media-sound-manager mm-ta")
-SET(pc_dependents "capi-base-common capi-media-sound-manager")
+SET(dependents "libtbm capi-media-tool dlog mm-player capi-base-common capi-media-sound-manager gstreamer-1.0 evas ecore elementary")
+SET(pc_dependents "libtbm capi-media-tool capi-base-common capi-media-sound-manager")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})

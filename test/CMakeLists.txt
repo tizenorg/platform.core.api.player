@@ -19,6 +19,7 @@ FOREACH(flag ${${fw_test}_CFLAGS})
 ENDFOREACH(flag)
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_CFLAGS}")
+SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--rpath=/usr/lib/gstreamer-0.10")
 
 IF(WAYLAND_SUPPORT)
     ADD_DEFINITIONS("-DHAVE_WAYLAND")

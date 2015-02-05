@@ -21,10 +21,9 @@
 #define DEPRECATED __attribute__((deprecated))
 #endif
 
-
 #include <tizen.h>
 #include <sound_manager.h>
-//#include <media_packet.h> We are going to support new feature.
+#include <media_packet.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,10 +64,6 @@ typedef enum
  * @brief Enumeration for media player's error codes.
  * @since_tizen 2.3
  */
-
-/*
-PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE,PLAYER_ERROR_RESOURCE_LIMIT, PLAYER_ERROR_PERMISSION_DENIED are added. 
-*/
 typedef enum
 {
     PLAYER_ERROR_NONE   = TIZEN_ERROR_NONE,                                 /**< Successful */
@@ -106,8 +101,7 @@ typedef enum
     PLAYER_INTERRUPTED_BY_RESOURCE_CONFLICT,    /**< Interrupted by a resource conflict */
     PLAYER_INTERRUPTED_BY_ALARM,                /**< Interrupted by an alarm */
     PLAYER_INTERRUPTED_BY_EMERGENCY,            /**< Interrupted by an emergency */
-    PLAYER_INTERRUPTED_BY_RESUMABLE_MEDIA,      /**< Interrupted by resumable media application*/ //->will be deprecated
-   // PLAYER_INTERRUPTED_BY_NOTIFICATION,         /**< Interrupted by a notification */
+    PLAYER_INTERRUPTED_BY_NOTIFICATION,         /**< Interrupted by a notification */
 } player_interrupted_code_e;
 
 /**
@@ -126,11 +120,9 @@ typedef enum
  */
 typedef enum
 {
-  PLAYER_DISPLAY_TYPE_X11 = 0,			/**< X surface display */ //--> will be deprecated
-  PLAYER_DISPLAY_TYPE_EVAS = 1,		/**< Evas image object surface display */ //--> will be deprecated
-  //PLAYER_DISPLAY_TYPE_OVERLAY = 0,    /**< Overlay surface display */
-  //PLAYER_DISPLAY_TYPE_EVAS,           /**< Evas image object surface display */
-  //PLAYER_DISPLAY_TYPE_NONE,           /**< This disposes off buffers */
+    PLAYER_DISPLAY_TYPE_OVERLAY = 0,    /**< Overlay surface display */
+    PLAYER_DISPLAY_TYPE_EVAS,           /**< Evas image object surface display */
+    PLAYER_DISPLAY_TYPE_NONE,           /**< This disposes off buffers */
 } player_display_type_e;
 
 /**
@@ -145,8 +137,8 @@ typedef enum
 } audio_latency_mode_e;
 
 /**
- * @brief Player display handle
- *
+ * @brief The player display handle.
+ * @since_tizen 2.3
  */
 typedef void* player_display_h;
 
@@ -156,8 +148,7 @@ typedef void* player_display_h;
  * @since_tizen 2.3
  */
 #include <stdint.h>
-#define GET_DISPLAY(x) ((void*)((intptr_t)(x))) //--> will be deprecated
-//#define GET_DISPLAY(x) (void*)(x)
+#define GET_DISPLAY(x) ((void*)((intptr_t)(x))) //solve cast pointer error for x86_64
 #endif
 
 /**
@@ -187,13 +178,12 @@ typedef enum
  */
 typedef enum
 {
-	PLAYER_DISPLAY_MODE_LETTER_BOX = 0,	/**< Letter box*/
-	PLAYER_DISPLAY_MODE_ORIGIN_SIZE,		/**< Origin size*/
-	PLAYER_DISPLAY_MODE_FULL_SCREEN,		/**< full-screen*/
-	PLAYER_DISPLAY_MODE_CROPPED_FULL,	/**< Cropped full-screen*/
-	PLAYER_DISPLAY_MODE_ORIGIN_OR_LETTER,	/**< Origin size (if surface size is larger than video size(width/height)) or Letter box (if video size(width/height) is larger than surface size)*/
-	PLAYER_DISPLAY_MODE_ROI,			/**< ROI mode*/ //--> will be deprecated
-    //PLAYER_DISPLAY_MODE_DST_ROI,            /**< Dst ROI mode */
+    PLAYER_DISPLAY_MODE_LETTER_BOX = 0,     /**< Letter box */
+    PLAYER_DISPLAY_MODE_ORIGIN_SIZE,        /**< Origin size */
+    PLAYER_DISPLAY_MODE_FULL_SCREEN,        /**< Full-screen */
+    PLAYER_DISPLAY_MODE_CROPPED_FULL,       /**< Cropped full-screen */
+    PLAYER_DISPLAY_MODE_ORIGIN_OR_LETTER,   /**< Origin size (if surface size is larger than video size(width/height)) or Letter box (if video size(width/height) is larger than surface size) */
+    PLAYER_DISPLAY_MODE_DST_ROI,            /**< Dst ROI mode */
 } player_display_mode_e;
 
 /**
@@ -211,7 +201,7 @@ typedef enum
  */
 typedef enum
 {
-	PLAYER_CONTENT_INFO_ALBUM,      /**< Album */
+    PLAYER_CONTENT_INFO_ALBUM,      /**< Album */
     PLAYER_CONTENT_INFO_ARTIST,     /**< Artist */
     PLAYER_CONTENT_INFO_AUTHOR,     /**< Author */
     PLAYER_CONTENT_INFO_GENRE,      /**< Genre */
@@ -220,113 +210,9 @@ typedef enum
 } player_content_info_e;
 
 /**
- * @brief  Enumerations of media stream content information
- */
-typedef enum
-{
-  PLAYER_TRACK_TYPE_AUDIO,		/**< Audio Track */
-  PLAYER_TRACK_TYPE_VIDEO,		/**< Video Track */
-  PLAYER_TRACK_TYPE_TEXT,	/**< Text Track */
-} player_track_type_e DEPRECATED; // will be deprecated
-/**
  * @}
  */
 
-/**
- * @addtogroup CAPI_MEDIA_PLAYER_AUDIO_EFFECT_MODULE
- * @{
- */
-
-/**
- * @brief Enumerations of audio effect
- */
-typedef enum{
-	AUDIO_EFFECT_3D = 1, 	/**< 3D effect */
-	AUDIO_EFFECT_BASS,	 	/**< Bass effect */
-	AUDIO_EFFECT_ROOM,		/**< Room effect */
-	AUDIO_EFFECT_REVERB, 	/**< Reverberation effect */
-	AUDIO_EFFECT_CLARITY,	/**< Clarity effect */
-} audio_effect_e DEPRECATED; // will be deprecated
-
-/**
- * @brief Enumerations of preset audio effect
- */
-typedef enum{
-	AUDIO_EFFECT_PRESET_AUTO = 0,		/**< Auto */
-	AUDIO_EFFECT_PRESET_NONE,			/**< None */
-	AUDIO_EFFECT_PRESET_POP,			/**< POP */
-	AUDIO_EFFECT_PRESET_ROCK,			/**< Rock */
-	AUDIO_EFFECT_PRESET_DANCE,			/**< Dance */
-	AUDIO_EFFECT_PRESET_JAZZ,			/**< Jazz */
-	AUDIO_EFFECT_PRESET_CLASSIC,		/**< Classic */
-	AUDIO_EFFECT_PRESET_VOCAL,			/**< Vocal */
-	AUDIO_EFFECT_PRESET_BASS_BOOST,		/**< Bass boost */
-	AUDIO_EFFECT_PRESET_TREBLE_BOOST,	/**< Treble boost */
-	AUDIO_EFFECT_PRESET_MTHEATER,		/**< Theater */
-	AUDIO_EFFECT_PRESET_EXTERNALIZATION,/**< Externalization */
-	AUDIO_EFFECT_PRESET_CAFE,			/**< Cafe */
-	AUDIO_EFFECT_PRESET_CONCERT_HALL,	/**< Concert Hall */
-	AUDIO_EFFECT_PRESET_VOICE,			/**< Voice */
-	AUDIO_EFFECT_PRESET_MOVIE, 			/**< Movie */
-	AUDIO_EFFECT_PRESET_VIRTUAL_5_1,	/**< Virtual 5.1 */
-	AUDIO_EFFECT_PRESET_HIPHOP,			/**< HipHop */
-	AUDIO_EFFECT_PRESET_RNB,			/**< R&B */
-	AUDIO_EFFECT_PRESET_FLAT,			/**< Flat */
-} audio_effect_preset_e DEPRECATED; // will be deprecated
-
-/**
- * @brief	Called once for each supported audio effect.
- * @param[in] effect  The audio effect
- * @param[in] user_data The user data passed from the foreach function
- * @return	@c true to continue with the next iteration of the loop, \n @c false to break outsp of the loop.
- * @pre	player_audio_effect_foreach_supported_effect() will invoke this callback.
- * @see	player_audio_effect_foreach_supported_effect()
- */
-typedef bool (*player_audio_effect_supported_effect_cb)(audio_effect_e effect, void *user_data) DEPRECATED;
-
-/**
- * @brief	Called once for each supported preset audio effect.
- * @param[in] preset  The preset audio effect
- * @param[in] user_data The user data passed from the foreach function
- * @return	@c true to continue with the next iteration of the loop, \n @c false to break outsp of the loop.
- * @pre	player_audio_effect_foreach_supported_preset() will invoke this callback.
- * @see	player_audio_effect_foreach_supported_preset()
- */
-typedef bool (*player_audio_effect_supported_preset_cb)(audio_effect_preset_e preset, void *user_data) DEPRECATED;
-
-/**
- * @}
- */
-
-/**
- * @addtogroup CAPI_MEDIA_PLAYER_X11_DISPLAY_MODULE
- * @{
- */
-
-/**
- * @internal
- * @brief  Called when the media player needs updated xid.
- * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
- * @param[in]   user_data  The user data passed from the callback registration function
- * @pre It will be invoked when player needs updated xid if you register this callback using player_set_x11_display_pixmap()
- * @return	The updated xid
- * @see player_set_x11_display_pixmap()
- */
-typedef unsigned int (*player_x11_pixmap_updated_cb)(void *user_data) DEPRECATED;
-
-/**
- * @internal
- * @brief  Called when the media player needs to inform rendering error.
- * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
- * @param[in]   pixmap_id  The pixmap_id where the rendering error is occurred
- * @param[in]   user_data  The user data passed from the callback registration function
- * @see player_set_x11_display_pixmap_error_cb()
- */
-typedef void (*player_x11_pixmap_error_cb)(unsigned int *pixmap_id, void *user_data) DEPRECATED;
-
-/**
- * @}
- */
 
 /**
  * @addtogroup CAPI_MEDIA_PLAYER_SUBTITLE_MODULE
@@ -449,30 +335,7 @@ typedef void (*player_video_captured_cb)(unsigned char *data, int width, int hei
  * @param[in] pkt Reference pointer to the media packet
  * @param[in] user_data The user data passed from the callback registration function
  */
-//typedef void (*player_media_packet_video_decoded_cb)(media_packet_h pkt, void *user_data);
-
-/**
- * @brief  Called when the video frame is decoded.
- * @remarks The color space format of the captured image is #IMAGE_UTIL_COLORSPACE_RGB888.
- * @param[in]   data	The decoded video frame data
- * @param[in]   width	The width of video frame
- * @param[in]   height The height of video frame
- * @param[in]   size	The size of video frame
- * @param[in]   user_data	The user data passed from the callback registration function
- * @see player_set_video_frame_decoded_cb()
- * @see player_unset_video_frame_decoded_cb()
- */
-typedef void (*player_video_frame_decoded_cb)(unsigned char *data, int width, int height, unsigned int size, void *user_data) DEPRECATED;
-
-/**
- * @brief  Called when the audio frame is decoded.
- * @param[in]   data	The decoded audio frame data
- * @param[in]   size	The size of audio frame
- * @param[in]   user_data	The user data passed from the callback registration function
- * @see player_set_audio_frame_decoded_cb()
- * @see player_unset_audio_frame_decoded_cb()
- */
-typedef void (*player_audio_frame_decoded_cb)(unsigned char *data, unsigned int size, void *user_data) DEPRECATED;
+typedef void (*player_media_packet_video_decoded_cb)(media_packet_h pkt, void *user_data);
 
 /**
  * @brief Creates a player handle for playing multimedia content.
@@ -800,46 +663,6 @@ int player_pause(player_h player);
 
 /**
  * @brief Sets the seek position for playback, asynchronously.
- * @param[in] player The handle to media player
- * @param[in] millisecond The position in milliseconds from the start to seek to
- * @param[in] callback	The callback function to register
- * @param[in] user_data	The user data to be passed to the callback function
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_SEEK_FAILED Seek operation failure
- * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @post It invokes player_seek_completed_cb() when seek operation completes, if you set a callback.
- * @see player_get_position()
- * @see player_get_position_ratio()
- * @see player_set_position_ratio()
- */
-int player_set_position(player_h player, int millisecond, player_seek_completed_cb callback, void *user_data) DEPRECATED;
-
-/**
- * @brief Sets the seek position for playback, asynchronously.
- * @param[in] player The handle to media player
- * @param[in] millisecond The position in milliseconds from the start to seek to
- * @param[in] accurate if true, the position selected will be returned but, this might be considerably slow.
- * @param[in] callback	The callback function to register
- * @param[in] user_data	The user data to be passed to the callback function
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_SEEK_FAILED Seek operation failure
- * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @post It invokes player_seek_completed_cb() when seek operation completes, if you set a callback.
- * @see player_get_position()
- * @see player_get_position_ratio()
- * @see player_set_position_ratio()
- */
-int player_seek(player_h player, int millisecond, bool accurate, player_seek_completed_cb callback, void *user_data) DEPRECATED;
-
-
-/**
- * @brief Sets the seek position for playback, asynchronously.
  * @since_tizen 2.3
  * @param[in] player The handle to the media player
  * @param[in] millisecond The position in milliseconds from the start to the seek point
@@ -857,42 +680,7 @@ int player_seek(player_h player, int millisecond, bool accurate, player_seek_com
  * @post It invokes player_seek_completed_cb() when seek operation completes, if you set a callback.
  * @see player_get_play_position()
  */
-//int player_set_play_position(player_h player, int millisecond, bool accurate, player_seek_completed_cb callback, void *user_data);
-
-/**
- * @brief Sets the playback position specified by percent of media content played, asynchronously.
- * @param[in] player The handle to media player
- * @param[in] percent The position in percentage from the start to seek to. \n The position is relative to content. (length, 0 = beginning, 100 = end)
- * @param[in] callback	The callback function to register
- * @param[in] user_data	The user data to be passed to the callback function
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_SEEK_FAILED Seek operation failure
- * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @post It invokes player_seek_completed_cb() when seek operation completes, if you set a callback.
- * @see player_get_position()
- * @see player_get_position_ratio()
- * @see player_set_position()
- */
-int player_set_position_ratio(player_h player, int percent, player_seek_completed_cb callback, void *user_data) DEPRECATED;
-
-/**
- * @brief Gets current position in milliseconds.
- * @param[in]   player The handle to media player
- * @param[out]  millisecond The current position in milliseconds
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_SEEK_FAILED Seek operation failure
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @see player_get_position_ratio()
- * @see player_set_position()
- * @see player_set_position_ratio()
- */
-int player_get_position(player_h player, int *millisecond) DEPRECATED;
+int player_set_play_position(player_h player, int millisecond, bool accurate, player_seek_completed_cb callback, void *user_data);
 
 /**
  * @brief Gets the current position in milliseconds.
@@ -908,23 +696,7 @@ int player_get_position(player_h player, int *millisecond) DEPRECATED;
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  * @see player_set_play_position()
  */
-//int player_get_play_position(player_h player, int *millisecond);
-
-/**DEPRECATED
- * @brief Gets the playback position specified by percent of media content played.
- * @param[in]   player The handle to media player
- * @param[out]  percent The current position in percentage [0, 100]
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_SEEK_FAILED Seek operation failure
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @see player_get_position()
- * @see player_set_position()
- * @see player_set_position_ratio()
- */
-int player_get_position_ratio(player_h player, int *percent) DEPRECATED;
+int player_get_play_position(player_h player, int *millisecond);
 
 /**
  * @brief Sets the player's mute status.
@@ -1021,18 +793,6 @@ int player_is_looping(player_h player, bool *looping);
 int player_set_display(player_h player, player_display_type_e type, player_display_h display);
 
 /**
- * @brief Gets the availability of display mode change
- * @remark The result can be changed by display setting.
- * @param[in] player The handle to media player
- * @param[out] changeable The cuurent availability of display mode change (@c true = changeable, @c false = non-changeable )
- * @return 0 on success, otherwise a negative error value.
- * @retval  #PLAYER_ERROR_NONE Successful
- * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @see	player_set_display_mode()
- */
-int player_is_display_mode_changeable(player_h player, bool* changeable) DEPRECATED;
-
-/**
  * @}
  */
 
@@ -1073,19 +833,6 @@ int player_get_display_mode(player_h player, player_display_mode_e *mode);
 
 /**
  * @brief Sets the visibility of the x surface video display
- * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
- * @param[in] player   The handle to media player
- * @param[in] rotation The visibility of display (@c true = visible, @c false = non-visible )
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
- * @see	player_is_x11_display_visible()
- */
-int player_set_x11_display_visible(player_h player, bool visible) DEPRECATED;
-
-/**
- * @brief Sets the visibility of the x surface video display
  * @since_tizen 2.3
  * @param[in] player   The handle to the media player
  * @param[in] visible The visibility of the display (@c true = visible, @c false = non-visible )
@@ -1096,19 +843,7 @@ int player_set_x11_display_visible(player_h player, bool visible) DEPRECATED;
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
  * @see	player_is_display_visible()
  */
-//int player_set_display_visible(player_h player, bool visible);
-
-/**
- * @brief Gets a visibility of the x surface video display
- * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
- * @param[in] player The handle to media player
- * @param[out] visible The current visibility of display (@c true = visible, @c false = non-visible )
- * @return 0 on success, otherwise a negative error value.
- * @retval  #PLAYER_ERROR_NONE Successful
- * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @see	player_set_x11_display_visible()
- */
-int player_is_x11_display_visible(player_h player, bool* visible) DEPRECATED;
+int player_set_display_visible(player_h player, bool visible);
 
 /**
  * @brief Gets the visibility of the x surface video display.
@@ -1121,21 +856,7 @@ int player_is_x11_display_visible(player_h player, bool* visible) DEPRECATED;
  * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @see	player_set_display_visible()
  */
-//int player_is_display_visible(player_h player, bool* visible);
-
-/**
- * @brief Sets the rotation settings of the x surface video display
- * @details Use this function to change the video orientation to portrait mode.
- * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
- * @param[in] player   The handle to media player
- * @param[in] rotation The rotation of display
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
- * @see  player_get_x11_display_rotation()
- */
-int player_set_x11_display_rotation(player_h player, player_display_rotation_e rotation) DEPRECATED;
+int player_is_display_visible(player_h player, bool* visible);
 
 /**
  * @brief Sets the rotation settings of the video surface display.
@@ -1153,19 +874,7 @@ int player_set_x11_display_rotation(player_h player, player_display_rotation_e r
  * @see  player_set_display
  * @see  player_get_display_rotation()
  */
-//int player_set_display_rotation(player_h player, player_display_rotation_e rotation);
-
-/**
- * @brief Gets a rotation of the x surface video display
- * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
- * @param[in] player The handle to media player
- * @param[out] rotation The current rotation of display
- * @return 0 on success, otherwise a negative error value.
- * @retval  #PLAYER_ERROR_NONE Successful
- * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @see	player_set_x11_display_rotation()
- */
-int player_get_x11_display_rotation( player_h player, player_display_rotation_e *rotation) DEPRECATED;
+int player_set_display_rotation(player_h player, player_display_rotation_e rotation);
 
 /**
  * @brief Gets the rotation of the video surface display.
@@ -1178,125 +887,12 @@ int player_get_x11_display_rotation( player_h player, player_display_rotation_e 
  * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @see     player_set_display_rotation()
  */
-//int player_get_display_rotation( player_h player, player_display_rotation_e *rotation);
-
-/**
- * @brief Sets the zoom level of the x surface video display
- * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
- * @param[in] player   The handle to media player
- * @param[in] level The level of zoom [1~9]
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
- * @see  player_get_x11_display_zoom()
- */
-int player_set_x11_display_zoom(player_h player, int level) DEPRECATED;
-
-/**
- * @brief Gets a zoom level of the x surface video display
- * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_X11, no operation is performed.
- * @param[in] player The handle to media player
- * @param[out] level The level of zoom [1~9]
- * @return 0 on success, otherwise a negative error value.
- * @retval  #PLAYER_ERROR_NONE Successful
- * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @see	player_set_x11_display_zoom()
- */
-int player_get_x11_display_zoom( player_h player, int *level) DEPRECATED;
-
-/**
- * @internal
- * @brief Registers a callback function to be invoked when player need updated xid.
- * @param[in] player	The handle to media player
- * @param[in] callback	The callback function to register
- * @param[in] user_data	The user data to be passed to the callback function
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @pre The player state must be either #PLAYER_STATE_IDLE by player_create() or #PLAYER_STATE_READY by player_prepare().
- * @post  player_set_x11_display_pixmap() will be invoked
- * @see player_set_x11_display_pixmap()
- */
-int player_set_x11_display_pixmap (player_h player, player_x11_pixmap_updated_cb callback, void *user_data) DEPRECATED;
-
-/**
- * @internal
- * @brief Registers a callback function to be invoked when failure of rendering video frame happen.
- * @param[in] player	The handle to media player
- * @param[in] callback	The callback function to register
- * @param[in] user_data	The user data to be passed to the callback function
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
- * @pre The player state must be either #PLAYER_STATE_IDLE by player_create() or #PLAYER_STATE_READY by player_prepare().
- * @post  player_set_x11_display_pixmap_error_cb() will be invoked
- * @see player_set_x11_display_pixmap_error_cb()
- */
-int player_set_x11_display_pixmap_error_cb (player_h player, player_x11_pixmap_error_cb callback, void *user_data) DEPRECATED;
-
-/**
- * @brief Sets information of ROI
- * @remarks If current display mode is not #PLAYER_DISPLAY_MODE_ROI, #PLAYER_ERROR_INVALID_OPERATION will be returned.
- * @param[in] player   The handle to media player
- * @param[in] x The x coordinate of ROI
- * @param[in] y The y coordinate of ROI
- * @param[in] w The width of ROI
- * @param[in] h The height of ROI
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @see  player_get_x11_display_roi()
- */
-int player_set_x11_display_roi (player_h player, int x, int y, int w, int h) DEPRECATED;
-
-/**
- * @brief Gets information of ROI
- * @remarks If current display mode is not #PLAYER_DISPLAY_MODE_ROI, #PLAYER_ERROR_INVALID_OPERATION will be returned.
- * @param[in] player   The handle to media player
- * @param[out] x The x coordinate of ROI
- * @param[out] y The y coordinate of ROI
- * @param[out] w The width of ROI
- * @param[out] h The height of ROI
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @see  player_set_x11_display_roi()
- */
-int player_get_x11_display_roi (player_h player, int *x, int *y, int *w, int *h) DEPRECATED;
+int player_get_display_rotation( player_h player, player_display_rotation_e *rotation);
 
 /**
  * @}
  */
 
-
-/**
- * @addtogroup CAPI_MEDIA_PLAYER_EVAS_DISPLAY_MODULE
- * @{
- */
-
-/**
- * @brief Sets the evas surface video display scaling status.
- * @remarks If current display type is not #PLAYER_DISPLAY_TYPE_EVAS, no operation is performed.
- * @remarks If the scaling status is @c false, player_is_display_mode_changeable() always return @a false.
- * @param[in]   player The handle to media player
- * @param[in]   enable New evas surface video display scaling status: (@c true = scaling, @c false = not scaled)
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- */
-int player_enable_evas_display_scaling(player_h player, bool enable) DEPRECATED;
-
-/**
- * @}
- */
 
 /**
  * @addtogroup CAPI_MEDIA_PLAYER_STREAM_INFO_MODULE
@@ -1438,21 +1034,6 @@ int player_get_album_art(player_h player, void **album_art, int *size);
  */
 int player_get_duration(player_h player, int *duration);
 
-
-/**
- * @brief Gets the track count
- * @param[in] player The handle to media player
- * @param [in] type The track type
- * @param [out] count The count of track
- * @return 0 on success, otherwise a negative error value
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- */
-int player_get_track_count(player_h player, player_track_type_e type, int *count) DEPRECATED;
-
 /**
  * @}
  */
@@ -1463,136 +1044,6 @@ int player_get_track_count(player_h player, player_track_type_e type, int *count
  * @{
  */
 
-/**
- * @brief Sets an audio effect value.
- * @param[in] player The handle to media player
- * @param[in] effect The audio effect type
- * @param[in] value The value of given effect type
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @see player_audio_effect_get_value()
- * @see player_audio_effect_clear()
- * @see player_audio_effect_get_value_range()
- */
-int player_audio_effect_set_value(player_h player, audio_effect_e effect, int value) DEPRECATED;
-
-/**
- * @brief Gets an audio effect value.
- * @param[in] player The handle to media player
- * @param[in] effect The audio effect type
- * @param[out] value The value of given effect type
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @see player_audio_effect_set_value()
- */
-int player_audio_effect_get_value(player_h player, audio_effect_e effect, int *value) DEPRECATED;
-
-/**
- * @brief Clears audio effect.
- * @param[in] player The handle to media player
- * @param[in] effect The audio effect type
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @see player_audio_effect_set_value()
- */
-int player_audio_effect_clear(player_h player, audio_effect_e effect) DEPRECATED;
-
-/**
- * @brief Gets the range of audio effect value.
- * @param[in] player The handle to media player
- * @param[in] effect The audio effect type
- * @param[out] min The minumum value to be set
- * @param[out] max The maximum value to be set
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @see player_audio_effect_set_value()
- */
-int player_audio_effect_get_value_range(player_h player, audio_effect_e effect, int* min, int* max) DEPRECATED;
-
-/**
- * @brief Checks whether the given effect is avaliable or not.
- * @param[in] player The handle to media player
- * @param[in] effect The audio effect to be checked
- * @param[out] available @c true if the specified audio effect is available, else @c false
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- */
-int player_audio_effect_is_available(player_h player, audio_effect_e effect, bool *available) DEPRECATED;
-
-/**
- * @brief Retrieves all supported audio effects by invoking callback function once for each supported audio effect.
- * @param[in] player The handle to media player
- * @param[in] callback    The callback function to invoke
- * @param[in] user_data	The user data to be passed to the callback function
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @post	This function invokes player_audio_effect_supported_effect_cb() repeatly to retrieve each supported audio effect.
- * @see	player_audio_effect_set_value()
- * @see	player_audio_effect_get_value()
- * @see	player_audio_effect_foreach_supported_effect()
- */
-int player_audio_effect_foreach_supported_effect(player_h player, player_audio_effect_supported_effect_cb callback, void *user_data) DEPRECATED;
-
-/**
- * @brief Sets an preset audio effect.
- * @remarks Audio effects or equalizer which is set be ignored.
- * @param[in] player The handle to media player
- * @param[in] preset The preset audio effect
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @see player_audio_effect_preset_is_available()
- * @see player_audio_effect_foreach_supported_preset()
- */
-int player_audio_effect_set_preset(player_h player, audio_effect_preset_e preset) DEPRECATED;
-
-/**
- * @brief Checks whether the given preset is avaliable or not.
- * @param[in] player The handle to media player
- * @param[in] preset The preset to be checked
- * @param[out] available @c true if the specified preset is available, else @c false
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- */
-int player_audio_effect_preset_is_available(player_h player, audio_effect_preset_e preset, bool *available) DEPRECATED;
-
-/**
- * @brief Retrieves all supported presets by invoking callback function once for each supported preset audio effect.
- * @param[in] player The handle to media player
- * @param[in] callback    The callback function to invoke
- * @param[in] user_data	The user data to be passed to the callback function
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @post	This function invokes player_audio_effect_supported_preset_cb() repeatly to retrieve each supported preset audio effect.
- * @see	player_audio_effect_set_preset()
- * @see	player_audio_effect_supported_preset_cb()
- */
-int player_audio_effect_foreach_supported_preset(player_h player, player_audio_effect_supported_preset_cb callback, void *user_data) DEPRECATED;
 /**
  * @brief Gets the number of equalizer bands.
  * @since_tizen 2.3
@@ -2084,21 +1535,6 @@ int player_set_subtitle_updated_cb(player_h player, player_subtitle_updated_cb c
 int player_unset_subtitle_updated_cb(player_h player);
 
 /**
- * @brief Sets the seek position for subtitle.
- * @remarks Only MicroDVD/SubViewer(*.sub), SAMI(*.smi), and SubRip(*.srt) subtitle formats are supported.
- * @param[in]  player The handle to media player
- * @param[in]  millisecond The position in milliseconds from the start to seek to
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The subtitle must be set by player_set_subtitle_path().
- * @pre The player state must be one of: #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- */
-int player_set_subtitle_position(player_h player, int millisecond) DEPRECATED;
-
-/**
  * @internal
  * @brief Sets the seek position for the subtitle.
  * @since_tizen 2.3
@@ -2114,7 +1550,7 @@ int player_set_subtitle_position(player_h player, int millisecond) DEPRECATED;
  * @pre The subtitle must be set by calling player_set_subtitle_path().
  * @pre The player state must be one of these: #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
  */
-//int player_set_subtitle_position_offset(player_h player, int millisecond);
+int player_set_subtitle_position_offset(player_h player, int millisecond);
 
 /**
  * @brief Registers a media packet video callback function to be called once per frame.
@@ -2136,7 +1572,7 @@ int player_set_subtitle_position(player_h player, int millisecond) DEPRECATED;
  * @pre	The player's state should be #PLAYER_STATE_IDLE. And, #PLAYER_DISPLAY_TYPE_NONE should be set by calling player_set_display.
  * @see player_unset_media_packet_video_frame_decoded_cb
  */
-//int player_set_media_packet_video_frame_decoded_cb(player_h player, player_media_packet_video_decoded_cb callback, void *user_data);
+int player_set_media_packet_video_frame_decoded_cb(player_h player, player_media_packet_video_decoded_cb callback, void *user_data);
 
 /**
  * @brief Unregisters the callback function.
@@ -2148,64 +1584,7 @@ int player_set_subtitle_position(player_h player, int millisecond) DEPRECATED;
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @see player_set_media_packet_video_frame_decoded_cb()
  */
-//int player_unset_media_packet_video_frame_decoded_cb(player_h player);
-
-
-/**
- * @brief Registers a callback function to be invoked when video frame is decoded.
- * @param[in] player	The handle to media player
- * @param[in] callback	The callback function to register
- * @param[in] user_data	The user data to be passed to the callback function
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @pre The player state must be #PLAYER_STATE_IDLE by player_create() or player_unprepare().
- * @post  player_video_frame_decoded_cb() will be invoked
- * @see player_unset_video_frame_decoded_cb()
- * @see player_video_frame_decoded_cb()
- */
-int player_set_video_frame_decoded_cb(player_h player, player_video_frame_decoded_cb callback, void *user_data) DEPRECATED;
-
-/**
- * @brief Unregisters the callback function.
- * @param[in] player The handle to media player
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @see player_set_video_frame_decoded_cb()
- */
-int player_unset_video_frame_decoded_cb(player_h player) DEPRECATED;
-
-/**
- * @brief Registers a callback function to be invoked when audio frame is decoded.
- * @param[in] player	The handle to media player
- * @param[in] start The start position to decode.
- * @param[in] end	The end position to decode.
- * @param[in] callback	The callback function to register
- * @param[in] user_data	The user data to be passed to the callback function
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @pre The player state must be #PLAYER_STATE_IDLE by player_create() or player_unprepare().
- * @post  player_audio_frame_decoded_cb() will be invoked
- * @see player_unset_audio_frame_decoded_cb()
- * @see player_audio_frame_decoded_cb()
- */
-int player_set_audio_frame_decoded_cb(player_h player, int start, int end, player_audio_frame_decoded_cb callback, void *user_data) DEPRECATED;
-
-/**
- * @brief Unregisters the callback function.
- * @param[in] player The handle to media player
- * @return 0 on success, otherwise a negative error value.
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @see player_set_audio_frame_decoded_cb()
- */
-int player_unset_audio_frame_decoded_cb(player_h player) DEPRECATED;
+int player_unset_media_packet_video_frame_decoded_cb(player_h player);
 
 /**
  * @}
