@@ -77,7 +77,7 @@ mkdir -p %{buildroot}/usr/share/license
 mkdir -p %{buildroot}/usr/bin
 cp LICENSE.APLv2 %{buildroot}/usr/share/license/%{name}
 cp test/player_test %{buildroot}/usr/bin
-#cp test/player_media_packet_test %{buildroot}/usr/bin
+cp test/player_media_packet_test %{buildroot}/usr/bin
 
 %make_install
 
