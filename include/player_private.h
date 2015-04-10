@@ -68,6 +68,9 @@ typedef struct _player_s{
 	MMHandleType mm_handle;
 	const void* user_cb[_PLAYER_EVENT_TYPE_NUM];
 	void* user_data[_PLAYER_EVENT_TYPE_NUM];
+#ifdef HAVE_WAYLAND
+	void* wl_display;
+#endif
 	void* display_handle;
 	player_display_type_e display_type;
 	int state;

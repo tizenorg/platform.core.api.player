@@ -111,6 +111,8 @@ static void win_del(void *data, Evas_Object *obj, void *event)
 static Evas_Object* create_win(const char *name)
 {
 	Evas_Object *eo = NULL;
+	int w = 0;
+	int h = 0;
 
 		printf ("[%s][%d] name=%s\n", __func__, __LINE__, name);
 
@@ -119,6 +121,9 @@ static Evas_Object* create_win(const char *name)
 				elm_win_title_set(eo, name);
 				elm_win_borderless_set(eo, EINA_TRUE);
 				evas_object_smart_callback_add(eo, "delete,request",win_del, NULL);
+				elm_win_screen_size_get(eo, NULL, NULL, &w, &h);
+				printf ("window size :%d,%d", w, h);
+				evas_object_resize(eo, w, h);
 				elm_win_autodel_set(eo, EINA_TRUE);
 		}
 		return eo;
