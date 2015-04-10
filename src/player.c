@@ -1655,7 +1655,14 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	Evas_Object *obj = NULL;
 	const char *object_type = NULL;
 	void *set_handle = NULL;
-
+#ifdef HAVE_WAYLAND
+	void *set_wl_display = NULL;
+	Ecore_Wl_Window * wl_window = NULL;
+	int wl_window_x = 0;
+	int wl_window_y = 0;
+	int wl_window_width = 0;
+	int wl_window_height = 0;
+#endif
 	int ret;
 	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
 	{
@@ -1702,10 +1709,30 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 			temp = handle->display_handle;
 			if (type == PLAYER_DISPLAY_TYPE_OVERLAY && !strcmp(object_type, "elm_win"))
 			{
-				/* x window overlay surface */
-				LOGI("overlay surface type");
-				handle->display_handle = (void *)elm_win_xwindow_get(obj);
-				set_handle = &(handle->display_handle);
+#ifdef HAVE_WAYLAND
+				/* wayland overlay surface*/
+				LOGI("Wayland overlay surface type");
+
+				evas_object_geometry_get(obj, &wl_window_x, &wl_window_y,
+				                         &wl_window_width, &wl_window_height);
+				LOGI("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
+					  wl_window_x, wl_window_y, wl_window_width, wl_window_height);
+
+				wl_window = elm_win_wl_window_get(obj);
+
+				/* get wl_surface */
+				handle->display_handle = (void *)ecore_wl_window_surface_get(wl_window);
+				set_handle = handle->display_handle;
+
+				/* get wl_display */
+				handle->wl_display = (void *)ecore_wl_display_get();
+				set_wl_display = handle->wl_display;
+#else // HAVE_X11
+							/* x window overlay surface */
+							LOGI("X overlay surface type");
+							handle->display_handle = (void *)elm_win_xwindow_get(obj);
+							set_handle = &(handle->display_handle);
+#endif
 			}
 			else if (type == PLAYER_DISPLAY_TYPE_EVAS && !strcmp(object_type, "image"))
 			{
@@ -1732,6 +1759,10 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	{
 		ret = mm_player_set_attribute(handle->mm_handle, NULL,
 			"display_surface_type", type,
+#ifdef HAVE_WAYLAND
+			"wl_display", set_wl_display,
+			sizeof(void*),
+#endif
 			"display_overlay", set_handle,
 			sizeof(display), (char*)NULL);
 
@@ -1751,6 +1782,20 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 			else
 				LOGI("NULL surface");
 		}
+#ifdef HAVE_WAYLAND
+		ret = mm_player_set_attribute(handle->mm_handle, NULL,
+			"wl_window_render_x", wl_window_x,
+			"wl_window_render_y", wl_window_y,
+			"wl_window_render_width", wl_window_width,
+			"wl_window_render_height", wl_window_height,
+			(char*)NULL);
+
+		if (ret != MM_ERROR_NONE)
+		{
+			handle->display_handle = temp;
+			LOGE("[%s] Failed to set wl_window render rectangle :%d",__FUNCTION__,ret);
+		}
+#endif
 	}
 	else //changing surface case
 	{
