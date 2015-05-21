@@ -125,6 +125,9 @@ static Evas_Object* create_win(const char *name)
 				printf ("window size :%d,%d", w, h);
 				evas_object_resize(eo, w, h);
 				elm_win_autodel_set(eo, EINA_TRUE);
+#ifdef HAVE_WAYLAND
+				elm_win_alpha_set(eo, EINA_TRUE);
+#endif
 		}
 		return eo;
 }
