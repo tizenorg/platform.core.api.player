@@ -3,8 +3,8 @@
 
 Name:       capi-media-player
 Summary:    A Media Player library in Tizen Native API
-Version:    0.1.3
-Release:    2
+Version:    0.2.3
+Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
@@ -28,6 +28,8 @@ BuildRequires:  pkgconfig(ecore-wayland)
 %endif
 BuildRequires:  pkgconfig(capi-media-tool)
 BuildRequires:  pkgconfig(libtbm)
+#BuildRequires:  pkgconfig(ttrace)
+BuildRequires:  pkgconfig(capi-system-info)
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
@@ -58,16 +60,23 @@ export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
 %endif
 MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
 %cmake . -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
+%if "%{?profile}" == "wearable"
+	-DTIZEN_WEARABLE=YES \
+    %else
+    -DTIZEN_MOBILE=YES \
+    %endif
 %if %{with wayland}
-         -DWAYLAND_SUPPORT=On \
+    -DWAYLAND_SUPPORT=On \
 %else
-         -DWAYLAND_SUPPORT=Off \
+    -DWAYLAND_SUPPORT=Off \
 %endif
 %if %{with x}
-         -DX11_SUPPORT=On
+    -DX11_SUPPORT=On \
 %else
-         -DX11_SUPPORT=Off
+    -DX11_SUPPORT=Off \
 %endif
+    -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
+    -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=%{version} -DMAJORVER=${MAJORVER}
 
 make %{?jobs:-j%jobs}
 
@@ -78,6 +87,7 @@ mkdir -p %{buildroot}/usr/bin
 cp LICENSE.APLv2 %{buildroot}/usr/share/license/%{name}
 cp test/player_test %{buildroot}/usr/bin
 cp test/player_media_packet_test %{buildroot}/usr/bin
+cp test/player_es_push_test %{buildroot}/usr/bin
 
 %make_install
 
