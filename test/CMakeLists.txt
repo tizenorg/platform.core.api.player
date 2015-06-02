@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 SET(fw_test "${fw_name}-test")
 
-INCLUDE_DIRECTORIES(../include)
+INCLUDE_DIRECTORIES(../include/mobile)
 link_directories(${CMAKE_SOURCE_DIR}/../)
 
 IF(X11_SUPPORT)
@@ -19,7 +19,7 @@ FOREACH(flag ${${fw_test}_CFLAGS})
 ENDFOREACH(flag)
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_CFLAGS}")
-SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--rpath=/usr/lib/gstreamer-0.10")
+SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--rpath=/usr/lib/gstreamer-1.0")
 
 IF(WAYLAND_SUPPORT)
     ADD_DEFINITIONS("-DHAVE_WAYLAND")
@@ -35,5 +35,6 @@ FOREACH(src ${sources})
     MESSAGE("${src_name}")
     ADD_EXECUTABLE(${src_name} ${src})
     TARGET_LINK_LIBRARIES(${src_name} capi-media-player ${${fw_test}_LDFLAGS})
+    INSTALL(TARGETS ${src_name} DESTINATION bin)
 ENDFOREACH()
 

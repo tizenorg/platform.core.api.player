@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 #include <player.h>
+#include <player_internal.h>
+#include <sound_manager.h>
 #include <pthread.h>
 #include <glib.h>
 #include <dlfcn.h>
 #include <appcore-efl.h>
 #include <Elementary.h>
-
 #ifdef HAVE_X11
 #include <Ecore_X.h>
 #endif
@@ -27,7 +28,6 @@
 #include <Ecore.h>
 #include <Ecore_Wayland.h>
 #endif
-
 //#define _USE_X_DIRECT_
 #ifdef _USE_X_DIRECT_
 #include <X11/Xlib.h>
@@ -39,10 +39,27 @@
 #define INI_SAMPLE_LIST_MAX 9
 #define DEFAULT_HTTP_TIMEOUT -1
 
-gboolean g_memory_playback = FALSE;
-char g_uri[MAX_STRING_LEN];
-char g_subtitle_uri[MAX_STRING_LEN];
-FILE *g_pcm_fd;
+static gboolean g_memory_playback = FALSE;
+static char g_uri[MAX_STRING_LEN];
+static char g_subtitle_uri[MAX_STRING_LEN];
+static FILE *g_pcm_fd;
+
+static gboolean is_es_push_mode = FALSE;
+static pthread_t g_feed_video_thread_id = 0;
+static bool g_thread_end = FALSE;
+static media_packet_h g_audio_pkt = NULL;
+static media_format_h g_audio_fmt = NULL;
+
+static media_packet_h g_video_pkt = NULL;
+static media_format_h g_video_fmt = NULL;
+
+
+//#define DUMP_OUTBUF         1
+#if DUMP_OUTBUF
+FILE *fp_out1 = NULL;
+FILE *fp_out2 = NULL;
+#endif
+
 enum
 {
 	CURRENT_STATUS_MAINMENU,
@@ -62,6 +79,8 @@ enum
 	CURRENT_STATUS_DISPLAY_SRC_CROP,
 	CURRENT_STATUS_SUBTITLE_FILENAME,
 	CURRENT_STATUS_AUDIO_EQUALIZER,
+	CURRENT_STATUS_PLAYBACK_RATE,
+	CURRENT_STATUS_SWITCH_SUBTITLE,
 };
 
 #define MAX_HANDLE 20
@@ -233,6 +252,26 @@ static void prepared_cb(void *user_data)
 	g_print("[Player_Test] prepared_cb!!!!\n");
 }
 
+static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s *audio_raw_frame, void *user_data)
+{
+	player_audio_raw_data_s* audio_raw = (player_audio_raw_data_s*) audio_raw_frame;
+
+	g_print("[Player_Test] decoded_cb_ex! channel: %d channel_mask: %lld\n", audio_raw->channel, audio_raw->channel_mask);
+
+#ifdef DUMP_OUTBUF
+	if (audio_raw_frame != NULL)
+	{
+		if(audio_raw->channel_mask == 1)
+			fwrite(audio_raw_frame->data, 1, audio_raw_frame->size, fp_out1);
+
+		else if(audio_raw->channel_mask == 2)
+			fwrite(audio_raw_frame->data, 1, audio_raw_frame->size, fp_out2);
+	}
+
+#endif
+
+}
+
 static void progress_down_cb(player_pd_message_type_e type, void *user_data)
 {
 	g_print("[Player_Test] progress_down_cb!!!! type : %d\n", type);
@@ -305,7 +344,7 @@ int	_save(unsigned char * src, int length)
 	else
 	{
 		g_print("open success\n");
-		if(fwrite(src, 1, length, fp )!=1)
+		if(fwrite(src, 1, length, fp ) < 1)
 		{
 			g_print("file write error!!\n");
 			fclose(fp);
@@ -410,6 +449,227 @@ static void player_set_memory_buffer_test()
     g_print("player_set_memory_buffer ret : %d\n", ret);
 }
 
+#ifdef TEST_ES
+int video_packet_count = 0;
+
+static void buffer_need_video_data_cb(unsigned int size, void *user_data)
+{
+	int real_read_len = 0;
+	char fname[128];
+	char fptsname[128];
+	static guint64 pts = 0L;
+
+	FILE *fp = NULL;
+	guint8 *buff_ptr = NULL;
+	void *src = NULL;
+
+	memset(fname, 0, 128);
+	memset(fptsname, 0, 128);
+
+	video_packet_count++;
+
+	if (video_packet_count > 1000)
+	{
+		g_print("EOS.\n");
+//		player_submit_packet(g_player[0], NULL, 0, 0, 1);
+		player_push_media_stream(g_player[0], NULL);
+		g_thread_end = TRUE;
+	}
+//	snprintf(fname, 128, "/opt/storage/usb/test/packet/packet_%d.dat", video_packet_count);
+//	snprintf(fptsname, 128, "/opt/storage/usb/test/packet/gstpts_%d.dat", video_packet_count);
+	snprintf(fname, 128, "/home/developer/test/packet/packet_%d.dat", video_packet_count);
+	snprintf(fptsname, 128, "/home/developer/test/packet/gstpts_%d.dat", video_packet_count);
+
+	fp = fopen(fptsname, "rb");
+	if (fp)
+	{
+		int pts_len = 0;
+		pts_len = fread(&pts, 1, sizeof(guint64), fp);
+		if (pts_len != sizeof(guint64))
+		{
+			g_print("Warning, pts value can be wrong.\n");
+		}
+		fclose(fp);
+		fp = NULL;
+	}
+
+	fp = fopen(fname, "rb");
+	if (fp)
+	{
+		buff_ptr = (guint8 *)g_malloc0(1048576);
+		real_read_len = fread(buff_ptr, 1, size, fp);
+		fclose(fp);
+		fp = NULL;
+	}
+	g_print("video need data - data size : %d, pts : %lld\n", real_read_len, pts);
+#if 0
+	player_submit_packet(g_player[0], buff_ptr, real_read_len, (pts/1000000), 1);
+#else
+	/* create media packet */
+	if (g_video_pkt) {
+		media_packet_destroy(g_video_pkt);
+		g_video_pkt = NULL;
+	}
+
+	media_packet_create_alloc(g_video_fmt, NULL, NULL, &g_video_pkt);
+
+	g_print("packet = %p, src = %p\n", g_video_pkt, src);
+
+
+	if (media_packet_get_buffer_data_ptr(g_video_pkt, &src) != MEDIA_PACKET_ERROR_NONE)
+		return;
+
+	if (media_packet_set_pts(g_video_pkt, (uint64_t)(pts/1000000)) != MEDIA_PACKET_ERROR_NONE)
+		return;
+
+	if (media_packet_set_buffer_size(g_video_pkt, (uint64_t)real_read_len) != MEDIA_PACKET_ERROR_NONE)
+		return;
+
+	memcpy(src, buff_ptr, real_read_len);
+
+	/* then, push it  */
+	player_push_media_stream(g_player[0], g_video_pkt);
+#endif
+
+	if (buff_ptr)
+	{
+		g_free(buff_ptr);
+		buff_ptr = NULL;
+	}
+}
+
+int audio_packet_count = 0;
+static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
+{
+	int real_read_len = 0;
+	char fname[128];
+	FILE *fp = NULL;
+	guint8 *buff_ptr = NULL;
+	void *src = NULL;
+
+	memset(fname, 0, 128);
+	audio_packet_count++;
+
+	if (audio_packet_count > 1000)
+	{
+		g_print("EOS.\n");
+//		player_submit_packet(g_player[0], NULL, 0, 0, 0);
+		player_push_media_stream(g_player[0], NULL);
+		g_thread_end = TRUE;
+	}
+
+//	snprintf(fname, 128, "/opt/storage/usb/test/audio_packet/packet_%d.dat", audio_packet_count);
+	snprintf(fname, 128, "/home/developer/test/audio_packet/packet_%d.dat", audio_packet_count);
+
+	static guint64 audio_pts = 0;
+	guint64 audio_dur = 21333333;
+
+	fp = fopen(fname, "rb");
+	if (fp)
+	{
+		buff_ptr = (guint8 *)g_malloc0(1048576);
+		real_read_len = fread(buff_ptr, 1, size, fp);
+		fclose(fp);
+		fp = NULL;
+
+		g_print("\t audio need data - data size : %d, pts : %lld\n", real_read_len, audio_pts);
+	}
+#if 0
+	player_submit_packet(g_player[0], buff_ptr, real_read_len, (audio_pts/1000000), 0);
+#else
+	/* create media packet */
+	if (g_audio_pkt) {
+		media_packet_destroy(g_audio_pkt);
+		g_audio_pkt = NULL;
+	}
+	media_packet_create_alloc(g_audio_fmt, NULL, NULL, &g_audio_pkt);
+
+	g_print("packet = %p, src = %p\n", g_audio_pkt, src);
+
+
+	if (media_packet_get_buffer_data_ptr(g_audio_pkt, &src) != MEDIA_PACKET_ERROR_NONE)
+		return;
+
+	if (media_packet_set_pts(g_audio_pkt, (uint64_t)(audio_pts/1000000)) != MEDIA_PACKET_ERROR_NONE)
+		return;
+
+	if (media_packet_set_buffer_size(g_audio_pkt, (uint64_t)real_read_len) != MEDIA_PACKET_ERROR_NONE)
+		return;
+
+	memcpy(src, buff_ptr, real_read_len);
+
+	/* then, push it  */
+	player_push_media_stream(g_player[0], g_audio_pkt);
+#endif
+
+	audio_pts += audio_dur;
+
+	if (buff_ptr)
+	{
+		g_free(buff_ptr);
+		buff_ptr = NULL;
+	}
+}
+
+static void set_content_info(bool is_push_mode)
+{
+	/* testcode for es buff src case, please input url as es_buff://123 or es_buff://push_mode */
+//	unsigned char codec_data[45] =	{0x0,0x0,0x1,0xb0,0x1,0x0,0x0,0x1,0xb5,0x89,0x13,0x0,0x0,0x1,0x0,0x0,0x0,0x1,0x20,0x0,0xc4,0x8d,0x88,0x5d,0xad,0x14,0x4,0x22,0x14,0x43,0x0,0x0,0x1,0xb2,0x4c,0x61,0x76,0x63,0x35,0x31,0x2e,0x34,0x30,0x2e,0x34};
+
+	/* create media format */
+	media_format_create(&g_audio_fmt);
+	media_format_create(&g_video_fmt);
+
+	//Video
+	/* configure media format  for video and set to player */
+	media_format_set_video_mime(g_video_fmt, MEDIA_FORMAT_MPEG4_SP);
+	media_format_set_video_width(g_video_fmt, 640);
+	media_format_set_video_height(g_video_fmt,272);
+//	player_set_media_stream_info(g_player[0], PLAYER_STREAM_TYPE_VIDEO, g_video_fmt);
+
+	//Audio--aac--StarWars.mp4
+	media_format_set_audio_mime(g_audio_fmt, MEDIA_FORMAT_AAC);
+	media_format_set_audio_channel(g_audio_fmt, 2);
+	media_format_set_audio_samplerate(g_audio_fmt, 48000);
+//	player_set_media_stream_info(g_player[0], PLAYER_STREAM_TYPE_AUDIO, g_audio_fmt);
+#if 0
+//	video_info->mime = g_strdup("video/mpeg"); //CODEC_ID_MPEG4VIDEO
+	video_info->width = 640;
+	video_info->height = 272;
+	video_info->version = 4;
+	video_info->framerate_den = 100;
+	video_info->framerate_num = 2997;
+
+	video_info->extradata_size = 45;
+	video_info->codec_extradata = codec_data;
+	player_set_video_stream_info(g_player[0], video_info);
+
+
+	//audio--aac--StarWars.mp4
+//	audio_info->mime = g_strdup("audio/mpeg");
+	//audio_info->version = 2;
+//	audio_info->user_info = 0;	 //raw
+#endif
+
+#ifdef _ES_PULL_
+	if (!is_push_mode)
+	{
+		player_set_buffer_need_video_data_cb(g_player[0], buffer_need_video_data_cb, (void*)g_player[0]);
+		player_set_buffer_need_audio_data_cb(g_player[0], buffer_need_audio_data_cb, (void*)g_player[0]);
+	}
+#endif
+}
+
+static void feed_video_data_thread_func(void *data)
+{
+	while (!g_thread_end)
+	{
+		buffer_need_video_data_cb(1048576, NULL);
+		buffer_need_audio_data_cb(1048576, NULL);
+	}
+}
+#endif
+
 static void _player_prepare(bool async)
 {
 	int ret = FALSE;
@@ -449,7 +709,27 @@ static void _player_prepare(bool async)
 				player_set_uri(g_player[i], g_uri);
 		}
 	}
+#ifdef TEST_ES
+	if (strstr(g_uri, "es_buff://"))
+	{
+		is_es_push_mode = FALSE;
+		video_packet_count = 0;
+		audio_packet_count = 0;
 
+		if (strstr(g_uri, "es_buff://push_mode"))
+		{
+			set_content_info(TRUE);
+			async = TRUE;
+			is_es_push_mode = TRUE;
+		}
+#ifdef _ES_PULL_
+		else
+		{
+			set_content_info(FALSE);
+		}
+#endif
+	}
+#endif
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
 	{
 		if ( async )
@@ -493,6 +773,12 @@ static void _player_prepare(bool async)
 		}
 	}
 
+#ifdef TEST_ES
+	if (is_es_push_mode) {
+		pthread_create(&g_feed_video_thread_id, NULL, (void*)feed_video_data_thread_func, NULL);
+	}
+#endif
+
 }
 
 static void _player_unprepare()
@@ -520,7 +806,6 @@ static void _player_unprepare()
 
 		ret = player_unset_error_cb(g_player[0]);
 		g_print("player_unset_error_cb ret %d\n", ret);
-
 	}
 	else
 	{
@@ -571,6 +856,7 @@ static void _player_unprepare()
 static void _player_destroy()
 {
 	int i = 0;
+
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
 	{
 		player_unprepare(g_player[0]);
@@ -592,6 +878,20 @@ static void _player_destroy()
 			}
 		}
 	}
+
+	if (g_video_pkt)
+		media_packet_destroy(g_video_pkt);
+
+	if (g_audio_pkt)
+		media_packet_destroy(g_audio_pkt);
+
+#if DUMP_OUTBUF
+    if (fp_out1)
+        fclose(fp_out1);
+    if (fp_out2)
+        fclose(fp_out2);
+#endif
+
 }
 
 static void _player_play()
@@ -630,6 +930,14 @@ static void _player_stop()
 			g_print("player_stop returned [%d]", bRet);
 		}
 	}
+#ifdef TEST_ES
+	g_thread_end = TRUE;
+	if (g_feed_video_thread_id)
+	{
+		pthread_join(g_feed_video_thread_id, NULL);
+		g_feed_video_thread_id = 0;
+	}
+#endif
 }
 
 static void _player_resume()
@@ -737,6 +1045,14 @@ static void set_position(int position)
 	}
 }
 
+static void set_playback_rate(float rate)
+{
+	if ( player_set_playback_rate(g_player[0], rate) != PLAYER_ERROR_NONE )
+	{
+		g_print("failed to set playback rate\n");
+	}
+}
+
 static void get_duration()
 {
 	int duration = 0;
@@ -744,6 +1060,19 @@ static void get_duration()
 	ret = player_get_duration(g_player[0], &duration);
 	g_print("                                                            ==> [Player_Test] player_get_duration() return : %d\n",ret);
 	g_print("                                                            ==> [Player_Test] Duration: [%d ] msec\n",duration);
+}
+
+static void audio_frame_decoded_cb_ex()
+{
+	int ret;
+
+#if DUMP_OUTBUF
+    fp_out1 = fopen("/opt/usr/media/out1.pcm", "wb");
+    fp_out2 = fopen("/opt/usr/media/out2.pcm", "wb");
+#endif
+
+	ret = player_set_pcm_extraction_mode(g_player[0], false, _audio_frame_decoded_cb_ex, &ret);
+	g_print("                                                            ==> [Player_Test] player_set_audio_frame_decoded_cb_ex return: %d\n", ret);
 }
 
 static void get_stream_info()
@@ -840,9 +1169,15 @@ static void change_surface(int option)
 		surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
 		g_print("change surface type to X\n");
 		break;
+#ifdef TIZEN_MOBILE
 	case 1: /* EVAS surface */
 		surface_type = PLAYER_DISPLAY_TYPE_EVAS;
 		g_print("change surface type to EVAS\n");
+		break;
+#endif
+	case 2:
+		g_print("change surface type to NONE\n");
+		player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_NONE, NULL);
 		break;
 	default:
 		g_print("invalid surface type\n");
@@ -1044,6 +1379,19 @@ static void input_subtitle_filename(char *subtitle_filename)
 	player_set_subtitle_path (g_player[0], g_subtitle_uri);
 }
 
+static void switch_subtitle(int index)
+{
+	char* lang_code = NULL;
+	if (player_select_track (g_player[0], PLAYER_STREAM_TYPE_TEXT, index) != PLAYER_ERROR_NONE)
+	{
+		g_print("player_select_track failed\n");
+	}
+	if (player_get_track_language_code(g_player[0], PLAYER_STREAM_TYPE_TEXT, index, &lang_code) == PLAYER_ERROR_NONE) {
+		g_print("selected track code %s\n", lang_code);
+		free(lang_code);
+	}
+}
+
 static void capture_video()
 {
 	if( player_capture_video(g_player[0],video_captured_cb,NULL)!=PLAYER_ERROR_NONE)
@@ -1137,6 +1485,12 @@ void quit_program()
 		}
 	}
 	elm_exit();
+
+	if (g_audio_fmt)
+		media_format_unref(g_audio_fmt);
+
+	if (g_video_fmt)
+		media_format_unref(g_video_fmt);
 }
 
 void play_with_ini(char *file_path)
@@ -1339,7 +1693,7 @@ void _interpret_main_menu(char *cmd)
 	}
 	else if(len == 2)
 	{
-	    if (strncmp(cmd, "pr", 2) == 0)
+		if (strncmp(cmd, "pr", 2) == 0)
 		{
 			_player_prepare(FALSE); // sync
 		}
@@ -1371,6 +1725,18 @@ void _interpret_main_menu(char *cmd)
 		else if (strncmp(cmd, "nb", 2) == 0 )
 		{
 			g_menu_state = CURRENT_STATUS_HANDLE_NUM;
+		}
+		else if (strncmp(cmd, "tr", 2) == 0 )
+		{
+			g_menu_state = CURRENT_STATUS_PLAYBACK_RATE;
+		}
+		else if (strncmp(cmd, "ss", 2) == 0 )
+		{
+			g_menu_state = CURRENT_STATUS_SWITCH_SUBTITLE;
+		}
+		else if(strncmp(cmd, "X3", 2) == 0)
+		{
+			audio_frame_decoded_cb_ex();
 		}
   		else
 		{
@@ -1411,12 +1777,14 @@ void display_sub_basic()
 	g_print("[ volume ] f. Set Volume\t");
 	g_print("g. Get Volume\t");
 	g_print("z. Set Sound type\t");
+	g_print("k. Set Sound Stream Info.\t");
 	g_print("[ mute ] h. Set Mute\t");
 	g_print("i. Get Mute\n");
 	g_print("[audio eq] E. Set Audio EQ\t");
 	g_print("H. Get Audio EQ\n");
  	g_print("[position] j. Set Position \t");
 	g_print("l. Get Position\n");
+	g_print("[trick] tr. set playback rate\n");
 	g_print("[duration] m. Get Duration\n");
 	g_print("[Stream Info] n. Get stream info (Video Size, codec, audio stream info, and tag info)\n");
 	g_print("[Looping] o. Set Looping\t");
@@ -1429,9 +1797,11 @@ void display_sub_basic()
 	g_print("[x display] t. Set display Rotation\t");
 	g_print("[Track] tl. Get Track language info(single only)\n");
 	g_print("[subtitle] A. Set(or change) subtitle path\n");
+	g_print("[subtitle] ss. Select(or change) subtitle track\n");
 	g_print("[Video Capture] C. Capture \n");
 	g_print("[etc] sp. Set Progressive Download\t");
 	g_print("mp. memory playback\n");
+	g_print("[audio_frame_decoded_cb_ex] X3. (input) set audio_frame_decoded_cb_ex callback \n");
 	g_print("\n");
 	g_print("=========================================================================================\n");
 }
@@ -1504,6 +1874,28 @@ static void displaymenu()
 	else if (g_menu_state == CURRENT_STATUS_AUDIO_EQUALIZER)
 	{
 		g_print(" *** input audio eq value.(0: UNSET, 1: SET) \n");
+	}
+	else if (g_menu_state == CURRENT_STATUS_PLAYBACK_RATE)
+	{
+		g_print(" *** input playback rate.(-5.0 ~ 5.0)\n");
+	}
+	else if (g_menu_state == CURRENT_STATUS_SWITCH_SUBTITLE)
+	{
+		int count = 0, cur_index = 0;
+		int ret = 0;
+
+		ret = player_get_track_count (g_player[0], PLAYER_STREAM_TYPE_TEXT, &count);
+		if(ret!=PLAYER_ERROR_NONE)
+			g_print ("player_get_track_count fail!!!!\n");
+		else if (count)
+		{
+			g_print ("Total subtitle tracks = %d \n", count);
+			player_get_current_track (g_player[0], PLAYER_STREAM_TYPE_TEXT, &cur_index);
+			g_print ("Current index = %d \n", cur_index);
+			g_print (" *** input correct index 0 to %d\n:", (count - 1));
+		}
+		else
+			g_print("no track\n");
 	}
  	else
 	{
@@ -1705,6 +2097,20 @@ static void interpret (char *cmd)
 		{
 			int value = atoi(cmd);
 			set_audio_eq(value);
+			reset_menu_state();
+		}
+		break;
+		case CURRENT_STATUS_PLAYBACK_RATE:
+		{
+			float rate = atof(cmd);
+			set_playback_rate(rate);
+			reset_menu_state();
+		}
+		break;
+		case CURRENT_STATUS_SWITCH_SUBTITLE:
+		{
+			int index = atoi(cmd);
+			switch_subtitle(index);
 			reset_menu_state();
 		}
 		break;

@@ -22,7 +22,7 @@
 #include <appcore-efl.h>
 
 #define KEY_END "XF86Stop"
-#define MEDIA_FILE_PATH "/root/1.mp4"
+#define MEDIA_FILE_PATH "/opt/usr/media/Color.mp4"
 #ifdef PACKAGE
 #undef PACKAGE
 #endif
@@ -94,7 +94,8 @@ create_base_gui(appdata_s *ad)
 
 	/* Window */
 	ad->win = elm_win_util_standard_add(PACKAGE, PACKAGE);
-	//elm_win_wm_desktop_layout_support_set(ad->win, EINA_TRUE);
+    /* This is not supported in 3.0
+	elm_win_wm_desktop_layout_support_set(ad->win, EINA_TRUE); */
 	elm_win_autodel_set(ad->win, EINA_TRUE);
 #if 0
 	if (elm_win_wm_rotation_supported_get(ad->win)) {
@@ -153,51 +154,19 @@ _media_packet_video_decoded_cb(media_packet_h packet, void *user_data)
 	return;
 }
 
-int	_save(unsigned char * src, int length)
-{	//unlink(CAPTUERD_IMAGE_SAVE_PATH);
-	FILE* fp;
-	char filename[256] = {0,};
-	static int WRITE_COUNT = 0;
-
-	//gchar *filename  = CAPTUERD_IMAGE_SAVE_PATH;
-	sprintf (filename, "ALBUM_ART_IMAGE_%d", WRITE_COUNT);
-	WRITE_COUNT++;
-	fp=fopen(filename, "w+");
-	if(fp==NULL)
-	{
-		g_print("file open error!!\n");
-		return FALSE;
-	}
-	else
-	{
-		g_print("open success\n");
-		if(fwrite(src, 1, length, fp )!=1)
-		{
-			g_print("file write error!!\n");
-			fclose(fp);
-			return FALSE;
-		}
-		g_print("write success(%s)\n", filename);
-		fclose(fp);
-	}
-
-	return TRUE;
-}
-
-
 static void
 pipe_cb(void *data, void *buf, unsigned int len)
 {
 	/* Now, we get a player surface to be set here. */
 	appdata_s *ad = data;
 	tbm_surface_h surface;
+#if _CAN_USE_NATIVE_SURFACE_TBM
 	Evas_Native_Surface surf;
+#endif
+	tbm_surface_info_s suf_info;
+	uint32_t plane_idx;
 	int ret;
 	GList *last_item = NULL;
-
-
-	tbm_surface_info_s suf_info;
-	uint32_t num_planes;
 
 	LOGD("start");
 
@@ -227,14 +196,7 @@ pipe_cb(void *data, void *buf, unsigned int len)
 		return;
 	}
 
-//	g_mutex_unlock(&ad->buffer_lock);
-
-	LOGE("Test : media packet");
-
 	ret = media_packet_get_tbm_surface(ad->packet, &surface);
-	LOGD("surface %p", surface);
-	printf("surface %p\n",surface);
-
 	if (ret != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("Failed to get surface from media packet. ret(0x%x)", ret);
 
@@ -246,15 +208,11 @@ pipe_cb(void *data, void *buf, unsigned int len)
 		return;
 	}
 
-	tbm_surface_get_info(surface,&suf_info);
-	num_planes = suf_info.num_planes;
-	LOGD("surface %lu", num_planes);
-	printf("surface %lu\n", num_planes);
-
-	_save(suf_info.planes[0].ptr, suf_info.planes[0].size);
+	LOGD("surface %p", surface);
 
 	g_mutex_unlock(&ad->buffer_lock);
-#if 0 /*NATIVE_SURFACE_TBM is not supported , It will be supported */
+
+#if _CAN_USE_NATIVE_SURFACE_TBM
 	/* Set tbm surface to image native surface */
 	memset(&surf, 0x0, sizeof(surf));
 	surf.version = EVAS_NATIVE_SURFACE_VERSION;
@@ -265,11 +223,35 @@ pipe_cb(void *data, void *buf, unsigned int len)
 
 	/* Set dirty image region to be redrawn */
 	evas_object_image_data_update_add(ad->img, 0, 0, ad->w, ad->h);
+#else
+	unsigned char *ptr = NULL;
+	unsigned char *buf_data = NULL;
+	media_format_h format = NULL;
+	media_format_mimetype_e mimetype;
+
+	media_packet_get_format(ad->packet, &format);
+	media_format_get_video_info(format, &mimetype, NULL, NULL, NULL, NULL);
+
+	if (mimetype == MEDIA_FORMAT_I420 || mimetype == MEDIA_FORMAT_NV12 || mimetype == MEDIA_FORMAT_NV12T) {
+
+		tbm_surface_get_info(surface,&suf_info);
+		buf_data = (unsigned char*)g_malloc0(suf_info.size);
+		ptr = buf_data;
+
+		for (plane_idx = 0; plane_idx < suf_info.num_planes; plane_idx++) {
+				memcpy(ptr, suf_info.planes[plane_idx].ptr, suf_info.planes[plane_idx].size);
+				ptr += suf_info.planes[plane_idx].size;
+		}
+		/* dump buf data here, if needed */
+		g_free(buf_data);
+	}
 #endif
+
 	LOGD("done");
 
 	return;
 }
+
 static int app_create(void *data)
 {
 	/* Hook to take necessary actions before main event loop starts

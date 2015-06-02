@@ -17,10 +17,6 @@
 #ifndef __TIZEN_MEDIA_PLAYER_H__
 #define __TIZEN_MEDIA_PLAYER_H__
 
-#ifndef DEPRECATED
-#define DEPRECATED __attribute__((deprecated))
-#endif
-
 #include <tizen.h>
 #include <sound_manager.h>
 #include <media_packet.h>
@@ -43,13 +39,13 @@ extern "C" {
 
 /**
  * @brief The media player's type handle.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef struct player_s *player_h;
 
 /**
  * @brief Enumeration for media player state.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef enum
 {
@@ -62,7 +58,7 @@ typedef enum
 
 /**
  * @brief Enumeration for media player's error codes.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef enum
 {
@@ -90,7 +86,7 @@ typedef enum
 
 /**
  * @brief Enumeration for media player's interruption type.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef enum
 {
@@ -106,7 +102,7 @@ typedef enum
 
 /**
  * @brief Enumeration for progressive download message type.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef enum
 {
@@ -116,18 +112,17 @@ typedef enum
 
 /**
  * @brief Enumeration for display type.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef enum
 {
     PLAYER_DISPLAY_TYPE_OVERLAY = 0,    /**< Overlay surface display */
-    PLAYER_DISPLAY_TYPE_EVAS,           /**< Evas image object surface display */
     PLAYER_DISPLAY_TYPE_NONE,           /**< This disposes off buffers */
 } player_display_type_e;
 
 /**
  * @brief Enumeration for audio latency mode.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef enum
 {
@@ -137,18 +132,39 @@ typedef enum
 } audio_latency_mode_e;
 
 /**
+ * @brief Enumeration for stream type.
+ * @since_tizen 2.4
+ */
+typedef enum
+{
+    PLAYER_STREAM_TYPE_DEFAULT,	/**< Container type */
+    PLAYER_STREAM_TYPE_AUDIO,	/**< Audio element stream type */
+    PLAYER_STREAM_TYPE_VIDEO,	/**< Video element stream type */
+    PLAYER_STREAM_TYPE_TEXT,	/**< Text type */
+} player_stream_type_e;
+
+/**
+ * @brief Enumeration of media stream buffer status
+ * @since_tizen 2.4
+ */
+typedef enum
+{
+    PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN,
+    PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW,
+} player_media_stream_buffer_status_e;
+
+/**
  * @brief The player display handle.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef void* player_display_h;
 
 #ifndef GET_DISPLAY
 /**
  * @brief Definition for a display handle from evas object.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
-#include <stdint.h>
-#define GET_DISPLAY(x) ((void*)((intptr_t)(x))) //solve cast pointer error for x86_64
+#define GET_DISPLAY(x) (void*)(x)
 #endif
 
 /**
@@ -162,7 +178,7 @@ typedef void* player_display_h;
 
 /**
  * @brief Enumeration for display rotation type.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef enum
 {
@@ -174,7 +190,7 @@ typedef enum
 
 /**
  * @brief Enumeration for x surface display aspect ratio.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef enum
 {
@@ -197,7 +213,7 @@ typedef enum
 
 /**
  * @brief Enumeration for media stream content information.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  */
 typedef enum
 {
@@ -221,7 +237,7 @@ typedef enum
 
 /**
  * @brief  Called when the subtitle is updated.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in]   duration	The duration of the updated subtitle
  * @param[in]   text		The text of the updated subtitle
  * @param[in]   user_data	The user data passed from the callback registration function
@@ -241,7 +257,7 @@ typedef void (*player_subtitle_updated_cb)(unsigned long duration, char *text, v
 
 /**
  * @brief Called when the media player is prepared.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details It will be invoked when player has reached the begin of stream.
  * @param[in]   user_data  The user data passed from the callback registration function
  * @pre player_prepare_async() will cause this callback.
@@ -252,7 +268,7 @@ typedef void (*player_prepared_cb)(void *user_data);
 
 /**
  * @brief Called when the media player is completed.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details It will be invoked when player has reached the end of the stream.
  * @param[in]   user_data  The user data passed from the callback registration function
  * @pre It will be invoked when the playback is completed if you register this callback using player_set_completed_cb().
@@ -263,16 +279,15 @@ typedef void (*player_completed_cb)(void *user_data);
 
 /**
  * @brief Called when the seek operation is completed.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in]   user_data  The user data passed from the callback registration function
- * @see player_set_position()
- * @see player_set_position_ratio()
+ * @see player_set_play_position()
  */
 typedef void (*player_seek_completed_cb)(void *user_data);
 
 /**
  * @brief Called when the media player is interrupted.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in]	error_code	The interrupted error code
  * @param[in]	user_data	The user data passed from the callback registration function
  * @see player_set_interrupted_cb()
@@ -282,7 +297,7 @@ typedef void (*player_interrupted_cb)(player_interrupted_code_e code, void *user
 
 /**
  * @brief Called when an error occurs in the media player.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in]	error_code  The error code
  * @param[in]	user_data	The user data passed from the callback registration function
  * @see player_set_error_cb()
@@ -293,7 +308,7 @@ typedef void (*player_error_cb)(int error_code, void *user_data);
 
 /**
  * @brief Called when the buffering percentage of the media playback is updated.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details If the buffer is full, it will return 100%.
  * @param[in]   percent	The percentage of buffering completed (0~100)
  * @param[in]   user_data	The user data passed from the callback registration function
@@ -304,7 +319,7 @@ typedef void (*player_buffering_cb)(int percent, void *user_data);
 
 /**
  * @brief Called when progressive download is started or completed.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in]   type		The message type for progressive download
  * @param[in]   user_data	The user data passed from the callback registration function
  * @see player_set_progressive_download_path()
@@ -313,7 +328,7 @@ typedef void (*player_pd_message_cb)(player_pd_message_type_e type, void *user_d
 
 /**
  * @brief Called when the video is captured.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The color space format of the captured image is IMAGE_UTIL_COLORSPACE_RGB888.
  * @param[in]   data	The captured image buffer
  * @param[in]   width	The width of the captured image
@@ -326,7 +341,7 @@ typedef void (*player_video_captured_cb)(unsigned char *data, int width, int hei
 
 /**
  * @brief Called to register for notifications about delivering media packet when every video frame is decoded.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  *
  * @remarks This function is issued in the context of gstreamer so the UI update code should not be directly invoked.\n
  * 		the packet should be released by media_packet_destroy() after use. \n
@@ -338,8 +353,59 @@ typedef void (*player_video_captured_cb)(unsigned char *data, int width, int hei
 typedef void (*player_media_packet_video_decoded_cb)(media_packet_h pkt, void *user_data);
 
 /**
+ * @brief Called when the buffer level drops below the threshold of max size or no free space in buffer.
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @param[in] user_data The user data passed from the callback registration function
+ * @see player_set_media_stream_buffer_status_cb()
+ * @see player_set_media_stream_buffer_max_size()
+ * @see player_set_media_stream_buffer_min_threshold()
+ */
+typedef void (*player_media_stream_buffer_status_cb) (player_media_stream_buffer_status_e status, void *user_data);
+
+/**
+ * @brief Called to notify the next push-buffer offset when seeking is occurred.
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @details The next push-buffer should produce buffers from the new offset.
+ * @param[in] offset The new byte position to seek
+ * @param[in] user_data The user data passed from the callback registration function
+ */
+typedef void (*player_media_stream_seek_cb) (unsigned long long offset, void *user_data);
+
+/**
+ * @brief Called to notify the video stream changed.
+ * @since_tizen 2.4
+ * @details The video stream changing is detected just before rendering operation.
+ * @param[in] width	The width of the captured image
+ * @param[in] height The height of the captured image
+ * @param[in] fps The frame per second of the video \n
+              It can be @c 0 if there is no video stream information.
+ * @param[in] bit_rate The video bit rate [Hz] \n
+ *            It can be an invalid value if there is no video stream information.
+ * @param[in] user_data The user data passed from the callback registration function
+ * @see player_set_video_stream_changed_cb()
+ */
+typedef void (*player_video_stream_changed_cb) (int width, int height, int fps, int bit_rate, void *user_data);
+
+/**
+ * @brief Called to notify the audio stream changed.
+ * @since_tizen 2.4
+ * @details The audio stream changing is detected just before rendering operation.
+ * @param[in] sample_rate The audio sample rate [Hz] \n
+ *                        Value can be invalid if there is no audio stream information.
+ * @param[in] channel The audio channel (1: mono, 2: stereo) \n
+ *                    Value can be invalid if there is no audio stream information.
+ * @param[in] bit_rate The audio bit rate [Hz] \n
+ *                     Value can be invalid if there is no audio stream information.
+ * @param[in] user_data The user data passed from the callback registration function
+ * @see player_set_audio_stream_changed_cb()
+ */
+typedef void (*player_audio_stream_changed_cb) (int sample_rate, int channel, int bit_rate, void *user_data);
+
+/**
  * @brief Creates a player handle for playing multimedia content.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks You must release @a player by using player_destroy().\n
  *          Although you can create multiple player handles at the same time,
  *          the player cannot guarantee proper operation because of limited resources, such as
@@ -357,7 +423,7 @@ int player_create(player_h *player);
 
 /**
  * @brief Destroys the media player handle and releases all its resources.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks To completely shutdown player operation, call this function with a valid player handle from any player state.
  * @param[in] player The handle to the media player to be destroyed
  * @return @c 0 on success,
@@ -373,7 +439,7 @@ int player_destroy(player_h player);
 
 /**
  * @brief Prepares the media player for playback.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The mediastorage privilege(http://tizen.org/privilege/mediastorage) should be added if any video/audio files are used to play located in the internal storage.
  * @remarks The externalstorage privilege(http://tizen.org/privilege/externalstorage) should be added if any video/audio files are used to play located in the external storage.
  * @remarks The internet privilege(http://tizen.org/privilege/internet) should be added if any URLs are used to play from network.
@@ -398,7 +464,7 @@ int player_prepare(player_h player);
 
 /**
  * @brief Prepares the media player for playback, asynchronously.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The mediastorage privilege(http://tizen.org/privilege/mediastorage) should be added if any video/audio files are used to play located in the internal storage.
  * @remarks The externalstorage privilege(http://tizen.org/privilege/externalstorage) should be added if any video/audio files are used to play located in the external storage.
  * @remarks The internet privilege(http://tizen.org/privilege/internet) should be added if any URLs are used to play from network.
@@ -429,7 +495,7 @@ int player_prepare_async (player_h player, player_prepared_cb callback, void* us
  * @details The most recently used media is reset and no longer associated with the player.
  *          Playback is no longer possible. If you want to use the player again, you will have to set the data URI and call
  *          player_prepare() again.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
@@ -448,7 +514,7 @@ int player_unprepare(player_h player);
  *
  * @details Associates media contents, referred to by the URI, with the player.
  *          If the function call is successful, subsequent calls to player_prepare() and player_start() will start playing the media.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks If you use HTTP or RSTP, URI should start with "http://" or "rtsp://". The default protocol is "file://".
  *          If you provide an invalid URI, you won't receive an error message until you call player_start().
  *
@@ -471,7 +537,7 @@ int player_set_uri(player_h player, const char * uri);
  *
  * @details Associates media content, cached in memory, with the player. Unlike the case of player_set_uri(), the media resides in memory.
  *          If the function call is successful, subsequent calls to player_prepare() and player_start() will start playing the media.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks If you provide an invalid data, you won't receive an error message until you call player_start().
  *
  * @param[in]   player The handle to the media player
@@ -490,7 +556,7 @@ int player_set_memory_buffer(player_h player, const void * data, int size);
 
 /**
  * @brief Gets the player's current state.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in]   player	The handle to the media player
  * @param[out]  state	The current state of the player
  * @return @c 0 on success,
@@ -503,7 +569,7 @@ int  player_get_state(player_h player, player_state_e *state);
 
 /**
  * @brief Sets the player's volume.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details  Setting this volume adjusts the player's instance volume, not the system volume.
  *	      The valid range is from 0 to 1.0, inclusive (1.0 = 100%). Default value is 1.0.
  *          To change system volume, use the @ref CAPI_MEDIA_SOUND_MANAGER_MODULE API.
@@ -523,7 +589,7 @@ int player_set_volume(player_h player, float left, float right);
 
 /**
  * @brief Gets the player's current volume factor.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details The range of @a left and @a right is from @c 0 to @c 1.0, inclusive (1.0 = 100%).
  *          This function gets the player volume, not the system volume.
  *          To get the system volume, use the @ref CAPI_MEDIA_SOUND_MANAGER_MODULE API.
@@ -542,7 +608,7 @@ int player_get_volume(player_h player, float *left, float *right);
 
 /**
  * @brief Sets the player's volume type.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The default sound type of the player is #SOUND_TYPE_MEDIA.
  *          To get the current sound type, use sound_manager_get_current_sound_type().
  *
@@ -559,7 +625,7 @@ int player_set_sound_type(player_h player, sound_type_e type);
 
 /**
  * @brief Sets the audio latency mode.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The default audio latency mode of the player is #AUDIO_LATENCY_MODE_MID.
  *		To get the current audio latency mode, use player_get_audio_latency_mode().
  *		If it's high mode, audio output interval can be increased so, it can keep more audio data to play.
@@ -579,7 +645,7 @@ int player_set_audio_latency_mode(player_h player, audio_latency_mode_e latency_
 
 /**
  * @brief Gets the current audio latency mode.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[out] latency_mode The latency mode to get from the audio
  * @return @c 0 on success,
@@ -594,7 +660,7 @@ int player_get_audio_latency_mode(player_h player, audio_latency_mode_e *latency
 
 /**
  * @brief Starts or resumes playback.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details Plays current media content, or resumes play if paused.
  *
  * @param[in]   player The handle to the media player
@@ -625,7 +691,7 @@ int player_start(player_h player);
 
 /**
  * @brief Stops playing media content.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in]   player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
@@ -644,7 +710,7 @@ int player_stop(player_h player);
 
 /**
  * @brief Pauses the player.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks	You can resume playback using player_start().
  *
  * @param[in]   player The handle to the media player
@@ -663,7 +729,7 @@ int player_pause(player_h player);
 
 /**
  * @brief Sets the seek position for playback, asynchronously.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[in] millisecond The position in milliseconds from the start to the seek point
  * @param[in] accurate If @c true the selected position is returned, but this might be considerably slow,
@@ -684,7 +750,7 @@ int player_set_play_position(player_h player, int millisecond, bool accurate, pl
 
 /**
  * @brief Gets the current position in milliseconds.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in]   player The handle to the media player
  * @param[out]  millisecond The current position in milliseconds
  * @return @c 0 on success,
@@ -700,7 +766,7 @@ int player_get_play_position(player_h player, int *millisecond);
 
 /**
  * @brief Sets the player's mute status.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details If the mute status is @c true, no sounds are played.
  *          If it is @c false, sounds are played at the previously set volume level.
  *          Until this function is called, by default the player is not muted.
@@ -719,7 +785,7 @@ int player_set_mute(player_h player, bool muted);
 
 /**
  * @brief Gets the player's mute status.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details If the mute status is @c true, no sounds are played.
  *          If it is @c false, sounds are played at the previously set volume level.
  *
@@ -737,7 +803,7 @@ int player_is_muted(player_h player, bool *muted);
 
 /**
  * @brief Sets the player's looping status.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details If the looping status is @c true, playback automatically restarts upon finishing.
  *          If it is @c false, it won't. The default value is @c false.
  *
@@ -756,7 +822,7 @@ int player_set_looping(player_h player, bool looping);
 
 /**
  * @brief Gets the player's looping status.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details If the looping status is @c true, playback automatically restarts upon finishing.
  *          If it is @c false, it won't.
  *
@@ -775,9 +841,11 @@ int player_is_looping(player_h player, bool *looping);
 
 /**
  * @brief Sets the video display.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks To get @a display to set, use #GET_DISPLAY().
  * @remarks To use the multiple surface display mode, use player_set_display() again with a different display type.
+ * @remarks We are not supporting changing display between different types. \n
+ *          If you want to change display handle after calling player_prepare(), you must use the same display type as what you set before.
  * @param[in]   player The handle to the media player
  * @param[in]   type The display type
  * @param[in]   display The handle to display
@@ -793,6 +861,240 @@ int player_is_looping(player_h player, bool *looping);
 int player_set_display(player_h player, player_display_type_e type, player_display_h display);
 
 /**
+ * @brief Registers a media packet video callback function to be called once per frame.
+ * @since_tizen 2.3.1
+ * @remarks This function should be called before preparing. \n
+ *	      A registered callback is called on the internal thread of the player. \n
+ *          A video frame can be retrieved using a registered callback as a media packet.\n
+ *          The callback function holds the same buffer that will be drawn on the display device.\n
+ *          So if you change the media packet in a registerd callback, it will be displayed on the device\n
+ *          and the media packet is available until it's destroyed by media_packet_destroy().
+ * @param[in] player The handle to the media player
+ * @param[in] callback The callback function to be registered
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @pre	The player's state should be #PLAYER_STATE_IDLE. And, #PLAYER_DISPLAY_TYPE_NONE should be set by calling player_set_display.
+ * @see player_unset_media_packet_video_frame_decoded_cb
+ */
+int player_set_media_packet_video_frame_decoded_cb(player_h player, player_media_packet_video_decoded_cb callback, void *user_data);
+
+/**
+ * @brief Unregisters the callback function.
+ * @since_tizen 2.3.1
+ * @param[in] player The handle to the media player
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @pre The player's state should be #PLAYER_STATE_READY or #PLAYER_STATE_IDLE
+ * @see player_set_media_packet_video_frame_decoded_cb()
+ */
+int player_unset_media_packet_video_frame_decoded_cb(player_h player);
+
+/**
+ * @brief  Pushes elementary stream to decode audio or video
+ * @since_tizen 2.4
+ * @param[in]  player   The handle to media player
+ * @param[in]  packet   The media packet to decode
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @retval #PLAYER_ERROR_NOT_SUPPORTED_FILE File not supported
+ * @pre	The player state must be set to #PLAYER_STATE_IDLE at least.
+ * @see  player_set_media_stream_info()
+ */
+int player_push_media_stream(player_h player, media_packet_h packet);
+
+/**
+ * @brief  Sets contents information for media stream
+ * @since_tizen 2.4
+ * @remarks AV format should be set before pushing elementary stream with player_push_media_stream().
+ * @remarks AAC can be supported.
+ * @remarks H.264 can be supported.
+ * @remarks This API should be called before calling the player_prepare() or player_prepare_async() \n
+            to reflect the media information when pipeline is created.
+ * @param[in] player The handle to media player
+ * @param[in] type   The type of target stream
+ * @param[in] format The media format to set audio information
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @see  player_push_media_stream()
+ */
+int player_set_media_stream_info(player_h player, player_stream_type_e type, media_format_h format);
+
+/**
+ * @brief  Pushes elementary stream to decode audio or video
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @param[in]  player   The handle to media player
+ * @param[in]  packet   The media packet to decode
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @retval #PLAYER_ERROR_NOT_SUPPORTED_FILE File not supported
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @see  player_set_media_stream_info()
+ */
+int player_push_media_stream(player_h player, media_packet_h packet);
+
+/**
+ * @brief Registers a callback function to be invoked when buffer underrun or overflow is occurred.
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @param[in] player   The handle to the media player
+ * @param[in] type     The type of target stream
+ * @param[in] callback The buffer status callback function to register
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @post player_media_stream_buffer_status_cb() will be invoked.
+ * @see player_unset_media_stream_buffer_status_cb()
+ * @see player_media_stream_buffer_status_cb()
+ */
+int player_set_media_stream_buffer_status_cb(player_h player, player_stream_type_e type, player_media_stream_buffer_status_cb callback, void *user_data);
+
+/**
+ * @brief Unregisters the buffer status callback function.
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @param[in] player The handle to the media player
+ * @param[in] type   The type of target stream
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @see player_set_media_stream_buffer_status_cb()
+ */
+int player_unset_media_stream_buffer_status_cb(player_h player, player_stream_type_e type);
+
+/**
+ * @brief Registers a callback function to be invoked when seeking is occurred.
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @param[in] player    The handle to the media player
+ * @param[in] type      The type of target stream
+ * @param[in] callback  The callback function to register
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @post player_media_stream_seek_cb() will be invoked.
+ * @see player_unset_media_stream_seek_cb()
+ * @see player_media_stream_seek_cb()
+ */
+int player_set_media_stream_seek_cb(player_h player, player_stream_type_e type, player_media_stream_seek_cb callback, void *user_data);
+
+/**
+ * @brief Unregisters the seek callback function.
+ * @since_tizen 2.4
+ * @param[in] player The handle to the media player
+ * @param[in] type   The type of target stream
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @see player_set_media_stream_seek_cb()
+ */
+int player_unset_media_stream_seek_cb(player_h player, player_stream_type_e type);
+
+/**
+ * @brief Sets the max size bytes of buffer.
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @remarks If the buffer level over the max size, player_media_stream_buffer_status_cb() will be invoked with overflow status.
+ * @param[in] player The handle to the media player
+ * @param[in] type   The type of target stream
+ * @param[in] max_size The max bytes of buffer
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @see player_get_media_stream_buffer_max_size()
+ * @see player_media_stream_buffer_status_cb()
+ */
+int player_set_media_stream_buffer_max_size(player_h player, player_stream_type_e type, unsigned long long max_size);
+
+/**
+ * @brief Gets the max size bytes of buffer.
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @remarks If the buffer level over the max size, player_media_stream_buffer_status_cb() will be invoked with overflow status.
+ * @param[in] player The handle to the media player
+ * @param[in] type   The type of target stream
+ * @param[out] max_size The max bytes of buffer
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @see player_set_media_stream_buffer_max_size()
+ * @see player_media_stream_buffer_status_cb()
+ */
+int player_get_media_stream_buffer_max_size(player_h player, player_stream_type_e type, unsigned long long *max_size);
+
+/**
+ * @brief Sets the buffer threshold percent of buffer.
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @remarks If the buffer level drops below the percent value, player_media_stream_buffer_status_cb() will be invoked with underrun status.
+ * @param[in] player The handle to the media player
+ * @param[in] type   The type of target stream
+ * @param[in] percent The minimum threshold(0~100) of buffer
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @see player_get_media_stream_buffer_min_threshold()
+ * @see player_media_stream_buffer_status_cb()
+ */
+int player_set_media_stream_buffer_min_threshold(player_h player, player_stream_type_e type, unsigned int percent);
+
+/**
+ * @brief Gets the buffer threshold percent of buffer.
+ * @since_tizen 2.4
+ * @remarks This API is used for media stream playback only.
+ * @remarks If the buffer level drops below the percent value, player_media_stream_buffer_status_cb() will be invoked with underrun status.
+ * @param[in] player The handle to the media player
+ * @param[in] type   The type of target stream
+ * @param[out] percent The minimum threshold(0~100) of buffer
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @see player_set_media_stream_buffer_min_threshold()
+ * @see player_media_stream_buffer_status_cb()
+ */
+int player_get_media_stream_buffer_min_threshold(player_h player, player_stream_type_e type, unsigned int *percent);
+
+/**
  * @}
  */
 
@@ -803,7 +1105,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 
 /**
  * @brief Sets the video display mode.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks If no display is set, no operation is performed.
  * @param[in] player   The handle to the media player
  * @param[in] mode The display mode
@@ -819,7 +1121,7 @@ int player_set_display_mode(player_h player, player_display_mode_e mode);
 
 /**
  * @brief Gets the video display mode.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks If no display is set, no operation is performed.
  * @param[in] player The handle to the media player
  * @param[out] mode The current display mode
@@ -833,7 +1135,7 @@ int player_get_display_mode(player_h player, player_display_mode_e *mode);
 
 /**
  * @brief Sets the visibility of the x surface video display
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player   The handle to the media player
  * @param[in] visible The visibility of the display (@c true = visible, @c false = non-visible )
  * @return @c 0 on success,
@@ -847,7 +1149,7 @@ int player_set_display_visible(player_h player, bool visible);
 
 /**
  * @brief Gets the visibility of the x surface video display.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[out] visible The current visibility of the display (@c true = visible, @c false = non-visible )
  * @return @c 0 on success,
@@ -860,7 +1162,7 @@ int player_is_display_visible(player_h player, bool* visible);
 
 /**
  * @brief Sets the rotation settings of the video surface display.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details Use this function to change the video orientation to portrait mode.
  * @param[in] player   The handle to the media player
  * @param[in] rotation The rotation of the display
@@ -870,7 +1172,6 @@ int player_is_display_visible(player_h player, bool* visible);
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
  * @retval #PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE Unsupported feature
- * @retval #PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE In case of using evasimagesink by PLAYER_DISPLAY_TYPE_EVAS
  * @see  player_set_display
  * @see  player_get_display_rotation()
  */
@@ -878,7 +1179,7 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
 
 /**
  * @brief Gets the rotation of the video surface display.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[out] rotation The current rotation of the display
  * @return @c 0 on success,
@@ -901,7 +1202,7 @@ int player_get_display_rotation( player_h player, player_display_rotation_e *rot
 
  /**
  * @brief Gets the media content information.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks You must release @a value using @c free().
  * @remarks The playback type should be local playback or HTTP streaming playback.
  * @param[in]  player The handle to the media player
@@ -915,13 +1216,13 @@ int player_get_display_rotation( player_h player, player_display_rotation_e *rot
  * @retval #PLAYER_ERROR_OUT_OF_MEMORY Not enough memory is available
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
  */
 int player_get_content_info(player_h player, player_content_info_e key, char ** value);
 
 /**
  * @brief Gets the audio and video codec information.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks You must release @a audio_codec and @a video_codec using free().
  * @remarks The playback type should be local playback or HTTP streaming playback.
  * @param[in] player The handle to the media player
@@ -935,13 +1236,13 @@ int player_get_content_info(player_h player, player_content_info_e key, char ** 
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
  */
 int player_get_codec_info(player_h player, char **audio_codec, char **video_codec);
 
 /**
  * @brief Gets the audio stream information.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The playback type should be local playback or HTTP streaming playback.
  * @param[in] player The handle to the media player
  * @param[out]  sample_rate The audio sample rate [Hz] \n
@@ -956,13 +1257,13 @@ int player_get_codec_info(player_h player, char **audio_codec, char **video_code
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
  */
 int player_get_audio_stream_info(player_h player, int *sample_rate, int *channel, int *bit_rate);
 
 /**
  * @brief Gets the video stream information.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The playback type should be local playback or HTTP streaming playback.
  * @param[in] player The handle to the media player
  * @param[out]  fps The frame per second of the video \n
@@ -975,13 +1276,13 @@ int player_get_audio_stream_info(player_h player, int *sample_rate, int *channel
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
  */
 int player_get_video_stream_info(player_h player, int *fps, int *bit_rate);
 
 /**
  * @brief Gets the video display's height and width.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The playback type should be local playback or HTTP streaming playback.
  * @param[in] player The handle to the media player
  * @param[out] width The width of the video \n
@@ -994,13 +1295,13 @@ int player_get_video_stream_info(player_h player, int *fps, int *bit_rate);
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
  */
 int player_get_video_size(player_h player, int *width, int *height);
 
 /**
  * @brief Gets the album art in the media resource.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks You must not release @a album_art. It will be released by framework when the player is destroyed.
  * @param[in] player The handle to the media player
  * @param[out] album_art The encoded artwork image
@@ -1011,13 +1312,13 @@ int player_get_video_size(player_h player, int *width, int *height);
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
  */
 int player_get_album_art(player_h player, void **album_art, int *size);
 
 /**
  * @brief Gets the total running time of the associated media.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The media source is associated with the player, using either player_set_uri() or player_set_memory_buffer().
  * @remarks The playback type should be local playback or HTTP streaming playback.
  * @param[in]   player The handle to the media player
@@ -1028,7 +1329,7 @@ int player_get_album_art(player_h player, void **album_art, int *size);
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING or #PLAYER_STATE_PAUSED.
  * @see player_set_uri()
  * @see player_set_memory_buffer()
  */
@@ -1046,7 +1347,7 @@ int player_get_duration(player_h player, int *duration);
 
 /**
  * @brief Gets the number of equalizer bands.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[out] count The number of equalizer bands
  * @return @c 0 on success,
@@ -1062,7 +1363,7 @@ int player_audio_effect_get_equalizer_bands_count (player_h player, int *count);
 
 /**
  * @brief Sets the gain set for the given equalizer band.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[in] index The index of the equalizer band to be set
  * @param[in] level The new gain in decibel that is set to the given band [dB]
@@ -1082,7 +1383,7 @@ int player_audio_effect_set_equalizer_band_level(player_h player, int index, int
 
 /**
  * @brief Gets the gain set for the given equalizer band.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in]   player The handle to the media player
  * @param[in]   index The index of the requested equalizer band
  * @param[out]   level The gain in decibel of the given band [dB]
@@ -1098,7 +1399,7 @@ int player_audio_effect_get_equalizer_band_level(player_h player, int index, int
 
 /**
  * @brief Sets all bands of the equalizer.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[in] band_levels The list of band levels to be set
  * @param[in] length The length of the band level
@@ -1117,7 +1418,7 @@ int player_audio_effect_set_equalizer_all_bands(player_h player, int *band_level
 
 /**
  * @brief Gets the valid band level range of the equalizer.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[out] min The minimum value to be set [dB]
  * @param[out] max The maximum value to be set [dB]
@@ -1134,7 +1435,7 @@ int player_audio_effect_get_equalizer_level_range(player_h player, int* min, int
 
 /**
  * @brief Gets the band frequency of the equalizer.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[in]  index The index of the requested equalizer band
  * @param[out] frequency The frequency of the given band [dB]
@@ -1149,7 +1450,7 @@ int player_audio_effect_get_equalizer_band_frequency(player_h player, int index,
 
 /**
  * @brief Gets the band frequency range of the equalizer.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[in]  index The index of the requested equalizer band
  * @param[out] range The frequency range of the given band [dB]
@@ -1164,7 +1465,7 @@ int player_audio_effect_get_equalizer_band_frequency_range(player_h player, int 
 
 /**
  * @brief Clears the equalizer effect.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
@@ -1178,7 +1479,7 @@ int player_audio_effect_equalizer_clear(player_h player);
 
 /**
  * @brief Checks whether the custom equalizer effect is available.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[out] available If @c true the specified audio effect is available,
  *                       otherwise @c false
@@ -1203,7 +1504,7 @@ int player_audio_effect_equalizer_is_available(player_h player, bool *available)
 
 /**
  * @brief Captures the video frame, asynchronously.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[in] callback	The callback function to register
  * @param[in] user_data	The user data to be passed to the callback function
@@ -1222,7 +1523,7 @@ int player_capture_video(player_h player, player_video_captured_cb callback, voi
 
 /**
  * @brief Sets the cookie for streaming playback.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[in] cookie The cookie to set
  * @param[in] size The size of the cookie
@@ -1239,7 +1540,7 @@ int player_set_streaming_cookie(player_h player, const char *cookie, int size);
 
 /**
  * @brief Sets the streaming user agent for playback.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[in] user_agent The user agent to set
  * @param[in] size The size of the user agent
@@ -1256,7 +1557,7 @@ int player_set_streaming_user_agent(player_h player, const char *user_agent, int
 
 /**
  * @brief Gets the download progress for streaming playback.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[out] start The starting position in percentage [0, 100]
  * @param[out] current The current position in percentage [0, 100]
@@ -1272,7 +1573,7 @@ int player_get_streaming_download_progress(player_h player, int *start, int *cur
 
 /**
  * @brief Registers a callback function to be invoked when the playback is finished.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player	The handle to the media player
  * @param[in] callback	The callback function to register
  * @param[in] user_data	The user data to be passed to the callback function
@@ -1290,7 +1591,7 @@ int player_set_completed_cb(player_h player, player_completed_cb callback, void 
 
 /**
  * @brief Unregisters the callback function.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
@@ -1303,7 +1604,7 @@ int player_unset_completed_cb(player_h player);
 
 /**
  * @brief Registers a callback function to be invoked when the playback is interrupted or the interrupt is completed.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player	The handle to the media player
  * @param[in] callback	The callback function to register
  * @param[in] user_data	The user data to be passed to the callback function
@@ -1321,7 +1622,7 @@ int player_set_interrupted_cb(player_h player, player_interrupted_cb callback, v
 
 /**
  * @brief Unregisters the callback function.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
@@ -1334,7 +1635,7 @@ int player_unset_interrupted_cb(player_h player);
 
 /**
  * @brief Registers a callback function to be invoked when an error occurs.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player	The handle to the media player
  * @param[in] callback	The callback function to register
  * @param[in] user_data	The user data to be passed to the callback function
@@ -1351,7 +1652,7 @@ int player_set_error_cb(player_h player, player_error_cb callback, void *user_da
 
 /**
  * @brief Unregisters the callback function.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
@@ -1364,7 +1665,7 @@ int player_unset_error_cb(player_h player);
 
 /**
  * @brief Registers a callback function to be invoked when there is a change in the buffering status of a media stream.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks The media resource should be streamed over the network.
  * @param[in] player	The handle to the media player
  * @param[in] callback	The callback function to register
@@ -1374,6 +1675,7 @@ int player_unset_error_cb(player_h player);
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE Unsupported feature
  * @post  player_buffering_cb() will be invoked.
  * @see player_unset_buffering_cb()
  * @see player_set_uri()
@@ -1383,7 +1685,7 @@ int player_set_buffering_cb(player_h player, player_buffering_cb callback, void 
 
 /**
  * @brief Unregisters the callback function.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
@@ -1396,7 +1698,7 @@ int player_unset_buffering_cb(player_h player);
 
 /**
  * @brief Sets a path to download, progressively.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks Progressive download will be started when you invoke player_start().
  * @param[in]   player The handle to the media player
  * @param[in]   path The absolute path to download
@@ -1406,6 +1708,7 @@ int player_unset_buffering_cb(player_h player);
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE Unsupported feature
  * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
  * @see player_set_progressive_download_message_cb()
  * @see player_unset_progressive_download_message_cb()
@@ -1414,7 +1717,7 @@ int player_set_progressive_download_path(player_h player, const char *path);
 
 /**
  * @brief Gets the status of progressive download.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @param[out] current The current download position (bytes)
  * @param[out] total_size The total size of the file (bytes)
@@ -1431,7 +1734,7 @@ int player_get_progressive_download_status(player_h player, unsigned long *curre
 
 /**
  * @brief Registers a callback function to be invoked when progressive download is started or completed.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player	The handle to the media player
  * @param[in] callback	The callback function to register
  * @param[in] user_data	The user data to be passed to the callback function
@@ -1440,6 +1743,7 @@ int player_get_progressive_download_status(player_h player, unsigned long *curre
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE Unsupported feature
  * @pre The path to download must be set by calling player_set_progressive_download_path().
  * @post  player_pd_message_cb() will be invoked.
  * @see player_unset_progressive_download_message_cb()
@@ -1449,7 +1753,7 @@ int player_set_progressive_download_message_cb(player_h player, player_pd_messag
 
 /**
  * @brief Unregisters the callback function.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
@@ -1462,7 +1766,7 @@ int player_unset_progressive_download_message_cb(player_h player);
 
 /**
  * @brief Sets the playback rate.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @details The default value is @c 1.0.
  * @remarks #PLAYER_ERROR_INVALID_OPERATION occurs when streaming playback.
  * @remarks No operation is performed, if @a rate is @c 0.
@@ -1487,7 +1791,7 @@ int player_set_playback_rate(player_h player, float rate);
 
 /**
  * @brief Sets a subtitle path.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks Only MicroDVD/SubViewer(*.sub), SAMI(*.smi), and SubRip(*.srt) subtitle formats are supported.
  * @param[in]   player The handle to the media player
  * @param[in]   path The absolute path of the subtitle file, it can be @c NULL in the #PLAYER_STATE_IDLE state.
@@ -1504,7 +1808,7 @@ int player_set_subtitle_path(player_h player,const char *path);
 
 /**
  * @brief Registers a callback function to be invoked when a subtitle updates.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player	The handle to the media player
  * @param[in] callback	The callback function to register
  * @param[in] user_data	The user data to be passed to the callback function
@@ -1523,7 +1827,7 @@ int player_set_subtitle_updated_cb(player_h player, player_subtitle_updated_cb c
 
 /**
  * @brief Unregisters the callback function.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @param[in] player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
@@ -1535,9 +1839,8 @@ int player_set_subtitle_updated_cb(player_h player, player_subtitle_updated_cb c
 int player_unset_subtitle_updated_cb(player_h player);
 
 /**
- * @internal
  * @brief Sets the seek position for the subtitle.
- * @since_tizen 2.3
+ * @since_tizen 2.3.1
  * @remarks Only MicroDVD/SubViewer(*.sub), SAMI(*.smi), and SubRip(*.srt) subtitle formats are supported.
  * @param[in]  player The handle to the media player
  * @param[in]  millisecond The position in milliseconds from the start to the seek point
@@ -1553,38 +1856,140 @@ int player_unset_subtitle_updated_cb(player_h player);
 int player_set_subtitle_position_offset(player_h player, int millisecond);
 
 /**
- * @brief Registers a media packet video callback function to be called once per frame.
- * @since_tizen 2.3
- * @remarks This function should be called before preparing. \n
- *	      A registered callback is called on the internal thread of the player. \n
- *          A video frame can be retrieved using a registered callback as a media packet.\n
- *          The callback function holds the same buffer that will be drawn on the display device.\n
- *          So if you change the media packet in a registerd callback, it will be displayed on the device\n
- *          and the media packet is available until it's destroyed by media_packet_destroy().
- * @param[in] player The handle to the media player
- * @param[in] callback The callback function to be registered
+ * @brief Registers a callback function to be invoked when video stream is changed.
+ * @since_tizen 2.4
+ * @remarks The stream changing is detected just before rendering operation.
+ * @param[in] player   The handle to the media player
+ * @param[in] callback The stream changed callback function to register
  * @param[in] user_data The user data to be passed to the callback function
-  * @return @c 0 on success,
+ * @return @c 0 on success,
  *         otherwise a negative error value
  * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
- * @pre	The player's state should be #PLAYER_STATE_IDLE. And, #PLAYER_DISPLAY_TYPE_NONE should be set by calling player_set_display.
- * @see player_unset_media_packet_video_frame_decoded_cb
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @post player_video_stream_changed_cb() will be invoked.
+ * @see player_unset_video_stream_changed_cb()
+ * @see player_video_stream_changed_cb()
  */
-int player_set_media_packet_video_frame_decoded_cb(player_h player, player_media_packet_video_decoded_cb callback, void *user_data);
+int player_set_video_stream_changed_cb (player_h player, player_video_stream_changed_cb callback, void *user_data);
 
 /**
- * @brief Unregisters the callback function.
- * @since_tizen 2.3
+ * @brief Unregisters the video stream changed callback function.
+ * @since_tizen 2.4
  * @param[in] player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
  * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @see player_set_media_packet_video_frame_decoded_cb()
+ * @see player_set_video_stream_changed_cb()
  */
-int player_unset_media_packet_video_frame_decoded_cb(player_h player);
+int player_unset_video_stream_changed_cb (player_h player);
+
+/**
+ * @brief Registers a callback function to be invoked when audio stream is changed.
+ * @since_tizen 2.4
+ * @remarks The stream changing is detected just before rendering operation.
+ * @param[in] player   The handle to the media player
+ * @param[in] callback The stream changed callback function to register
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @post player_audio_stream_changed_cb() will be invoked.
+ * @see player_unset_audio_stream_changed_cb()
+ * @see player_audio_stream_changed_cb()
+ */
+int player_set_audio_stream_changed_cb (player_h player, player_audio_stream_changed_cb callback, void *user_data);
+
+/**
+ * @brief Unregisters the audio stream changed callback function.
+ * @since_tizen 2.4
+ * @param[in] player The handle to the media player
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @see player_set_audio_stream_changed_cb()
+ */
+int player_unset_audio_stream_changed_cb (player_h player);
+
+/**
+ * @brief Gets current track index.
+ * @since_tizen 2.4
+ * @details Index starts from 0.
+ * @param[in] player The handle to the media player
+ * @param[in] type The type of target stream
+ * @param[out] index  The index of track
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_NOT_SUPPORTD Not supported
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED
+ */
+int player_get_current_track(player_h player, player_stream_type_e type, int *index);
+
+/**
+ * @brief Gets language code of a track.
+ * @since_tizen 2.4
+ * @remarks @a code must be released with @c free() by caller
+ * @param[in] player The handle to the media player
+ * @param[in] type The type of target stream
+ * @param[in] index  The index of track
+ * @param[out] code A language code in ISO 639-1. "und" will be returned if the language is undefined.
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_NOT_SUPPORTD Not supported
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED
+ */
+int player_get_track_language_code(player_h player, player_stream_type_e type, int index, char **code);
+
+/**
+ * @brief Gets the track count.
+ * @since_tizen 2.4
+ * @param[in] player The handle to the media player
+ * @param[in] type The type of target stream
+ * @param[out] count The number of track
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_NOT_SUPPORTD Not supported
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED
+ */
+int player_get_track_count(player_h player, player_stream_type_e type, int *count);
+
+/**
+ * @brief Selects a track to play.
+ * @since_tizen 2.4
+ * @param[in] player The handle to the media player
+ * @param[in] type The type of target stream
+ * @param[in] index  The index of track
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_NOT_SUPPORTD Not supported
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED
+ * @see player_get_current_track()
+ */
+int player_select_track(player_h player, player_stream_type_e type, int index);
 
 /**
  * @}
