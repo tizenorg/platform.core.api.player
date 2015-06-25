@@ -844,7 +844,7 @@ static bool  __video_stream_callback(void *stream, void *user_data)
 				if(i < bo_num)
 					info.planes[i].offset = 0;
 				else
-					info.planes[i].offset = info.planes[i - 1].size;
+					info.planes[i].offset = info.planes[i - 1].offset + info.planes[i - 1].size;
 				info.size += info.planes[i].size;
 			}
 			tsurf = tbm_surface_internal_create_with_bos(&info ,
