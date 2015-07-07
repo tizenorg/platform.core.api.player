@@ -3287,9 +3287,11 @@ int player_get_track_count(player_h player, player_stream_type_e type, int *coun
 		case PLAYER_STREAM_TYPE_AUDIO:
 			track_type = MM_PLAYER_TRACK_TYPE_AUDIO;
 			break;
+#if (defined _USE_M_V_INPUT_SELECTOR_ || defined TEST_ES)
 		case PLAYER_STREAM_TYPE_VIDEO:
 			track_type = MM_PLAYER_TRACK_TYPE_VIDEO;
 			break;
+#endif
 		case PLAYER_STREAM_TYPE_TEXT:
 			track_type = MM_PLAYER_TRACK_TYPE_TEXT;
 			break;
@@ -3324,9 +3326,11 @@ int player_get_current_track(player_h player, player_stream_type_e type, int *in
 		case PLAYER_STREAM_TYPE_AUDIO:
 			track_type = MM_PLAYER_TRACK_TYPE_AUDIO;
 			break;
+#if (defined _USE_M_V_INPUT_SELECTOR_ || defined TEST_ES)
 		case PLAYER_STREAM_TYPE_VIDEO:
 			track_type = MM_PLAYER_TRACK_TYPE_VIDEO;
 			break;
+#endif
 		case PLAYER_STREAM_TYPE_TEXT:
 			track_type = MM_PLAYER_TRACK_TYPE_TEXT;
 			break;
@@ -3361,9 +3365,11 @@ int player_select_track(player_h player, player_stream_type_e type, int index)
 		case PLAYER_STREAM_TYPE_AUDIO:
 			track_type = MM_PLAYER_TRACK_TYPE_AUDIO;
 			break;
+#if (defined _USE_M_V_INPUT_SELECTOR_ || defined TEST_ES)
 		case PLAYER_STREAM_TYPE_VIDEO:
 			track_type = MM_PLAYER_TRACK_TYPE_VIDEO;
 			break;
+#endif
 		case PLAYER_STREAM_TYPE_TEXT:
 			track_type = MM_PLAYER_TRACK_TYPE_TEXT;
 			break;
@@ -3399,9 +3405,11 @@ int player_get_track_language_code(player_h player, player_stream_type_e type, i
 		case PLAYER_STREAM_TYPE_AUDIO:
 			track_type = MM_PLAYER_TRACK_TYPE_AUDIO;
 			break;
+#if (defined _USE_M_V_INPUT_SELECTOR_ || defined TEST_ES)
 		case PLAYER_STREAM_TYPE_VIDEO:
 			track_type = MM_PLAYER_TRACK_TYPE_VIDEO;
 			break;
+#endif
 		case PLAYER_STREAM_TYPE_TEXT:
 			track_type = MM_PLAYER_TRACK_TYPE_TEXT;
 			break;
