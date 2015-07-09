@@ -2851,39 +2851,6 @@ int player_unset_media_packet_video_frame_decoded_cb(player_h player)
 		return PLAYER_ERROR_NONE;
 }
 
-static bool  __audio_stream_changed_callback (void *user_data)
-{
-	player_s * handle = (player_s*)user_data;
-	_player_event_e event_type = _PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED;
-
-	LOGE("[%s] event type %d", __FUNCTION__, event_type);
-
-	if(handle->user_cb[event_type])
-	{
-		int sample_rate = 0, channel = 0, bit_rate = 0;
-
-		int ret = mm_player_get_attribute(handle->mm_handle, NULL,
-					MM_PLAYER_AUDIO_SAMPLERATE, &sample_rate,
-					MM_PLAYER_AUDIO_CHANNEL, &channel,
-					MM_PLAYER_AUDIO_BITRATE, &bit_rate, (char*)NULL);
-
-		if(ret != MM_ERROR_NONE)
-		{
-			LOGE("[%s] get attr is failed", __FUNCTION__);
-			return FALSE;
-		}
-
-		((player_audio_stream_changed_cb)handle->user_cb[event_type])(sample_rate, channel, bit_rate, handle->user_data[event_type]);
-	}
-	else
-	{
-		LOGE("[%s] audio stream changed cb was not set.", __FUNCTION__);
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
 static bool  __video_stream_changed_callback (void *user_data)
 {
 	player_s * handle = (player_s*)user_data;
@@ -2915,43 +2882,6 @@ static bool  __video_stream_changed_callback (void *user_data)
 	}
 
 	return TRUE;
-}
-
-int player_set_audio_stream_changed_cb (player_h player, player_audio_stream_changed_cb callback, void *user_data)
-{
-	int ret;
-	PLAYER_INSTANCE_CHECK(player);
-	PLAYER_NULL_ARG_CHECK(callback);
-	player_s * handle = (player_s *) player;
-
-	if (handle->state != PLAYER_STATE_IDLE )
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d", __FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
-
-	ret = mm_player_set_audio_stream_changed_callback ( handle->mm_handle,
-					  (mm_player_stream_changed_callback)__audio_stream_changed_callback, (void*)handle );
-
-	if(ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret,(char*)__FUNCTION__);
-
-	return __set_callback(_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED, player, callback, user_data);
-}
-
-int player_unset_audio_stream_changed_cb (player_h player)
-{
-	int ret;
-	PLAYER_INSTANCE_CHECK(player);
-	player_s * handle = (player_s *) player;
-
-	__unset_callback(_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED, player);
-
-	ret = mm_player_set_audio_stream_changed_callback(handle->mm_handle, NULL, NULL);
-	if(ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret,(char*)__FUNCTION__);
-	else
-		return PLAYER_ERROR_NONE;
 }
 
 int player_set_video_stream_changed_cb (player_h player, player_video_stream_changed_cb callback, void *user_data)
