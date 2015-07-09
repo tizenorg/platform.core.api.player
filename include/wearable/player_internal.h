@@ -62,6 +62,7 @@ typedef void (*player_audio_pcm_extraction_cb)(player_audio_raw_data_s *audio_ra
  * @since_tizen 2.4
  * @param[in] player    The handle to the media player
  * @param[in] sync Sync on the clock
+ * @param[in] format Audio format of output pcm
  * @param[in] callback The callback function to register
  * @param[in] user_data The user data to be passed to the callback function
  * @return @c 0 on success,
@@ -75,7 +76,7 @@ typedef void (*player_audio_pcm_extraction_cb)(player_audio_raw_data_s *audio_ra
  * @post player_audio_pcm_extraction_cb() will be invoked.
  * @see player_unset_audio_frame_decoded_cb_ex()
  */
-int player_set_pcm_extraction_mode(player_h player, bool sync, player_audio_pcm_extraction_cb callback, void *user_data);
+int player_set_pcm_extraction_mode(player_h player, bool sync, const char *format, player_audio_pcm_extraction_cb callback, void *user_data);
 
 /**
  * @}

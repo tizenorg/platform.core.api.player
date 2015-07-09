@@ -1067,7 +1067,7 @@ static void audio_frame_decoded_cb_ex()
     fp_out2 = fopen("/opt/usr/media/out2.pcm", "wb");
 #endif
 
-	ret = player_set_pcm_extraction_mode(g_player[0], false, _audio_frame_decoded_cb_ex, &ret);
+	ret = player_set_pcm_extraction_mode(g_player[0], false, "F32LE", _audio_frame_decoded_cb_ex, &ret);
 	g_print("                                                            ==> [Player_Test] player_set_audio_frame_decoded_cb_ex return: %d\n", ret);
 }
 
