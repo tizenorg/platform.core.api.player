@@ -1949,7 +1949,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 			sizeof(void*),
 #endif
 			"display_overlay", set_handle,
-			sizeof(display), (char*)NULL);
+			sizeof(void*), (char*)NULL);
 
 		if (ret != MM_ERROR_NONE)
 		{
