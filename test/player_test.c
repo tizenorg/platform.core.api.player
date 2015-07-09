@@ -254,22 +254,18 @@ static void prepared_cb(void *user_data)
 
 static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s *audio_raw_frame, void *user_data)
 {
-	player_audio_raw_data_s* audio_raw = (player_audio_raw_data_s*) audio_raw_frame;
+	player_audio_raw_data_s* audio_raw = audio_raw_frame;
+
+	if (!audio_raw) return;
 
 	g_print("[Player_Test] decoded_cb_ex! channel: %d channel_mask: %lld\n", audio_raw->channel, audio_raw->channel_mask);
 
 #ifdef DUMP_OUTBUF
-	if (audio_raw_frame != NULL)
-	{
-		if(audio_raw->channel_mask == 1)
-			fwrite(audio_raw_frame->data, 1, audio_raw_frame->size, fp_out1);
-
-		else if(audio_raw->channel_mask == 2)
-			fwrite(audio_raw_frame->data, 1, audio_raw_frame->size, fp_out2);
-	}
-
+	if(audio_raw->channel_mask == 1)
+		fwrite((guint8 *)audio_raw->data, 1, audio_raw->size, fp_out1);
+	else if(audio_raw->channel_mask == 2)
+		fwrite((guint8 *)audio_raw->data, 1, audio_raw->size, fp_out2);
 #endif
-
 }
 
 static void progress_down_cb(player_pd_message_type_e type, void *user_data)
