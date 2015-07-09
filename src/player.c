@@ -1351,7 +1351,7 @@ int player_unprepare (player_h player)
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
 
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
@@ -1754,11 +1754,6 @@ int 	player_set_looping (player_h player, bool looping)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int value = 0;
 	if(looping==TRUE)
@@ -1782,12 +1777,8 @@ int player_is_looping (player_h player, bool *looping)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(looping);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 	int count;
+
 	int ret = mm_player_get_attribute(handle->mm_handle, NULL,MM_PLAYER_PLAYBACK_COUNT , &count, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{
@@ -1847,11 +1838,6 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	int wl_window_height = 0;
 #endif
 	int ret;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	if (type != PLAYER_DISPLAY_TYPE_NONE && display == NULL)
 	{
@@ -2356,11 +2342,6 @@ int player_audio_effect_get_equalizer_bands_count (player_h player, int *count)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(count);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int ret = mm_player_audio_effect_custom_get_eq_bands_number(handle->mm_handle, count);
 	if(ret != MM_ERROR_NONE)
@@ -2374,11 +2355,6 @@ int player_audio_effect_set_equalizer_all_bands(player_h player, int *band_level
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(band_levels);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int ret = mm_player_audio_effect_custom_set_level_eq_from_list(handle->mm_handle, band_levels, length);
 	if(ret != MM_ERROR_NONE)
@@ -2396,11 +2372,6 @@ int player_audio_effect_set_equalizer_band_level(player_h player, int index, int
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int ret = mm_player_audio_effect_custom_set_level(handle->mm_handle,MM_AUDIO_EFFECT_CUSTOM_EQ, index, level);
 	if(ret != MM_ERROR_NONE)
@@ -2419,11 +2390,6 @@ int player_audio_effect_get_equalizer_band_level(player_h player, int index, int
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(level);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int ret = mm_player_audio_effect_custom_get_level(handle->mm_handle,MM_AUDIO_EFFECT_CUSTOM_EQ, index, level);
 	if(ret != MM_ERROR_NONE)
@@ -2438,11 +2404,6 @@ int player_audio_effect_get_equalizer_level_range(player_h player, int* min, int
 	PLAYER_NULL_ARG_CHECK(min);
 	PLAYER_NULL_ARG_CHECK(max);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int ret = mm_player_audio_effect_custom_get_level_range(handle->mm_handle, MM_AUDIO_EFFECT_CUSTOM_EQ, min, max);
 	if(ret != MM_ERROR_NONE)
@@ -2456,11 +2417,6 @@ int player_audio_effect_get_equalizer_band_frequency(player_h player, int index,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(frequency);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int ret = mm_player_audio_effect_custom_get_eq_bands_freq(handle->mm_handle, index, frequency);
 	if(ret != MM_ERROR_NONE)
@@ -2474,11 +2430,6 @@ int player_audio_effect_get_equalizer_band_frequency_range(player_h player, int 
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(range);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int ret = mm_player_audio_effect_custom_get_eq_bands_width(handle->mm_handle, index, range);
 	if(ret != MM_ERROR_NONE)
@@ -2491,11 +2442,6 @@ int player_audio_effect_equalizer_clear(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int ret = mm_player_audio_effect_custom_clear_eq_all(handle->mm_handle);
 	if(ret != MM_ERROR_NONE)
@@ -2514,11 +2460,6 @@ int player_audio_effect_equalizer_is_available(player_h player, bool *available)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(available);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) :  current state - %d" ,__FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
 	int ret = mm_player_is_supported_custom_effect_type(handle->mm_handle, MM_AUDIO_EFFECT_CUSTOM_EQ);
 	if(ret != MM_ERROR_NONE)
@@ -3095,15 +3036,9 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s * handle = (player_s *) player;
-	/**/
-	PLAYER_CHECK_CONDITION(handle->error_code == PLAYER_ERROR_NONE, PLAYER_ERROR_NOT_SUPPORTED_FILE, "can't support this format");
-	if (handle->state < PLAYER_STATE_IDLE || handle->state > PLAYER_STATE_PAUSED)
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,
-			__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
 
+	PLAYER_CHECK_CONDITION(handle->error_code == PLAYER_ERROR_NONE,
+		PLAYER_ERROR_NOT_SUPPORTED_FILE, "can't support this format");
 
 	int ret = mm_player_submit_packet(handle->mm_handle, packet);
 
@@ -3167,11 +3102,7 @@ int player_get_media_stream_buffer_max_size(player_h player, player_stream_type_
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(max_size);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
+
 	unsigned long long _max_size;
 	int ret = mm_player_get_media_stream_buffer_max_size(handle->mm_handle, type, &_max_size);
 	if(ret != MM_ERROR_NONE)
@@ -3209,11 +3140,7 @@ int player_get_media_stream_buffer_min_threshold(player_h player, player_stream_
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(percent);
 	player_s * handle = (player_s *) player;
-	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
-	{
-		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
-		return PLAYER_ERROR_INVALID_STATE;
-	}
+
 	unsigned int _value;
 	int ret = mm_player_get_media_stream_buffer_min_percent(handle->mm_handle, type, &_value);
 	if(ret != MM_ERROR_NONE)
@@ -3266,9 +3193,6 @@ int player_get_track_count(player_h player, player_stream_type_e type, int *coun
 		case PLAYER_STREAM_TYPE_AUDIO:
 			track_type = MM_PLAYER_TRACK_TYPE_AUDIO;
 			break;
-		case PLAYER_STREAM_TYPE_VIDEO:
-			track_type = MM_PLAYER_TRACK_TYPE_VIDEO;
-			break;
 		case PLAYER_STREAM_TYPE_TEXT:
 			track_type = MM_PLAYER_TRACK_TYPE_TEXT;
 			break;
@@ -3303,9 +3227,6 @@ int player_get_current_track(player_h player, player_stream_type_e type, int *in
 		case PLAYER_STREAM_TYPE_AUDIO:
 			track_type = MM_PLAYER_TRACK_TYPE_AUDIO;
 			break;
-		case PLAYER_STREAM_TYPE_VIDEO:
-			track_type = MM_PLAYER_TRACK_TYPE_VIDEO;
-			break;
 		case PLAYER_STREAM_TYPE_TEXT:
 			track_type = MM_PLAYER_TRACK_TYPE_TEXT;
 			break;
@@ -3339,9 +3260,6 @@ int player_select_track(player_h player, player_stream_type_e type, int index)
 	{
 		case PLAYER_STREAM_TYPE_AUDIO:
 			track_type = MM_PLAYER_TRACK_TYPE_AUDIO;
-			break;
-		case PLAYER_STREAM_TYPE_VIDEO:
-			track_type = MM_PLAYER_TRACK_TYPE_VIDEO;
 			break;
 		case PLAYER_STREAM_TYPE_TEXT:
 			track_type = MM_PLAYER_TRACK_TYPE_TEXT;
