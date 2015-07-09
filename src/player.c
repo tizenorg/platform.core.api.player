@@ -407,6 +407,49 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user
 	return MEDIA_PACKET_FINALIZE;
 }
 
+static bool _player_network_availability_check()
+{
+	#define _FEATURE_NAME_WIFI 		"http://tizen.org/feature/network.wifi"
+	#define _FEATURE_NAME_TELEPHONY "http://tizen.org/feature/network.telephony"
+	#define _FEATURE_NAME_ETHERNET	"http://tizen.org/feature/network.ethernet"
+	bool enabled = FALSE;
+	bool supported = FALSE;
+
+	if (SYSTEM_INFO_ERROR_NONE == system_info_get_platform_bool(_FEATURE_NAME_WIFI, &enabled))
+	{
+		LOGI("wifi status = %d", enabled);
+		if (enabled) supported = TRUE;
+	}
+	else
+	{
+		LOGE("SYSTEM_INFO_ERROR");
+	}
+
+	if (SYSTEM_INFO_ERROR_NONE == system_info_get_platform_bool(_FEATURE_NAME_TELEPHONY, &enabled))
+	{
+		LOGI("telephony status = %d", enabled);
+		if (enabled) supported = TRUE;
+	}
+	else
+	{
+		LOGE("SYSTEM_INFO_ERROR");
+	}
+
+	if (SYSTEM_INFO_ERROR_NONE == system_info_get_platform_bool(_FEATURE_NAME_ETHERNET, &enabled))
+	{
+		LOGI("ethernet status = %d", enabled);
+		if (enabled) supported = TRUE;
+	}
+	else
+	{
+		LOGE("SYSTEM_INFO_ERROR");
+	}
+
+	if (!supported) return FALSE;
+
+	return TRUE;
+}
+
 static player_interrupted_code_e __convert_interrupted_code(int code)
 {
 	player_interrupted_code_e ret = PLAYER_INTERRUPTED_BY_RESOURCE_CONFLICT;
@@ -465,9 +508,13 @@ static int __set_callback(_player_event_e type, player_h player, void* callback,
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
-	player_s * handle = (player_s *) player;
 	if (_PLAYER_EVENT_TYPE_BUFFERING == type)
-		PLAYER_NETWORK_AVAILABLE_CHECK();
+	{
+		if (!_player_network_availability_check())
+		return PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE;
+	}
+
+	player_s * handle = (player_s *) player;
 	handle->user_cb[type] = callback;
 	handle->user_data[type] = user_data;
 	LOGI("[%s] Event type : %d ",__FUNCTION__, type);
@@ -2522,7 +2569,9 @@ int player_set_progressive_download_path(player_h player, const char *path)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(path);
-	PLAYER_NETWORK_AVAILABLE_CHECK();
+	if (!_player_network_availability_check())
+		return PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE;
+
 	player_s * handle = (player_s *) player;
 	PLAYER_STATE_CHECK(handle,PLAYER_STATE_IDLE);
 
@@ -2725,9 +2774,11 @@ int player_set_progressive_download_message_cb(player_h player, player_pd_messag
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
-	PLAYER_NETWORK_AVAILABLE_CHECK();
+	if (!_player_network_availability_check())
+		return PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE;
 
 	player_s * handle = (player_s *) player;
+
 	if (handle->state != PLAYER_STATE_IDLE  &&  handle->state != PLAYER_STATE_READY)
 	{
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
