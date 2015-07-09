@@ -60,36 +60,6 @@ extern "C" {
 #define PLAYER_TRACE_ASYNC_END(NAME, KEY)
 #endif
 
-#define PLAYER_NETWORK_AVAILABLE_CHECK() \
-do \
-{ \
-	bool enabled = FALSE; \
-	bool supported = FALSE; \
-	if (SYSTEM_INFO_ERROR_NONE == system_info_get_platform_bool("http://tizen.org/feature/network.wifi", &enabled)) \
-	{ \
-		LOGI("[%s] wifi status = %d", __FUNCTION__, enabled); \
-		if (enabled) supported = TRUE; \
-	} \
-	else \
-	{ \
-		LOGE("[%s] SYSTEM_INFO_ERROR", __FUNCTION__); \
-	} \
-	if (SYSTEM_INFO_ERROR_NONE == system_info_get_platform_bool("http://tizen.org/feature/network.telephony", &enabled)) \
-	{ \
-		LOGI("[%s] telephony status = %d", __FUNCTION__, enabled); \
-		if (enabled) supported = TRUE; \
-	} \
-	else \
-	{ \
-		LOGE("[%s] SYSTEM_INFO_ERROR", __FUNCTION__); \
-	} \
-	if (!supported) \
-	{ \
-		LOGE("[%s] PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE", __FUNCTION__); \
-		return PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE; \
-	} \
-} while (0)
-
 typedef enum {
 	_PLAYER_EVENT_TYPE_PREPARE,
 	_PLAYER_EVENT_TYPE_COMPLETE,
