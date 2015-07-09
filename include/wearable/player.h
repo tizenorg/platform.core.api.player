@@ -389,21 +389,6 @@ typedef void (*player_media_stream_seek_cb) (unsigned long long offset, void *us
 typedef void (*player_video_stream_changed_cb) (int width, int height, int fps, int bit_rate, void *user_data);
 
 /**
- * @brief Called to notify the audio stream changed.
- * @since_tizen 2.4
- * @details The audio stream changing is detected just before rendering operation.
- * @param[in] sample_rate The audio sample rate [Hz] \n
- *                        Value can be invalid if there is no audio stream information.
- * @param[in] channel The audio channel (1: mono, 2: stereo) \n
- *                    Value can be invalid if there is no audio stream information.
- * @param[in] bit_rate The audio bit rate [Hz] \n
- *                     Value can be invalid if there is no audio stream information.
- * @param[in] user_data The user data passed from the callback registration function
- * @see player_set_audio_stream_changed_cb()
- */
-typedef void (*player_audio_stream_changed_cb) (int sample_rate, int channel, int bit_rate, void *user_data);
-
-/**
  * @brief Creates a player handle for playing multimedia content.
  * @since_tizen 2.3.1
  * @remarks You must release @a player by using player_destroy().\n
@@ -1886,38 +1871,6 @@ int player_set_video_stream_changed_cb (player_h player, player_video_stream_cha
  * @see player_set_video_stream_changed_cb()
  */
 int player_unset_video_stream_changed_cb (player_h player);
-
-/**
- * @brief Registers a callback function to be invoked when audio stream is changed.
- * @since_tizen 2.4
- * @remarks The stream changing is detected just before rendering operation.
- * @param[in] player   The handle to the media player
- * @param[in] callback The stream changed callback function to register
- * @param[in] user_data The user data to be passed to the callback function
- * @return @c 0 on success,
- *         otherwise a negative error value
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
- * @post player_audio_stream_changed_cb() will be invoked.
- * @see player_unset_audio_stream_changed_cb()
- * @see player_audio_stream_changed_cb()
- */
-int player_set_audio_stream_changed_cb (player_h player, player_audio_stream_changed_cb callback, void *user_data);
-
-/**
- * @brief Unregisters the audio stream changed callback function.
- * @since_tizen 2.4
- * @param[in] player The handle to the media player
- * @return @c 0 on success,
- *         otherwise a negative error value
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @see player_set_audio_stream_changed_cb()
- */
-int player_unset_audio_stream_changed_cb (player_h player);
 
 /**
  * @brief Gets current track index.
