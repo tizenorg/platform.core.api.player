@@ -884,6 +884,7 @@ int player_unset_media_packet_video_frame_decoded_cb(player_h player);
 /**
  * @brief  Pushes elementary stream to decode audio or video
  * @since_tizen 2.4
+ * @remarks player_set_media_stream_info() should be called before using this API.
  * @param[in]  player   The handle to media player
  * @param[in]  packet   The media packet to decode
  * @return @c 0 on success,
@@ -1860,6 +1861,7 @@ int player_unset_video_stream_changed_cb (player_h player);
  * @brief Gets current track index.
  * @since_tizen 2.4
  * @details Index starts from 0.
+ * @remarks PLAYER_STREAM_TYPE_VIDEO is not supported.
  * @param[in] player The handle to the media player
  * @param[in] type The type of target stream
  * @param[out] index  The index of track
@@ -1878,6 +1880,7 @@ int player_get_current_track(player_h player, player_stream_type_e type, int *in
  * @brief Gets language code of a track.
  * @since_tizen 2.4
  * @remarks @a code must be released with @c free() by caller
+ * @remarks PLAYER_STREAM_TYPE_VIDEO is not supported.
  * @param[in] player The handle to the media player
  * @param[in] type The type of target stream
  * @param[in] index  The index of track
@@ -1896,6 +1899,7 @@ int player_get_track_language_code(player_h player, player_stream_type_e type, i
 /**
  * @brief Gets the track count.
  * @since_tizen 2.4
+ * @remarks PLAYER_STREAM_TYPE_VIDEO is not supported.
  * @param[in] player The handle to the media player
  * @param[in] type The type of target stream
  * @param[out] count The number of track
@@ -1913,6 +1917,7 @@ int player_get_track_count(player_h player, player_stream_type_e type, int *coun
 /**
  * @brief Selects a track to play.
  * @since_tizen 2.4
+ * @remarks PLAYER_STREAM_TYPE_VIDEO is not supported.
  * @param[in] player The handle to the media player
  * @param[in] type The type of target stream
  * @param[in] index  The index of track
