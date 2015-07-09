@@ -5,7 +5,7 @@
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
 *
-* http://www.apache.org/licenses/LICENSE-2.0void set_pcm_spec
+* http://www.apache.org/licenses/LICENSE-2.0
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -445,7 +445,6 @@ static void player_set_memory_buffer_test()
     g_print("player_set_memory_buffer ret : %d\n", ret);
 }
 
-#ifdef TEST_ES
 int video_packet_count = 0;
 
 static void buffer_need_video_data_cb(unsigned int size, void *user_data)
@@ -664,7 +663,6 @@ static void feed_video_data_thread_func(void *data)
 		buffer_need_audio_data_cb(1048576, NULL);
 	}
 }
-#endif
 
 static void _player_prepare(bool async)
 {
@@ -705,7 +703,7 @@ static void _player_prepare(bool async)
 				player_set_uri(g_player[i], g_uri);
 		}
 	}
-#ifdef TEST_ES
+
 	if (strstr(g_uri, "es_buff://"))
 	{
 		is_es_push_mode = FALSE;
@@ -725,7 +723,7 @@ static void _player_prepare(bool async)
 		}
 #endif
 	}
-#endif
+
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY)
 	{
 		if ( async )
@@ -769,11 +767,9 @@ static void _player_prepare(bool async)
 		}
 	}
 
-#ifdef TEST_ES
 	if (is_es_push_mode) {
 		pthread_create(&g_feed_video_thread_id, NULL, (void*)feed_video_data_thread_func, NULL);
 	}
-#endif
 
 }
 
@@ -926,14 +922,14 @@ static void _player_stop()
 			g_print("player_stop returned [%d]", bRet);
 		}
 	}
-#ifdef TEST_ES
+
 	g_thread_end = TRUE;
 	if (g_feed_video_thread_id)
 	{
 		pthread_join(g_feed_video_thread_id, NULL);
 		g_feed_video_thread_id = 0;
 	}
-#endif
+
 }
 
 static void _player_resume()
