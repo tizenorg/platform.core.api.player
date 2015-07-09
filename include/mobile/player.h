@@ -919,23 +919,6 @@ int player_push_media_stream(player_h player, media_packet_h packet);
 int player_set_media_stream_info(player_h player, player_stream_type_e type, media_format_h format);
 
 /**
- * @brief  Pushes elementary stream to decode audio or video
- * @since_tizen 2.4
- * @remarks This API is used for media stream playback only.
- * @param[in]  player   The handle to media player
- * @param[in]  packet   The media packet to decode
- * @return @c 0 on success,
- *         otherwise a negative error value
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
- * @retval #PLAYER_ERROR_NOT_SUPPORTED_FILE File not supported
- * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
- * @see  player_set_media_stream_info()
- */
-int player_push_media_stream(player_h player, media_packet_h packet);
-
-/**
  * @brief Registers a callback function to be invoked when buffer underrun or overflow is occurred.
  * @since_tizen 2.4
  * @remarks This API is used for media stream playback only.
