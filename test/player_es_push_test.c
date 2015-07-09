@@ -144,12 +144,12 @@ static void
 create_base_gui(appdata_s *ad)
 {
 	/* Enable GLES Backened */
-	elm_config_preferred_engine_set("opengl_x11");
+	elm_config_preferred_engine_set("3d");
 
 	/* Window */
 	ad->win = create_win(PACKAGE);//elm_win_util_standard_add(PACKAGE, PACKAGE);
 	ad->rect = create_render_rect(ad->win);
-        /* This is not supported in 3.0  
+        /* This is not supported in 3.0
 	elm_win_wm_desktop_layout_support_set(ad->win, EINA_TRUE);*/
 	elm_win_autodel_set(ad->win, EINA_TRUE);
 	evas_object_smart_callback_add(ad->win, "delete,request", win_delete_request_cb, ad);
