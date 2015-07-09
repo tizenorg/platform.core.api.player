@@ -5,7 +5,7 @@
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
 *
-* http://www.apache.org/licenses/LICENSE-2.0
+* http://www.apache.org/licenses/LICENSE-2.0void set_pcm_spec
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -1071,6 +1071,14 @@ static void audio_frame_decoded_cb_ex()
 	g_print("                                                            ==> [Player_Test] player_set_audio_frame_decoded_cb_ex return: %d\n", ret);
 }
 
+static void set_pcm_spec()
+{
+	int ret;
+
+	ret = player_set_pcm_spec(g_player[0], 44100, 2);
+	g_print("[Player_Test] set_pcm_spec return: %d\n", ret);
+}
+
 static void get_stream_info()
 {
 	int w = 0;
@@ -1733,6 +1741,10 @@ void _interpret_main_menu(char *cmd)
 		else if(strncmp(cmd, "X3", 2) == 0)
 		{
 			audio_frame_decoded_cb_ex();
+		}
+		else if(strncmp(cmd, "X4", 2) == 0)
+		{
+			set_pcm_spec();
 		}
   		else
 		{

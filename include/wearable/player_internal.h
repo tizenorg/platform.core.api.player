@@ -74,9 +74,25 @@ typedef void (*player_audio_pcm_extraction_cb)(player_audio_raw_data_s *audio_ra
  * @retval #PLAYER_ERROR_NOT_SUPPORTD Not supported
  * @pre The player state must be #PLAYER_STATE_IDLE by player_create() or player_unprepare().
  * @post player_audio_pcm_extraction_cb() will be invoked.
- * @see player_unset_audio_frame_decoded_cb_ex()
  */
 int player_set_pcm_extraction_mode(player_h player, bool sync, const char *format, player_audio_pcm_extraction_cb callback, void *user_data);
+/**
+ * @brief Set pcm mode spec. Samplerate, channel is needed.
+ * @since_tizen 2.4
+ * @param[in] player    The handle to the media player
+ * @param[in] samplerate Samplerate
+ * @param[in] channel Channel
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_NOT_SUPPORTD Not supported
+ * @pre The player state must be #PLAYER_STATE_IDLE by player_create() or player_unprepare().
+ * @see player_set_pcm_extraction_mode()
+ */
+int player_set_pcm_spec(player_h player, int samplerate, int channel);
 
 /**
  * @}
