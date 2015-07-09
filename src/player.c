@@ -1487,6 +1487,8 @@ int player_set_sound_type(player_h player, sound_type_e type)
 
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
+	LOGI("[%s] sound type = %d", __FUNCTION__, type);
+
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL,"sound_volume_type" , type, (char*)NULL);
 	if(ret != MM_ERROR_NONE)
 	{

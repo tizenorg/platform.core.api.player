@@ -298,6 +298,16 @@
 
  *</table></div>
  *
+ * @if WEARABLE
+ * @section CAPI_MEDIA_PLAYER_MODULE_FEATURE Related Features
+ * This API is related with the following features:
+ *  - http://tizen.org/feature/network.internet
+ *
+ * It is recommended to design feature related codes in your application for reliability.
+ * You can check if a device supports the related features for this API by using @ref CAPI_SYSTEM_SYSTEM_INFO_MODULE, thereby controlling the procedure of your application.
+ * To ensure your application is only running on the device with specific features, please define the features in your manifest file using the manifest editor in the SDK.
+ * More details on featuring your application can be found from <a href="../org.tizen.mobile.native.appprogramming/html/ide_sdk_tools/feature_element.htm"><b>Feature Element</b>.</a>
+ * @endif
  */
 
 
