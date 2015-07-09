@@ -144,7 +144,7 @@ static void
 create_base_gui(appdata_s *ad)
 {
 	/* Enable GLES Backened */
-	elm_config_preferred_engine_set("opengl_x11");
+	elm_config_preferred_engine_set("3d");
 
 	/* Window */
 	ad->win = create_win(PACKAGE);//elm_win_util_standard_add(PACKAGE, PACKAGE);

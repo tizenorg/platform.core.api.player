@@ -191,7 +191,7 @@ static int app_create(void *data)
 	Evas_Object *win = NULL;
 
 	/* use gl backend */
-	elm_config_preferred_engine_set("opengl_x11");
+	elm_config_preferred_engine_set("3d");
 
 	/* create window */
 	win = create_win(PACKAGE);
