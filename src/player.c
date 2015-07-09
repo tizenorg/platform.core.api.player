@@ -3010,10 +3010,8 @@ int player_set_media_stream_buffer_status_cb ( player_h player,
 
 	if (type == PLAYER_STREAM_TYPE_VIDEO)
 		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS, player, callback, user_data);
-	else if (type == PLAYER_STREAM_TYPE_AUDIO)
-		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS, player, callback, user_data);
 	else
-		return PLAYER_ERROR_INVALID_PARAMETER;
+		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS, player, callback, user_data);
 }
 
 int player_unset_media_stream_buffer_status_cb (player_h player, player_stream_type_e type)
@@ -3067,10 +3065,8 @@ int player_set_media_stream_seek_cb (player_h player,
 
 	if (type == PLAYER_STREAM_TYPE_VIDEO)
 		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK, player, callback, user_data);
-	else if (type == PLAYER_STREAM_TYPE_AUDIO)
-		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK, player, callback, user_data);
 	else
-		return PLAYER_ERROR_INVALID_PARAMETER;
+		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK, player, callback, user_data);
 }
 
 int player_unset_media_stream_seek_cb (player_h player, player_stream_type_e type)
