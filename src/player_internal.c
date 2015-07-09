@@ -58,14 +58,19 @@ bool  __audio_stream_callback_ex(MMPlayerAudioStreamDataType *stream, void *user
 	return TRUE;
 }
 
-int player_set_pcm_extraction_mode(player_h player, bool sync, player_audio_pcm_extraction_cb callback, void *user_data)
+int player_set_pcm_extraction_mode(player_h player, bool sync, const char *format, player_audio_pcm_extraction_cb callback, void *user_data)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
 	player_s * handle = (player_s *) player;
+	int ret = MM_ERROR_NONE;
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
-	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "pcm_extraction",TRUE, "pcm_extraction_start_msec", 0, "pcm_extraction_end_msec", 0, NULL);
+	ret = mm_player_set_attribute(handle->mm_handle, NULL, "pcm_extraction",TRUE, "pcm_extraction_start_msec", 0, "pcm_extraction_end_msec", 0, NULL);
+	if(ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+
+	ret = mm_player_set_attribute(handle->mm_handle, NULL, "pcm_audioformat", format , strlen(format), NULL);
 	if(ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret,(char*)__FUNCTION__);
 
