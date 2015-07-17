@@ -258,7 +258,7 @@ static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s *audio_raw_frame,
 
 	if (!audio_raw) return;
 
-	g_print("[Player_Test] decoded_cb_ex! channel: %d channel_mask: %lld\n", audio_raw->channel, audio_raw->channel_mask);
+	g_print("[Player_Test] decoded_cb_ex! channel: %d channel_mask: %" G_GUINT64_FORMAT "\n", audio_raw->channel, audio_raw->channel_mask);
 
 #ifdef DUMP_OUTBUF
 	if(audio_raw->channel_mask == 1)
@@ -496,7 +496,7 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 		fclose(fp);
 		fp = NULL;
 	}
-	g_print("video need data - data size : %d, pts : %lld\n", real_read_len, pts);
+	g_print("video need data - data size : %d, pts : %" G_GUINT64_FORMAT "\n", real_read_len, pts);
 #if 0
 	player_submit_packet(g_player[0], buff_ptr, real_read_len, (pts/1000000), 1);
 #else
@@ -567,7 +567,7 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 		fclose(fp);
 		fp = NULL;
 
-		g_print("\t audio need data - data size : %d, pts : %lld\n", real_read_len, audio_pts);
+		g_print("\t audio need data - data size : %d, pts : %" G_GUINT64_FORMAT "\n", real_read_len, audio_pts);
 	}
 #if 0
 	player_submit_packet(g_player[0], buff_ptr, real_read_len, (audio_pts/1000000), 0);
