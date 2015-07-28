@@ -30,6 +30,7 @@
 #include <Ecore.h>
 #include <Elementary.h>
 #include <Ecore.h>
+#include <Ecore_Wayland.h>
 #include <tbm_bufmgr.h>
 #include <tbm_surface_internal.h>
 
