@@ -239,8 +239,8 @@ pipe_cb(void *data, void *buf, unsigned int len)
 		ptr = buf_data;
 
 		for (plane_idx = 0; plane_idx < suf_info.num_planes; plane_idx++) {
-				memcpy(ptr, suf_info.planes[plane_idx].ptr, suf_info.planes[plane_idx].size);
-				ptr += suf_info.planes[plane_idx].size;
+			memcpy(ptr, suf_info.planes[plane_idx].ptr, suf_info.planes[plane_idx].size);
+			ptr += suf_info.planes[plane_idx].size;
 		}
 		/* dump buf data here, if needed */
 		g_free(buf_data);

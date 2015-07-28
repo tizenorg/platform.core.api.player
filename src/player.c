@@ -807,7 +807,7 @@ static int __msg_callback(int message, void *param, void *user_data)
 			err_code = PLAYER_ERROR_NOT_SUPPORTED_FILE;
 			break;
 		case MM_MESSAGE_SEEK_COMPLETED: //0x114
-			if (handle->display_type != ((int)MM_DISPLAY_SURFACE_NULL) && handle->state == PLAYER_STATE_READY)
+			if (handle->display_type != PLAYER_DISPLAY_TYPE_NONE && handle->state == PLAYER_STATE_READY)
 			{
 				if(handle->is_display_visible)
 					mm_player_set_attribute(handle->mm_handle, NULL,"display_visible" , 1, (char*)NULL);
@@ -1046,6 +1046,20 @@ static void __job_value_to_destroy(gpointer value)
 }
 #endif
 
+static MMDisplaySurfaceType __player_convet_display_type(player_display_type_e type)
+{
+	switch(type) {
+	case PLAYER_DISPLAY_TYPE_OVERLAY:
+		return MM_DISPLAY_SURFACE_X;
+	case PLAYER_DISPLAY_TYPE_EVAS:
+		return MM_DISPLAY_SURFACE_EVAS;
+	case PLAYER_DISPLAY_TYPE_NONE:
+		return MM_DISPLAY_SURFACE_NULL;
+	default :
+		return MM_DISPLAY_SURFACE_NULL;
+	}
+}
+
 /*
 * Public Implementation
 */
@@ -1076,7 +1090,7 @@ int player_create (player_h *player)
 	{
 		*player = (player_h)handle;
 		handle->state = PLAYER_STATE_IDLE;
-		handle->display_type = MM_DISPLAY_SURFACE_NULL; // means DISPLAY_TYPE_NONE(3)
+		handle->display_type = PLAYER_DISPLAY_TYPE_NONE;
 		handle->is_stopped=false;
 		handle->is_display_visible=true;
 #ifdef USE_ECORE_FUNCTIONS
@@ -1212,7 +1226,7 @@ int player_prepare_async (player_h player, player_prepared_cb callback, void* us
 		LOGW("[%s] Failed to set message callback function (0x%x)" ,__FUNCTION__, ret);
 	}
 
-	if (handle->display_type==((int)MM_DISPLAY_SURFACE_NULL))
+	if (handle->display_type==PLAYER_DISPLAY_TYPE_NONE)
 	{
 		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", MM_DISPLAY_SURFACE_NULL, (char*)NULL);
 		if(ret != MM_ERROR_NONE)
@@ -1283,7 +1297,7 @@ int player_prepare (player_h player)
 		LOGW("[%s] Failed to set message callback function (0x%x)" ,__FUNCTION__, ret);
 	}
 
-	if (handle->display_type==((int)MM_DISPLAY_SURFACE_NULL))
+	if (handle->display_type==PLAYER_DISPLAY_TYPE_NONE)
 	{
 		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", MM_DISPLAY_SURFACE_NULL, (char*)NULL);
 		if(ret != MM_ERROR_NONE)
@@ -1380,7 +1394,7 @@ int player_unprepare (player_h player)
 		}
 
 		handle->state = PLAYER_STATE_IDLE;
-		handle->display_type = MM_DISPLAY_SURFACE_NULL; // means DISPLAY_TYPE_NONE(3)
+		handle->display_type = PLAYER_DISPLAY_TYPE_NONE;
 		handle->is_set_pixmap_cb = false;
 		handle->is_stopped=false;
 		handle->is_display_visible=true;
@@ -1865,7 +1879,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	{
 		/* NULL surface */
 		handle->display_handle = 0;
-		handle->display_type = (int)MM_DISPLAY_SURFACE_NULL;
+		handle->display_type = PLAYER_DISPLAY_TYPE_NONE;
 		set_handle = NULL;
 	}
 	else
@@ -1926,16 +1940,16 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	}
 
 	/* set display handle */
-	if (handle->display_type == (int)MM_DISPLAY_SURFACE_NULL || type == handle->display_type) // first time or same type
+	if (handle->display_type == PLAYER_DISPLAY_TYPE_NONE || type == handle->display_type) // first time or same type
 	{
 		ret = mm_player_set_attribute(handle->mm_handle, NULL,
-			"display_surface_type", type,
+			"display_surface_type", __player_convet_display_type(type),
 #ifdef HAVE_WAYLAND
 			"wl_display", set_wl_display,
 			sizeof(void*),
 #endif
 			"display_overlay", set_handle,
-			sizeof(void*), (char*)NULL);
+			sizeof(player_display_h), (char*)NULL);
 
 		if (ret != MM_ERROR_NONE)
 		{
@@ -1975,7 +1989,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 			LOGE("[%s] it is not available to change display surface from %d to %d",__FUNCTION__, handle->display_type, type);
 			return PLAYER_ERROR_INVALID_OPERATION;
 		}
-		ret = mm_player_change_videosink(handle->mm_handle, type, set_handle);
+		ret = mm_player_change_videosink(handle->mm_handle, __player_convet_display_type(type), set_handle);
 		if (ret != MM_ERROR_NONE)
 		{
 			handle->display_handle = temp;
@@ -1999,7 +2013,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 
 	if(ret != MM_ERROR_NONE)
 	{
-		handle->display_type = MM_DISPLAY_SURFACE_NULL;
+		handle->display_type = PLAYER_DISPLAY_TYPE_NONE;
 		return __player_convert_error_code(ret,(char*)__FUNCTION__);
 	}
 	else
