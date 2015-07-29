@@ -190,6 +190,11 @@
  *    <td>This function must be called after player_create()</td>
  * </tr>
  * <tr>
+ *    <td>player_set_audio_policy_info()</td>
+ *    <td>IDLE</td>
+ *    <td>This function must be called after player_create()</td>
+ * </tr>
+ * <tr>
  *    <td>player_set_sound_type()</td>
  *    <td>IDLE</td>
  *    <td>This function must be called after player_create()</td>
