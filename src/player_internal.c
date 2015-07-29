@@ -133,7 +133,7 @@ static MMDisplaySurfaceType __player_mused_convet_display_type(player_display_ty
 
 
 #ifdef HAVE_WAYLAND
-int player_set_display_wl_for_mused(player_h player, player_display_type_e type, unsigned int surface,
+int player_set_display_wl_for_mused(player_h player, player_display_type_e type, intptr_t surface,
 		int x, int y, int w, int h)
 {
 	PLAYER_INSTANCE_CHECK(player);
