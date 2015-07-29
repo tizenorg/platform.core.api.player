@@ -30,7 +30,9 @@
 #include <Ecore.h>
 #include <Elementary.h>
 #include <Ecore.h>
+#ifdef HAVE_WAYLAND
 #include <Ecore_Wayland.h>
+#endif
 #include <tbm_bufmgr.h>
 #include <tbm_surface_internal.h>
 
@@ -97,7 +99,7 @@
 			{ \
 				g_cond_wait (&handle->message_queue_cond,&handle->message_queue_lock); \
 			} \
-			handle->current_message = (int)g_queue_pop_head (handle->message_queue); \
+			handle->current_message = (int)(intptr_t)g_queue_pop_head (handle->message_queue); \
 			g_mutex_unlock (&handle->message_queue_lock); \
 			LOGI("Retrived  message [%d] from queue",handle->current_message); \
 		}else{ \
@@ -1052,8 +1054,10 @@ static MMDisplaySurfaceType __player_convet_display_type(player_display_type_e t
 	switch(type) {
 	case PLAYER_DISPLAY_TYPE_OVERLAY:
 		return MM_DISPLAY_SURFACE_X;
+#ifdef TIZEN_MOBILE
 	case PLAYER_DISPLAY_TYPE_EVAS:
 		return MM_DISPLAY_SURFACE_EVAS;
+#endif
 	case PLAYER_DISPLAY_TYPE_NONE:
 		return MM_DISPLAY_SURFACE_NULL;
 	default :
