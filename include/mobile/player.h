@@ -90,14 +90,14 @@ typedef enum
  */
 typedef enum
 {
-    PLAYER_INTERRUPTED_COMPLETED = 0,           /**< Interrupt completed */
-    PLAYER_INTERRUPTED_BY_MEDIA,                /**< Interrupted by a non-resumable media application */
-    PLAYER_INTERRUPTED_BY_CALL,                 /**< Interrupted by an incoming call */
-    PLAYER_INTERRUPTED_BY_EARJACK_UNPLUG,       /**< Interrupted by unplugging headphones */
+    PLAYER_INTERRUPTED_COMPLETED = 0,           /**< Interrupt completed (Deprecated since 3.0)*/
+    PLAYER_INTERRUPTED_BY_MEDIA,                /**< Interrupted by a non-resumable media application (Deprecated since 3.0)*/
+    PLAYER_INTERRUPTED_BY_CALL,                 /**< Interrupted by an incoming call (Deprecated since 3.0)*/
+    PLAYER_INTERRUPTED_BY_EARJACK_UNPLUG,       /**< Interrupted by unplugging headphones (Deprecated since 3.0)*/
     PLAYER_INTERRUPTED_BY_RESOURCE_CONFLICT,    /**< Interrupted by a resource conflict */
-    PLAYER_INTERRUPTED_BY_ALARM,                /**< Interrupted by an alarm */
-    PLAYER_INTERRUPTED_BY_EMERGENCY,            /**< Interrupted by an emergency */
-    PLAYER_INTERRUPTED_BY_NOTIFICATION,         /**< Interrupted by a notification */
+    PLAYER_INTERRUPTED_BY_ALARM,                /**< Interrupted by an alarm (Deprecated since 3.0)*/
+    PLAYER_INTERRUPTED_BY_EMERGENCY,            /**< Interrupted by an emergency (Deprecated since 3.0)*/
+    PLAYER_INTERRUPTED_BY_NOTIFICATION,         /**< Interrupted by a notification (Deprecated since 3.0)*/
 } player_interrupted_code_e;
 
 /**
@@ -593,6 +593,7 @@ int player_set_volume(player_h player, float left, float right);
 int player_get_volume(player_h player, float *left, float *right);
 
 /**
+ * @deprecated Deprecated since 3.0. Use player_set_audio_policy_info() instead.
  * @brief Sets the player's volume type.
  * @since_tizen 2.3
  * @remarks The default sound type of the player is #SOUND_TYPE_MEDIA.
@@ -608,6 +609,28 @@ int player_get_volume(player_h player, float *left, float *right);
  * @see sound_manager_get_current_sound_type()
  */
 int player_set_sound_type(player_h player, sound_type_e type);
+
+/**
+ * @brief Sets the player's sound manager stream information.
+ * @since_tizen 2.4
+ * @remarks You can set sound stream information including audio routing and volume type.
+ * For more details, please refer to sound_manager.h
+ *
+ * @param[in] player The handle to the media player
+ * @param[in] stream_info The sound manager info type
+ * @return @c 0 on success,
+ * otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE Unsupported feature
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create().
+ * @see #sound_stream_info_h
+ * @see sound_manager_create_stream_information()
+ * @see sound_manager_destroy_stream_information()
+ */
+int player_set_audio_policy_info(player_h player, sound_stream_info_h stream_info);
 
 /**
  * @brief Sets the audio latency mode.
@@ -647,11 +670,13 @@ int player_get_audio_latency_mode(player_h player, audio_latency_mode_e *latency
 /**
  * @brief Starts or resumes playback.
  * @since_tizen 2.3
+ * @remarks Sound can be mixed with other sounds if you don't control the stream focus in sound-manager module since 3.0.\n
+ * You can refer to @ref CAPI_MEDIA_SUOND_MANAGER_MODULE.
  * @details Plays current media content, or resumes play if paused.
  *
  * @param[in]   player The handle to the media player
  * @return @c 0 on success,
- *         otherwise a negative error value
+ * otherwise a negative error value
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation

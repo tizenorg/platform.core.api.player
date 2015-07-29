@@ -1517,6 +1517,44 @@ int player_set_sound_type(player_h player, sound_type_e type)
 		return PLAYER_ERROR_NONE;
 }
 
+int player_set_audio_policy_info(player_h player, sound_stream_info_h stream_info)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
+
+	bool is_available = false;
+
+	/* check if stream_info is valid */
+	int ret = sound_manager_is_available_stream_information(stream_info, NATIVE_API_PLAYER, &is_available);
+
+	if(ret != MM_ERROR_NONE)
+	{
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		if(is_available == false)
+			ret = MM_ERROR_NOT_SUPPORT_API;
+	else
+	{
+		char *stream_type = NULL;
+		int stream_index = 0;
+		ret	 = sound_manager_get_type_from_stream_information(stream_info, &stream_type);
+		ret	 = sound_manager_get_index_from_stream_information(stream_info, &stream_index);
+		if (ret == SOUND_MANAGER_ERROR_NONE)
+			ret	= mm_player_set_attribute(handle->mm_handle, NULL,"sound_stream_type", stream_type, strlen(stream_type), "sound_stream_index", stream_index, (char*)NULL);
+		else
+			ret = MM_ERROR_PLAYER_INTERNAL;
+		}
+	}
+
+	if(ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
+}
+
 int player_set_audio_latency_mode(player_h player, audio_latency_mode_e latency_mode)
 {
 	PLAYER_INSTANCE_CHECK(player);
