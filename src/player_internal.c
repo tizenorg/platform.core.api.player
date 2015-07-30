@@ -386,9 +386,6 @@ int player_get_raw_video_caps(player_h player, char **caps)
 	PLAYER_NULL_ARG_CHECK(caps);
 	player_s * handle = (player_s *) player;
 
-	if (handle->display_type == PLAYER_DISPLAY_TYPE_NONE)
-		return PLAYER_ERROR_INVALID_STATE;
-
 	ret = mm_player_get_raw_video_caps(handle->mm_handle, caps);
 	if(ret != MM_ERROR_NONE) {
 		return __player_convert_error_code(ret,(char*)__FUNCTION__);
