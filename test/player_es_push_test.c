@@ -20,6 +20,10 @@
 #include <player.h>
 #include <glib.h>
 #include <appcore-efl.h>
+#ifdef HAVE_WAYLAND
+#include <Ecore.h>
+#include <Ecore_Wayland.h>
+#endif
 
 #define KEY_END "XF86Stop"
 #define ES_FEEDING_PATH "es_buff://push_mode"
@@ -108,13 +112,21 @@ static void win_del(void *data, Evas_Object *obj, void *event)
 static Evas_Object* create_win(const char *name)
 {
 	Evas_Object *eo = NULL;
+	int w = 0;
+	int h = 0;
 
 	eo = elm_win_add(NULL, name, ELM_WIN_BASIC);
 	if (eo) {
-			elm_win_title_set(eo, name);
-			elm_win_borderless_set(eo, EINA_TRUE);
-			evas_object_smart_callback_add(eo, "delete,request",win_del, NULL);
-			elm_win_autodel_set(eo, EINA_TRUE);
+		elm_win_title_set(eo, name);
+		elm_win_borderless_set(eo, EINA_TRUE);
+		evas_object_smart_callback_add(eo, "delete,request",win_del, NULL);
+		elm_win_screen_size_get(eo, NULL, NULL, &w, &h);
+		g_print ("window size :%d,%d", w, h);
+		evas_object_resize(eo, w, h);
+		elm_win_autodel_set(eo, EINA_TRUE);
+#ifdef HAVE_WAYLAND
+		elm_win_alpha_set(eo, EINA_TRUE);
+#endif
 	}
 	return eo;
 }
