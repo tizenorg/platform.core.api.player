@@ -379,6 +379,26 @@ int player_set_display_for_mused(player_h player, player_display_type_e type, un
 }
 #endif
 
+int player_set_audio_policy_info_for_mused(player_h player,
+	char *stream_type, int stream_index)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+	int ret;
+
+	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
+
+	ret = mm_player_set_attribute(handle->mm_handle, NULL,
+			"sound_stream_type", stream_type, strlen(stream_type),
+			"sound_stream_index", stream_index,
+			NULL);
+
+	if(ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
+}
+
 int player_get_raw_video_caps(player_h player, char **caps)
 {
 	int ret;
