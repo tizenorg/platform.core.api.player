@@ -1,6 +1,6 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-SET(fw_name "capi-media-player")
+SET(fw_name "legacy-capi-media-player")
 
 PROJECT(${fw_name})
 
