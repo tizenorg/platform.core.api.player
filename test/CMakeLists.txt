@@ -34,7 +34,7 @@ FOREACH(src ${sources})
     GET_FILENAME_COMPONENT(src_name ${src} NAME_WE)
     MESSAGE("${src_name}")
     ADD_EXECUTABLE(${src_name} ${src})
-    TARGET_LINK_LIBRARIES(${src_name} capi-media-player ${${fw_test}_LDFLAGS})
+    TARGET_LINK_LIBRARIES(${src_name} legacy-capi-media-player ${${fw_test}_LDFLAGS})
     INSTALL(TARGETS ${src_name} DESTINATION bin)
 ENDFOREACH()
 

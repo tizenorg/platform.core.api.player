@@ -1,14 +1,14 @@
 %bcond_with wayland
 %bcond_with x
 
-Name:       capi-media-player
+Name:       legacy-capi-media-player
 Summary:    A Media Player library in Tizen Native API
 Version:    0.2.5
 Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
-Source1001: 	capi-media-player.manifest
+Source1001: 	legacy-capi-media-player.manifest
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(gstreamer-1.0)
 BuildRequires:  pkgconfig(gstreamer-plugins-base-1.0)
@@ -85,9 +85,9 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/license
 mkdir -p %{buildroot}/usr/bin
 cp LICENSE.APLv2 %{buildroot}/usr/share/license/%{name}
-cp test/player_test %{buildroot}/usr/bin
-cp test/player_media_packet_test %{buildroot}/usr/bin
-cp test/player_es_push_test %{buildroot}/usr/bin
+cp test/legacy_player_test %{buildroot}/usr/bin
+cp test/legacy_player_media_packet_test %{buildroot}/usr/bin
+cp test/legacy_player_es_push_test %{buildroot}/usr/bin
 
 %make_install
 
@@ -99,8 +99,8 @@ cp test/player_es_push_test %{buildroot}/usr/bin
 %files
 %manifest %{name}.manifest
 %license LICENSE.APLv2
-%manifest capi-media-player.manifest
-%{_libdir}/libcapi-media-player.so.*
+%manifest legacy-capi-media-player.manifest
+%{_libdir}/liblegacy-capi-media-player.so.*
 %{_datadir}/license/%{name}
 %{_bindir}/*
 
@@ -108,6 +108,6 @@ cp test/player_es_push_test %{buildroot}/usr/bin
 %manifest %{name}.manifest
 %{_includedir}/media/*.h
 %{_libdir}/pkgconfig/*.pc
-%{_libdir}/libcapi-media-player.so
+%{_libdir}/liblegacy-capi-media-player.so
 
 
