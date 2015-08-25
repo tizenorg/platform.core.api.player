@@ -124,7 +124,7 @@ static MMDisplaySurfaceType __player_mused_convet_display_type(player_display_ty
 		return MM_DISPLAY_SURFACE_REMOTE;
 #ifdef TIZEN_MOBILE
 	case PLAYER_DISPLAY_TYPE_EVAS:
-		return MM_DISPLAY_SURFACE_EVAS;
+		return MM_DISPLAY_SURFACE_REMOTE;
 #endif
 	case PLAYER_DISPLAY_TYPE_NONE:
 		return MM_DISPLAY_SURFACE_NULL;
@@ -142,6 +142,7 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 	player_s * handle = (player_s *) player;
 	void *set_handle = NULL;
 	MMDisplaySurfaceType mmType = __player_mused_convet_display_type(type);
+	MMDisplaySurfaceType mmClientType = MM_DISPLAY_SURFACE_NULL;
 
 	int ret;
 	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
@@ -181,6 +182,13 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 			LOGI("Wayland overlay surface type");
 			handle->display_handle = (void *)surface;
 			set_handle = &(handle->display_handle);
+			mmClientType = MM_DISPLAY_SURFACE_X;
+		} else if (type == PLAYER_DISPLAY_TYPE_EVAS)
+		{
+			LOGI("Evas surface type");
+			handle->display_handle = (void *)surface;
+			set_handle = &(handle->display_handle);
+			mmClientType = MM_DISPLAY_SURFACE_EVAS;
 		} else {
 			LOGE("invalid surface type");
 			return PLAYER_ERROR_INVALID_PARAMETER;
@@ -193,6 +201,7 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 		LOGW("first time or same type");
 		ret = mm_player_set_attribute(handle->mm_handle, NULL,
 			"display_surface_type", mmType,
+			"display_surface_client_type", mmClientType,
 			"display_overlay", set_handle,
 			sizeof(void *), (char*)NULL);
 
