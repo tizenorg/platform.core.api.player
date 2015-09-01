@@ -82,6 +82,7 @@ typedef enum
     PLAYER_ERROR_DRM_NOT_PERMITTED  = PLAYER_ERROR_CLASS | 0x0b,            /**< Format not permitted */
     PLAYER_ERROR_RESOURCE_LIMIT     = PLAYER_ERROR_CLASS | 0x0c,            /**< Resource limit */
     PLAYER_ERROR_PERMISSION_DENIED  = TIZEN_ERROR_PERMISSION_DENIED,        /**< Permission denied */
+    PLAYER_ERROR_SERVICE_DISCONNECTED = PLAYER_ERROR_CLASS | 0x0d,          /**< Socket connection lost (Since 3.0) */
 } player_error_e;
 
 /**
@@ -298,12 +299,21 @@ typedef void (*player_interrupted_cb)(player_interrupted_code_e code, void *user
 
 /**
  * @brief Called when an error occurs in the media player.
+ * @details Following error codes can be delivered.
+ *          #PLAYER_ERROR_INVALID_OPERATION
+ *          #PLAYER_ERROR_INVALID_STATE
+ *          #PLAYER_ERROR_INVALID_URI
+ *          #PLAYER_ERROR_CONNECTION_FAILED
+ *          #PLAYER_ERROR_DRM_NOT_PERMITTED
+ *          #PLAYER_ERROR_FILE_NO_SPACE_ON_DEVICE
+ *          #PLAYER_ERROR_NOT_SUPPORTED_FILE
+ *          #PLAYER_ERROR_SEEK_FAILED
+ *          #PLAYER_ERROR_SERVICE_DISCONNECTED
  * @since_tizen 2.3
  * @param[in]	error_code  The error code
  * @param[in]	user_data	The user data passed from the callback registration function
  * @see player_set_error_cb()
  * @see player_unset_error_cb()
- * @see #player_error_e
  */
 typedef void (*player_error_cb)(int error_code, void *user_data);
 
