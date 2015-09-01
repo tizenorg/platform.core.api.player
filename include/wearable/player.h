@@ -82,6 +82,7 @@ typedef enum
     PLAYER_ERROR_DRM_NOT_PERMITTED  = PLAYER_ERROR_CLASS | 0x0b,            /**< Format not permitted */
     PLAYER_ERROR_RESOURCE_LIMIT     = PLAYER_ERROR_CLASS | 0x0c,            /**< Resource limit */
     PLAYER_ERROR_PERMISSION_DENIED  = TIZEN_ERROR_PERMISSION_DENIED,        /**< Permission denied */
+    PLAYER_ERROR_SERVICE_DISCONNECTED = TIZEN_ERROR_CONNECTION_ABORTED,     /**< Socket connection lost */
 } player_error_e;
 
 /**
