@@ -1752,7 +1752,7 @@ int player_get_play_position (player_h player, int *millisecond)
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
 	}
-	int pos;
+	unsigned long pos;
 	int ret = mm_player_get_position(handle->mm_handle, MM_PLAYER_POS_FORMAT_TIME , &pos);
 	if(ret != MM_ERROR_NONE)
 	{
@@ -1760,7 +1760,7 @@ int player_get_play_position (player_h player, int *millisecond)
 	}
 	else
 	{
-		*millisecond = pos;
+		*millisecond = (int)pos;
 		return PLAYER_ERROR_NONE;
 	}
 }
@@ -2705,8 +2705,8 @@ int player_get_streaming_download_progress(player_h player, int *start, int *cur
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
 		return PLAYER_ERROR_INVALID_STATE;
 	}
-	int _current=0;
-	int _start=0;
+	unsigned long _current=0;
+	unsigned long _start=0;
 	int ret = mm_player_get_buffer_position(handle->mm_handle,MM_PLAYER_POS_FORMAT_PERCENT,&_start,&_current);
 	if(ret != MM_ERROR_NONE)
 	{
@@ -2714,8 +2714,8 @@ int player_get_streaming_download_progress(player_h player, int *start, int *cur
 	}
 	else
 	{
-		*start = _start;
-		*current = _current;
+		*start = (int)_start;
+		*current = (int)_current;
 		return PLAYER_ERROR_NONE;
 	}
 }
