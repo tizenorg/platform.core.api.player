@@ -43,7 +43,7 @@ typedef struct
 	int rate;            /**<  Samplerate */
 	int depth;           /**< Depth */
 	bool little_endian;  /**< Endianness */
-	guint64 channel_mask;	  /**< channel_mask */
+	guint64 channel_mask;	/**< channel_mask */
 } player_audio_raw_data_s;
 
 /**

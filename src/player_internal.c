@@ -422,3 +422,28 @@ int player_get_raw_video_caps(player_h player, char **caps)
 
 	return PLAYER_ERROR_NONE;
 }
+
+int player_set_video_bin_created_cb(player_h player, player_video_bin_created_cb callback, void *user_data)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(callback);
+	int type = _PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED;
+
+	player_s * handle = (player_s *) player;
+	handle->user_cb[type] = callback;
+	handle->user_data[type] = user_data;
+	LOGI("[%s] Event type : %d ",__FUNCTION__, type);
+	return PLAYER_ERROR_NONE;
+}
+
+int player_unset_video_bin_created_cb(player_h player)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+	int type = _PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED;
+
+	handle->user_cb[type] = NULL;
+	handle->user_data[type] = NULL;
+	LOGI("[%s] Event type : %d ",__FUNCTION__, type);
+	return PLAYER_ERROR_NONE;
+}

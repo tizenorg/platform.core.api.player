@@ -35,7 +35,7 @@
 #define PACKAGE "player_test"
 #define MAX_STRING_LEN	2048
 #define MMTS_SAMPLELIST_INI_DEFAULT_PATH "/opt/etc/mmts_filelist.ini"
-#define PLAYER_TEST_DUMP_PATH_PREFIX   "/opt/usr/media/dump_pcm_"
+#define PLAYER_TEST_DUMP_PATH_PREFIX   "/home/owner/content/dump_pcm_"
 #define INI_SAMPLE_LIST_MAX 9
 #define DEFAULT_HTTP_TIMEOUT -1
 
@@ -987,7 +987,7 @@ static void _player_state()
 
 static void _player_set_progressive_download()
 {
-	player_set_progressive_download_path(g_player[0], "/opt/test.pd");
+	player_set_progressive_download_path(g_player[0], "/home/owner/test.pd");
 	player_set_progressive_download_message_cb(g_player[0], progress_down_cb, (void*)g_player[0]);
 }
 
