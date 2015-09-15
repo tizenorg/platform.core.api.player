@@ -52,7 +52,7 @@ ENDIF(TIZEN_MOBILE)
 SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--rpath=${LIB_INSTALL_DIR}")
 
 #aux_source_directory(src SOURCES)
-SET(SOURCES src/player.c src/player_internal.c)
+SET(SOURCES src/player.c src/player_internal.c src/player_priv.c)
 
 ADD_LIBRARY(${fw_name} SHARED ${SOURCES})
 
