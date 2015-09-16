@@ -189,7 +189,7 @@ typedef enum
 } player_display_rotation_e;
 
 /**
- * @brief Enumeration for x surface display aspect ratio.
+ * @brief Enumeration for display mode type.
  * @since_tizen 2.3.1
  */
 typedef enum
