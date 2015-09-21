@@ -3357,7 +3357,6 @@ int player_get_track_language_code(player_h player, player_stream_type_e type, i
 	}
 
 	char* language_code=NULL;
-	const int code_len=2;
 	MMPlayerTrackType track_type = 0;
 	switch(type)
 	{
@@ -3386,14 +3385,21 @@ int player_get_track_language_code(player_h player, player_stream_type_e type, i
 	}
 	else
 	{
+		int code_len=0;
 		*code = NULL;
-		if(language_code!=NULL)
+		if(language_code!=NULL && strncmp(language_code, "und", 3))
 		{
+			code_len = 2;
 			*code = strndup(language_code, code_len);
-			free(language_code);
 		}
 		else
+		{
+			code_len = 3;
 			*code = strndup("und", code_len);
+		}
+
+		if(language_code)
+			free(language_code);
 
 		language_code=NULL;
 		return PLAYER_ERROR_NONE;
