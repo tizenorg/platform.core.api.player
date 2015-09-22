@@ -72,6 +72,7 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 	void *set_handle = NULL;
 	MMDisplaySurfaceType mmType = __player_mused_convet_display_type(type);
 	MMDisplaySurfaceType mmClientType = MM_DISPLAY_SURFACE_NULL;
+	MMPlayerPipelineType mmPipelineType = MM_PLAYER_PIPELINE_SERVER;
 
 	int ret;
 	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
@@ -131,8 +132,9 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 		ret = mm_player_set_attribute(handle->mm_handle, NULL,
 			"display_surface_type", mmType,
 			"display_surface_client_type", mmClientType,
-			"display_overlay", set_handle,
-			sizeof(void *), (char*)NULL);
+			"display_overlay", set_handle, sizeof(void *),
+			"pipeline_type", mmPipelineType,
+			NULL);
 
 		if (ret != MM_ERROR_NONE)
 		{
@@ -261,8 +263,8 @@ int player_set_display_for_mused(player_h player, player_display_type_e type, un
 	{
 		ret = mm_player_set_attribute(handle->mm_handle, NULL,
 			"display_surface_type", mmType,
-			"display_overlay", set_handle,
-			sizeof(xhandle), (char*)NULL);
+			"display_overlay", set_handle, sizeof(xhandle),
+			NULL);
 
 		if (ret != MM_ERROR_NONE)
 		{
