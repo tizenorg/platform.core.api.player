@@ -134,6 +134,7 @@ typedef struct _player_s{
 int __player_convert_error_code(int code, char* func_name);
 bool __player_state_validate(player_s * handle, player_state_e threshold);
 int player_sound_register(player_h player, int pid);
+int player_is_streaming(player_h player, bool *is_streaming);
 
 /**
  * @brief Called when the video sink bin is crated.

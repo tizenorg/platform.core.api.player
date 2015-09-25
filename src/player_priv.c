@@ -393,3 +393,14 @@ int player_sound_register(player_h player, int pid)
 
 	return PLAYER_ERROR_NONE;
 }
+
+int player_is_streaming(player_h player, bool *is_streaming)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+
+	int ret = mm_player_is_streaming(handle->mm_handle, is_streaming);
+	if(ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+	return PLAYER_ERROR_NONE;
+}
