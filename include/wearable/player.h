@@ -933,6 +933,19 @@ int player_unset_media_packet_video_frame_decoded_cb(player_h player);
 int player_push_media_stream(player_h player, media_packet_h packet);
 
 /**
+ * @brief  Sets media stream playback mode.
+ * @since_tizen 3.0
+ * @param[in] player The handle to media player
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ */
+int player_set_media_stream(player_h player);
+
+/**
  * @brief  Sets contents information for media stream
  * @since_tizen 2.4
  * @remarks AV format should be set before pushing elementary stream with player_push_media_stream().
