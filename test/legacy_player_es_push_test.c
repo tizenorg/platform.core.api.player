@@ -26,8 +26,6 @@
 #endif
 
 #define KEY_END "XF86Stop"
-#define ES_FEEDING_PATH "es_buff://push_mode"
-//#define ES_FEEDING_PATH "es_buff://pull_mode"
 
 #define ES_DEFAULT_DIR_PATH			"/home/owner/content/"
 #define ES_DEFAULT_H264_VIDEO_PATH		ES_DEFAULT_DIR_PATH"Simpsons.h264"
@@ -537,12 +535,6 @@ static int app_reset(bundle *b, void *data)
 	ret = player_set_display(ad->player_handle, PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(ad->win));
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player_set_display failed : 0x%x", ret);
-		goto FAILED;
-	}
-
-	ret = player_set_uri(ad->player_handle, ES_FEEDING_PATH);
-	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_set_uri failed : 0x%x", ret);
 		goto FAILED;
 	}
 
