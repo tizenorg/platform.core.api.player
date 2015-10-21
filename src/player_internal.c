@@ -97,3 +97,36 @@ int player_set_pcm_spec(player_h player, const char *format, int samplerate, int
 
 	return PLAYER_ERROR_NONE;
 }
+
+int player_set_streaming_playback_rate(player_h player, float rate)
+{
+	LOGI("[%s] rate : %0.1f", __FUNCTION__, rate);
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+
+	int ret = mm_player_set_play_speed(handle->mm_handle, rate, TRUE);
+
+	switch (ret)
+	{
+		case MM_ERROR_NONE:
+		case MM_ERROR_PLAYER_NO_OP:
+			ret = PLAYER_ERROR_NONE;
+			break;
+		case MM_ERROR_NOT_SUPPORT_API:
+		case MM_ERROR_PLAYER_SEEK:
+			LOGE("[%s] PLAYER_ERROR_INVALID_OPERATION(0x%08x) : seek error",__FUNCTION__, PLAYER_ERROR_INVALID_OPERATION);
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+			break;
+		default:
+			return __player_convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	return ret;
+}
+
+

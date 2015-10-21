@@ -95,6 +95,23 @@ int player_set_pcm_extraction_mode(player_h player, bool sync, player_audio_pcm_
  * @see player_set_pcm_extraction_mode()
  */
 int player_set_pcm_spec(player_h player, const char *format, int samplerate, int channel);
+
+/**
+ * @brief Sets the playback rate include streaming mode.
+ * @since_tizen 3.0
+ * @details The default value is @c 1.0.
+ * @remarks No operation is performed, if @a rate is @c 0.
+ * @remarks The sound is muted, when playback rate is under @c 0.0 and over @c 2.0.
+ * @param[in]   player The handle to the media player
+ * @param[in]   rate The playback rate
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be set to #PLAYER_STATE_PLAYING by calling player_start().
+ * @pre The player state must be set to #PLAYER_STATE_READY by calling player_prepare() or set to #PLAYER_STATE_PLAYING by calling player_start() or set to #PLAYER_STATE_PAUSED by calling player_pause().
+ */
+int player_set_streaming_playback_rate(player_h player, float rate);
+
+
 /**
  * @}
  */

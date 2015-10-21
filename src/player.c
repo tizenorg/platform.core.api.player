@@ -2120,7 +2120,7 @@ int player_set_playback_rate(player_h player, float rate)
 		return PLAYER_ERROR_INVALID_STATE;
 	}
 
-	int ret = mm_player_set_play_speed(handle->mm_handle, rate);
+	int ret = mm_player_set_play_speed(handle->mm_handle, rate, FALSE);
 
 	switch (ret)
 	{
