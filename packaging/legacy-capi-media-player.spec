@@ -3,7 +3,7 @@
 
 Name:       legacy-capi-media-player
 Summary:    A Media Player library in Tizen Native API
-Version:    0.2.5
+Version:    0.2.6
 Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
