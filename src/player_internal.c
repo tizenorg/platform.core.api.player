@@ -44,16 +44,16 @@ do \
 bool  __audio_stream_callback_ex(MMPlayerAudioStreamDataType *stream, void *user_data)
 {
 	player_s * handle = (player_s*)user_data;
+
+	if (!__player_state_validate(handle, PLAYER_STATE_READY))
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
+		return TRUE;
+	}
+
 	if( handle->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME] )
 	{
-		if(handle->state==PLAYER_STATE_PLAYING || handle->state==PLAYER_STATE_PAUSED)
-		{
-			((player_audio_pcm_extraction_cb)handle->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME])((player_audio_raw_data_s *)stream, handle->user_data[_PLAYER_EVENT_TYPE_AUDIO_FRAME]);
-		}
-		else
-		{
-			LOGE("[%s] Skip stream - current state : %d", __FUNCTION__,handle->state);
-		}
+		((player_audio_pcm_extraction_cb)handle->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME])((player_audio_raw_data_s *)stream, handle->user_data[_PLAYER_EVENT_TYPE_AUDIO_FRAME]);
 	}
 	return TRUE;
 }
