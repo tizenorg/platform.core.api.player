@@ -1976,7 +1976,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 #else // HAVE_X11
 							/* x window overlay surface */
 							LOGI("X overlay surface type");
-							handle->display_handle = (void *)elm_win_xwindow_get(obj);
+							handle->display_handle = (void *)(uintptr_t)elm_win_xwindow_get(obj);
 							set_handle = &(handle->display_handle);
 #endif
 			}
