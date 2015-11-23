@@ -317,7 +317,7 @@ int player_set_display_for_mused(player_h player, player_display_type_e type, un
 		{
 			/* x window overlay surface */
 			LOGI("overlay surface type");
-			handle->display_handle = (void *)xhandle;
+			handle->display_handle = (void *)(uintptr_t)xhandle;
 			set_handle = &(handle->display_handle);
 		}
 		else
