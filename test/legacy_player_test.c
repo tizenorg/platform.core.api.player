@@ -331,7 +331,7 @@ int	_save(unsigned char * src, int length)
 	static int WRITE_COUNT = 0;
 
 	//gchar *filename  = CAPTUERD_IMAGE_SAVE_PATH;
-	sprintf (filename, "ALBUM_ART_IMAGE_%d", WRITE_COUNT);
+	snprintf (filename, 256, "ALBUM_ART_IMAGE_%d", WRITE_COUNT);
 	WRITE_COUNT++;
 	fp=fopen(filename, "w+");
 	if(fp==NULL)
@@ -494,6 +494,14 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 	if (fp)
 	{
 		buff_ptr = (guint8 *)g_malloc0(1048576);
+		if (!buff_ptr)
+		{
+			g_print("no free space\n");
+			fclose(fp);
+			fp = NULL;
+			return;
+		}
+
 		real_read_len = fread(buff_ptr, 1, size, fp);
 		fclose(fp);
 		fp = NULL;
@@ -514,13 +522,13 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 
 
 	if (media_packet_get_buffer_data_ptr(g_video_pkt, &src) != MEDIA_PACKET_ERROR_NONE)
-		return;
+		goto EXIT;
 
 	if (media_packet_set_pts(g_video_pkt, (uint64_t)(pts/1000000)) != MEDIA_PACKET_ERROR_NONE)
-		return;
+		goto EXIT;
 
 	if (media_packet_set_buffer_size(g_video_pkt, (uint64_t)real_read_len) != MEDIA_PACKET_ERROR_NONE)
-		return;
+		goto EXIT;
 
 	memcpy(src, buff_ptr, real_read_len);
 
@@ -528,6 +536,7 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 	player_push_media_stream(g_player[0], g_video_pkt);
 #endif
 
+EXIT:
 	if (buff_ptr)
 	{
 		g_free(buff_ptr);
@@ -565,6 +574,14 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 	if (fp)
 	{
 		buff_ptr = (guint8 *)g_malloc0(1048576);
+		if (!buff_ptr)
+		{
+			g_print("no free space\n");
+			fclose(fp);
+			fp = NULL;
+			return;
+		}
+
 		real_read_len = fread(buff_ptr, 1, size, fp);
 		fclose(fp);
 		fp = NULL;
@@ -585,13 +602,13 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 
 
 	if (media_packet_get_buffer_data_ptr(g_audio_pkt, &src) != MEDIA_PACKET_ERROR_NONE)
-		return;
+		goto EXIT;
 
 	if (media_packet_set_pts(g_audio_pkt, (uint64_t)(audio_pts/1000000)) != MEDIA_PACKET_ERROR_NONE)
-		return;
+		goto EXIT;
 
 	if (media_packet_set_buffer_size(g_audio_pkt, (uint64_t)real_read_len) != MEDIA_PACKET_ERROR_NONE)
-		return;
+		goto EXIT;
 
 	memcpy(src, buff_ptr, real_read_len);
 
@@ -601,6 +618,7 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 
 	audio_pts += audio_dur;
 
+EXIT:
 	if (buff_ptr)
 	{
 		g_free(buff_ptr);
