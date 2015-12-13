@@ -28,7 +28,7 @@ extern "C" {
 #undef LOG_TAG
 #endif
 #define LOG_TAG "TIZEN_N_PLAYER"
-//#define USE_ECORE_FUNCTIONS
+/* #define USE_ECORE_FUNCTIONS */
 
 #define PLAYER_CHECK_CONDITION(condition,error,msg)     \
                 if(condition) {} else \
@@ -179,7 +179,7 @@ int player_unset_video_bin_created_cb(player_h player);
 }
 #endif
 
-#endif //__TIZEN_MEDIA_PLAYER_PRIVATE_H__
+#endif /* __TIZEN_MEDIA_PLAYER_PRIVATE_H__ */
 
 
 

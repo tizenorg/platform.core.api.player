@@ -35,8 +35,7 @@ extern "C" {
  * @brief This file contains the media player API for custom features.
  * @since_tizen 2.4
  */
-typedef struct
-{
+typedef struct {
 	void *data;          /**< PCM data */
 	int size;            /**< Data Size */
 	int channel;         /**< Channel */

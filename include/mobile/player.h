@@ -47,8 +47,7 @@ typedef struct player_s *player_h;
  * @brief Enumeration for media player state.
  * @since_tizen 2.3
  */
-typedef enum
-{
+typedef enum {
     PLAYER_STATE_NONE,          /**< Player is not created */
     PLAYER_STATE_IDLE,          /**< Player is created, but not prepared */
     PLAYER_STATE_READY,         /**< Player is ready to play media */
@@ -60,8 +59,7 @@ typedef enum
  * @brief Enumeration for media player's error codes.
  * @since_tizen 2.3
  */
-typedef enum
-{
+typedef enum {
     PLAYER_ERROR_NONE   = TIZEN_ERROR_NONE,                                 /**< Successful */
     PLAYER_ERROR_OUT_OF_MEMORY  = TIZEN_ERROR_OUT_OF_MEMORY,                /**< Out of memory */
     PLAYER_ERROR_INVALID_PARAMETER  = TIZEN_ERROR_INVALID_PARAMETER,        /**< Invalid parameter */
@@ -89,8 +87,7 @@ typedef enum
  * @brief Enumeration for media player's interruption type.
  * @since_tizen 2.3
  */
-typedef enum
-{
+typedef enum {
     PLAYER_INTERRUPTED_COMPLETED = 0,           /**< Interrupt completed (Deprecated since 3.0)*/
     PLAYER_INTERRUPTED_BY_MEDIA,                /**< Interrupted by a non-resumable media application (Deprecated since 3.0)*/
     PLAYER_INTERRUPTED_BY_CALL,                 /**< Interrupted by an incoming call (Deprecated since 3.0)*/
@@ -105,8 +102,7 @@ typedef enum
  * @brief Enumeration for progressive download message type.
  * @since_tizen 2.3
  */
-typedef enum
-{
+typedef enum {
     PLAYER_PD_STARTED = 0,              /**< Progressive download is started */
     PLAYER_PD_COMPLETED,                /**< Progressive download is completed */
 } player_pd_message_type_e;
@@ -115,8 +111,7 @@ typedef enum
  * @brief Enumeration for display type.
  * @since_tizen 2.3
  */
-typedef enum
-{
+typedef enum {
     PLAYER_DISPLAY_TYPE_OVERLAY = 0,    /**< Overlay surface display */
     PLAYER_DISPLAY_TYPE_EVAS,           /**< Evas image object surface display */
     PLAYER_DISPLAY_TYPE_NONE,           /**< This disposes off buffers */
@@ -126,8 +121,7 @@ typedef enum
  * @brief Enumeration for audio latency mode.
  * @since_tizen 2.3
  */
-typedef enum
-{
+typedef enum {
     AUDIO_LATENCY_MODE_LOW = 0,     /**< Low audio latency mode */
     AUDIO_LATENCY_MODE_MID,         /**< Middle audio latency mode */
     AUDIO_LATENCY_MODE_HIGH,        /**< High audio latency mode */
@@ -137,8 +131,7 @@ typedef enum
  * @brief Enumeration for stream type.
  * @since_tizen 2.4
  */
-typedef enum
-{
+typedef enum {
     PLAYER_STREAM_TYPE_DEFAULT,	/**< Container type */
     PLAYER_STREAM_TYPE_AUDIO,	/**< Audio element stream type */
     PLAYER_STREAM_TYPE_VIDEO,	/**< Video element stream type */
@@ -149,8 +142,7 @@ typedef enum
  * @brief Enumeration of media stream buffer status
  * @since_tizen 2.4
  */
-typedef enum
-{
+typedef enum {
     PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN,
     PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW,
 } player_media_stream_buffer_status_e;
@@ -182,8 +174,7 @@ typedef void* player_display_h;
  * @brief Enumeration for display rotation type.
  * @since_tizen 2.3
  */
-typedef enum
-{
+typedef enum {
     PLAYER_DISPLAY_ROTATION_NONE,   /**< Display is not rotated */
     PLAYER_DISPLAY_ROTATION_90,     /**< Display is rotated 90 degrees */
     PLAYER_DISPLAY_ROTATION_180,    /**< Display is rotated 180 degrees */
@@ -194,8 +185,7 @@ typedef enum
  * @brief Enumeration for display mode.
  * @since_tizen 2.3
  */
-typedef enum
-{
+typedef enum {
     PLAYER_DISPLAY_MODE_LETTER_BOX = 0,     /**< Letter box */
     PLAYER_DISPLAY_MODE_ORIGIN_SIZE,        /**< Origin size */
     PLAYER_DISPLAY_MODE_FULL_SCREEN,        /**< Full-screen */
@@ -217,8 +207,7 @@ typedef enum
  * @brief Enumeration for media stream content information.
  * @since_tizen 2.3
  */
-typedef enum
-{
+typedef enum {
     PLAYER_CONTENT_INFO_ALBUM,      /**< Album */
     PLAYER_CONTENT_INFO_ARTIST,     /**< Artist */
     PLAYER_CONTENT_INFO_AUTHOR,     /**< Author */
