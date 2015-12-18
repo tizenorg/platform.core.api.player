@@ -113,12 +113,14 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 			handle->display_handle = (void *)surface;
 			set_handle = &(handle->display_handle);
 			mmClientType = MM_DISPLAY_SURFACE_X;
+#ifdef TIZEN_MOBILE
 		} else if (type == PLAYER_DISPLAY_TYPE_EVAS)
 		{
 			LOGI("Evas surface type");
 			handle->display_handle = (void *)surface;
 			set_handle = &(handle->display_handle);
 			mmClientType = MM_DISPLAY_SURFACE_EVAS;
+#endif
 		} else {
 			LOGE("invalid surface type");
 			return PLAYER_ERROR_INVALID_PARAMETER;
