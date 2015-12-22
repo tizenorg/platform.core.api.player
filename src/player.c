@@ -947,15 +947,17 @@ static bool __video_stream_callback(void *stream, void *user_data)
 		}
 
 		if (pkt) {
-			/*LOGD("media packet %p, internal buffer %p", pkt, stream->internal_buffer); */
+			/* LOGD("media packet %p, internal buffer %p", pkt, stream->internal_buffer); */
 			if (video_stream->timestamp) {
-				ret = media_packet_set_pts(pkt, video_stream->timestamp);
+				ret = media_packet_set_pts(pkt, (uint64_t)video_stream->timestamp * 1000000);
 				if (ret != MEDIA_PACKET_ERROR_NONE) {
 					LOGE("media_packet_set_pts failed");
 
 					media_packet_destroy(pkt);
 					pkt = NULL;
 				}
+			} else {
+				LOGD("media packet %p, didn't have video-stream timestamp", pkt);
 			}
 
 			/* set internal buffer */
