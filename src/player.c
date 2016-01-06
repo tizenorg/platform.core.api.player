@@ -1409,6 +1409,13 @@ int player_set_sound_type(player_h player, sound_type_e type)
 
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
+	bool sig_value = false;
+
+	/* check if focus is released */
+	mm_sound_get_signal_value(MM_SOUND_SIGNAL_RELEASE_INTERNAL_FOCUS, &sig_value);
+	if(sig_value)
+		return PLAYER_ERROR_SOUND_POLICY;
+
 	LOGI("[%s] sound type = %d", __FUNCTION__, type);
 
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "sound_volume_type", type, (char *)NULL);
