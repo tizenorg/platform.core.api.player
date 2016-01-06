@@ -596,6 +596,8 @@ int player_get_volume(player_h player, float *left, float *right);
  * @since_tizen 2.3.1
  * @remarks The default sound type of the player is #SOUND_TYPE_MEDIA.
  *          To get the current sound type, use sound_manager_get_current_sound_type().
+ * @remarks If stream_info already existed by calling player_set_audio_policy_info(),
+ *          It will return error.
  *
  * @param[in]   player The handle to the media player
  * @param[in]   type The sound type
@@ -603,6 +605,7 @@ int player_get_volume(player_h player, float *left, float *right);
  *         otherwise a negative error value
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_SOUND_POLICY Sound policy error
  * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create().
  * @see sound_manager_get_current_sound_type()
  */
