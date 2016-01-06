@@ -28,10 +28,6 @@
 #include <Ecore.h>
 #include <Ecore_Wayland.h>
 #endif
-/* #define _USE_X_DIRECT_ */
-#ifdef _USE_X_DIRECT_
-#include <X11/Xlib.h>
-#endif
 #define PACKAGE "player_test"
 #define MAX_STRING_LEN 2048
 #define MMTS_SAMPLELIST_INI_DEFAULT_PATH "/opt/etc/mmts_filelist.ini"
@@ -131,7 +127,7 @@ static Evas_Object *create_win(const char *name)
 	int w = 0;
 	int h = 0;
 
-	printf("[%s][%d] name=%s\n", __func__, __LINE__, name);
+	g_print("[%s][%d] name=%s\n", __func__, __LINE__, name);
 
 	eo = elm_win_add(NULL, name, ELM_WIN_BASIC);
 	if (eo) {
@@ -139,7 +135,7 @@ static Evas_Object *create_win(const char *name)
 		elm_win_borderless_set(eo, EINA_TRUE);
 		evas_object_smart_callback_add(eo, "delete,request", win_del, NULL);
 		elm_win_screen_size_get(eo, NULL, NULL, &w, &h);
-		printf("window size :%d,%d", w, h);
+		g_print("window size :%d,%d", w, h);
 		evas_object_resize(eo, w, h);
 		elm_win_autodel_set(eo, EINA_TRUE);
 #ifdef HAVE_WAYLAND
