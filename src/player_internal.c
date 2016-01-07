@@ -121,3 +121,90 @@ int player_set_streaming_playback_rate(player_h player, float rate)
 	}
 	return ret;
 }
+
+static bool __media_stream_buffer_status_callback_ex(player_stream_type_e type, player_media_stream_buffer_status_e status, unsigned long long bytes, void *user_data)
+{
+	player_s *handle = (player_s *)user_data;
+	_player_event_e event_type;
+
+	if (type == PLAYER_STREAM_TYPE_AUDIO)
+		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
+	else if (type == PLAYER_STREAM_TYPE_VIDEO)
+		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
+	else
+		return FALSE;
+
+	LOGE("[%s] event type %d, status %d, bytes %llu", __FUNCTION__, event_type, status, bytes);
+
+	if (handle->user_cb[event_type]) {
+		((player_media_stream_buffer_status_cb_ex)handle->user_cb[event_type])(status, bytes, handle->user_data[event_type]);
+	} else {
+		LOGE("[%s][type:%d] buffer status cb was not set.", __FUNCTION__, type);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+
+int player_set_media_stream_buffer_status_cb_ex(player_h player, player_stream_type_e type, player_media_stream_buffer_status_cb_ex callback, void *user_data)
+{
+	int ret;
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(callback);
+	player_s *handle = (player_s *)player;
+	_player_event_e event_type;
+
+	if (handle->state != PLAYER_STATE_IDLE) {
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d", __FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+	/* the type can be expaned with default and text. */
+	if ((type != PLAYER_STREAM_TYPE_VIDEO) && (type != PLAYER_STREAM_TYPE_AUDIO)) {
+		LOGE("[%s] PLAYER_ERROR_INVALID_PARAMETER(type : %d)", __FUNCTION__, type);
+		return PLAYER_ERROR_INVALID_PARAMETER;
+	}
+
+	ret = mm_player_set_media_stream_buffer_status_callback(handle->mm_handle, type, (mm_player_media_stream_buffer_status_callback)__media_stream_buffer_status_callback_ex, (void *)handle);
+
+	if (ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+
+	if (type == PLAYER_STREAM_TYPE_VIDEO)
+		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
+	else
+		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
+
+	LOGI("[%s] Event type : %d ", __FUNCTION__, type);
+
+	handle->user_cb[event_type] = callback;
+	handle->user_data[event_type] = user_data;
+
+	return PLAYER_ERROR_NONE;
+}
+
+int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream_type_e type)
+{
+	int ret;
+	PLAYER_INSTANCE_CHECK(player);
+	player_s *handle = (player_s *)player;
+	_player_event_e event_type;
+
+	if (type == PLAYER_STREAM_TYPE_VIDEO)
+		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
+	else if (type == PLAYER_STREAM_TYPE_AUDIO)
+		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
+	else
+		return PLAYER_ERROR_INVALID_PARAMETER;
+
+	handle->user_cb[event_type] = NULL;
+	handle->user_data[event_type] = NULL;
+
+	LOGI("[%s] Event type : %d ", __FUNCTION__, type);
+
+	ret = mm_player_set_media_stream_buffer_status_callback(handle->mm_handle, type, NULL, NULL);
+	if (ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
+}

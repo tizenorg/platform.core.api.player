@@ -2627,7 +2627,7 @@ int player_unset_video_stream_changed_cb(player_h player)
 		return PLAYER_ERROR_NONE;
 }
 
-static bool __media_stream_buffer_status_callback(player_stream_type_e type, player_media_stream_buffer_status_e status, void *user_data)
+static bool __media_stream_buffer_status_callback(player_stream_type_e type, player_media_stream_buffer_status_e status, unsigned long long bytes, void *user_data)
 {
 	player_s *handle = (player_s *)user_data;
 	_player_event_e event_type;

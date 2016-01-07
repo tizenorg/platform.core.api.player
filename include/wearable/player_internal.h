@@ -55,6 +55,18 @@ typedef struct {
  */
 typedef void (*player_audio_pcm_extraction_cb)(player_audio_raw_data_s *audio_raw_frame, void *user_data);
 
+/**
+ * @brief Called when the buffer level drops below the min size or exceeds the max size.
+ * @since_tizen 3.0
+ * @remarks This API is used for media stream playback only.
+ * @param[in] status The buffer status
+ * @param[in] bytes The current buffer level bytes
+ * @param[in] user_data The user data passed from the callback registration function
+ * @see player_set_media_stream_buffer_status_cb_ex()
+ * @see player_set_media_stream_buffer_max_size()
+ * @see player_set_media_stream_buffer_min_threshold()
+ */
+typedef void (*player_media_stream_buffer_status_cb_ex) (player_media_stream_buffer_status_e status, unsigned long long bytes, void *user_data);
 
 /**
  * @brief Registers a callback function to be invoked when audio frame is decoded. Audio only contents is possible. If included video, error happens.
@@ -109,6 +121,40 @@ int player_set_pcm_spec(player_h player, const char *format, int samplerate, int
  */
 int player_set_streaming_playback_rate(player_h player, float rate);
 
+/**
+ * @brief Registers a callback function to be invoked when buffer underrun or overflow is occurred.
+ * @since_tizen 3.0
+ * @remarks This API is used for media stream playback only.
+ * @param[in] player   The handle to the media player
+ * @param[in] type     The type of target stream
+ * @param[in] callback The buffer status callback function to register
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @post player_media_stream_buffer_status_cb_ex() will be invoked.
+ * @see player_unset_media_stream_buffer_status_cb_ex()
+ * @see player_media_stream_buffer_status_cb_ex()
+ */
+int player_set_media_stream_buffer_status_cb_ex(player_h player, player_stream_type_e type, player_media_stream_buffer_status_cb_ex callback, void *user_data);
+
+/**
+ * @brief Unregisters the buffer status callback function.
+ * @since_tizen 3.0
+ * @remarks This API is used for media stream playback only.
+ * @param[in] player The handle to the media player
+ * @param[in] type   The type of target stream
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @see player_set_media_stream_buffer_status_cb()
+ */
+int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream_type_e type);
 
 /**
  * @}

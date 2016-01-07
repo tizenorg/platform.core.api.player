@@ -18,6 +18,7 @@
 #include <tbm_surface.h>
 #include <dlog.h>
 #include <player.h>
+#include <player_internal.h>
 #include <glib.h>
 #include <appcore-efl.h>
 #ifdef HAVE_WAYLAND
@@ -199,7 +200,7 @@ static int app_pause(void *data)
 	}
 
 	if (ad->player_handle == NULL) {
-		printf("player_handle is NULL");
+		LOGE("player_handle is NULL");
 		return -1;
 	}
 
@@ -208,14 +209,14 @@ static int app_pause(void *data)
 		ad->feeding_thread_id = 0;
 	}
 
-	player_unset_media_stream_buffer_status_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO);
-	player_unset_media_stream_buffer_status_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO);
+	player_unset_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO);
+	player_unset_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO);
 	player_unset_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO);
 	player_unset_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO);
 
 	ret = player_unprepare(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		printf("player_unprepare failed : 0x%x", ret);
+		LOGE("player_unprepare failed : 0x%x", ret);
 		return false;
 	}
 
@@ -228,7 +229,7 @@ static int app_pause(void *data)
 	/* destroy player handle */
 	ret = player_destroy(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		printf("player_destroy failed : 0x%x", ret);
+		LOGE("player_destroy failed : 0x%x", ret);
 		return false;
 	}
 
@@ -454,20 +455,24 @@ static void feed_video_data_thread_func(void *data)
 	}
 }
 
-void _video_buffer_status_cb(player_media_stream_buffer_status_e status, void *user_data)
+void _video_buffer_status_cb_ex(player_media_stream_buffer_status_e status, unsigned long long bytes, void *user_data)
 {
-	if (status == PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN)
-		LOGE("video buffer is underrun state");
-	else if (status == PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW)
-		LOGE("video buffer is overrun state");
+	if (status == PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN) {
+		LOGE("video buffer is underrun state, current level byte = %llu", bytes);
+	}
+	else if (status == PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW) {
+		LOGE("video buffer is overrun state, current level byte = %llu", bytes);
+	}
 }
 
-void _audio_buffer_status_cb(player_media_stream_buffer_status_e status, void *user_data)
+void _audio_buffer_status_cb_ex(player_media_stream_buffer_status_e status, unsigned long long bytes, void *user_data)
 {
-	if (status == PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN)
-		LOGE("audio buffer is underrun state");
-	else if (status == PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW)
-		LOGE("audio buffer is overrun state");
+	if (status == PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN) {
+		LOGE("audio buffer is underrun state, current level byte = %llu", bytes);
+	}
+	else if (status == PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW) {
+		LOGE("audio buffer is overrun state, current level byte = %llu", bytes);
+	}
 }
 
 void _video_seek_data_cb(unsigned long long offset, void *user_data)
@@ -517,12 +522,15 @@ static int app_reset(bundle *b, void *data)
 	media_format_set_video_width(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_WIDTH);
 	media_format_set_video_height(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_HEIGHT);
 
-	ret = player_set_media_stream_buffer_status_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_buffer_status_cb, (void *)ad);
+	player_set_media_stream_buffer_max_size(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, (unsigned long long)800*1024);
+	player_set_media_stream_buffer_min_threshold(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, 50);
+
+	ret = player_set_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_buffer_status_cb_ex, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set video buffer status cb failed : 0x%x", ret);
 		goto FAILED;
 	}
-	ret = player_set_media_stream_buffer_status_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_buffer_status_cb, (void *)ad);
+	ret = player_set_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_buffer_status_cb_ex, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set audio buffer status cb failed : 0x%x", ret);
 		goto FAILED;
