@@ -1411,15 +1411,46 @@ int player_set_sound_type(player_h player, sound_type_e type)
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
 	int sig_value = 0;
+	char *stream_type = NULL;
+	int stream_index = -1;
 
 	/* check if focus is released */
 	mm_sound_get_signal_value(MM_SOUND_SIGNAL_RELEASE_INTERNAL_FOCUS, &sig_value);
 	if(sig_value)
 		return PLAYER_ERROR_SOUND_POLICY;
 
-	LOGI("[%s] sound type = %d", __FUNCTION__, type);
+	/* convert volume_type to stream_type */
+	switch(type)
+	{
+		case SOUND_TYPE_SYSTEM:
+			stream_type = "system";
+			break;
+		case SOUND_TYPE_NOTIFICATION:
+			stream_type = "notification";
+			break;
+		case SOUND_TYPE_ALARM:
+			stream_type = "alarm";
+			break;
+		case SOUND_TYPE_RINGTONE:
+			stream_type = "ringtone-voip";
+			break;
+		case SOUND_TYPE_MEDIA:
+		case SOUND_TYPE_CALL:
+			stream_type = "media";
+			break;
+		case SOUND_TYPE_VOIP:
+			stream_type = "voip";
+			break;
+		case SOUND_TYPE_VOICE:
+			stream_type = "voice-information";
+			break;
+		default:
+			LOGW("check the value[%d].\n", type);
+			return PLAYER_ERROR_INVALID_PARAMETER;
+	}
+	LOGI("[%s] sound type = %s", __FUNCTION__, stream_type);
 
-	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "sound_volume_type", type, (char *)NULL);
+	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "sound_stream_type", stream_type, strlen(stream_type), "sound_stream_index", stream_index, (char *)NULL);
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 	else
