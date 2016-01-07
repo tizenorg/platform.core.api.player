@@ -35,6 +35,7 @@
 #endif
 #include <tbm_bufmgr.h>
 #include <tbm_surface_internal.h>
+#include <mm_sound.h>
 
 #define __JOB_KEY_PREPARED		"prepared"
 #define __JOB_KEY_ERROR		"error"
@@ -1409,7 +1410,7 @@ int player_set_sound_type(player_h player, sound_type_e type)
 
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
-	bool sig_value = false;
+	int sig_value = false;
 
 	/* check if focus is released */
 	mm_sound_get_signal_value(MM_SOUND_SIGNAL_RELEASE_INTERNAL_FOCUS, &sig_value);

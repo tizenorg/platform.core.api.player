@@ -19,7 +19,7 @@ SET(INC_COM_DIR include)
 
 INCLUDE_DIRECTORIES(${INC_DIR}, ${INC_COM_DIR})
 
-SET(dependents "libtbm capi-media-tool dlog mm-player capi-base-common capi-media-sound-manager gstreamer-1.0 evas ecore elementary capi-system-info")
+SET(dependents "libtbm capi-media-tool dlog mm-player capi-base-common capi-media-sound-manager gstreamer-1.0 evas ecore elementary capi-system-info mm-sound")
 SET(pc_dependents "libtbm capi-media-tool capi-base-common capi-media-sound-manager")
 
 INCLUDE(FindPkgConfig)

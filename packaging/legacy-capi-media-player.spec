@@ -30,6 +30,7 @@ BuildRequires:  pkgconfig(capi-media-tool)
 BuildRequires:  pkgconfig(libtbm)
 #BuildRequires:  pkgconfig(ttrace)
 BuildRequires:  pkgconfig(capi-system-info)
+BuildRequires:  pkgconfig(mm-sound)
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
