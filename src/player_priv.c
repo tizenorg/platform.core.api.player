@@ -46,6 +46,7 @@ int player_set_shm_stream_path_for_mused(player_h player, const char *stream_pat
 	return PLAYER_ERROR_NONE;
 }
 
+#ifdef USE_CLIENT_PIPELINE
 static MMDisplaySurfaceType __player_mused_convet_display_type(player_display_type_e type)
 {
 	switch (type) {
@@ -61,6 +62,7 @@ static MMDisplaySurfaceType __player_mused_convet_display_type(player_display_ty
 		return MM_DISPLAY_SURFACE_NULL;
 	}
 }
+#endif
 
 #ifdef HAVE_WAYLAND
 int player_set_display_wl_for_mused(player_h player, player_display_type_e type, intptr_t surface, int x, int y, int w, int h)
@@ -68,7 +70,9 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
 	void *set_handle = NULL;
+#ifdef USE_CLIENT_PIPELINE
 	MMDisplaySurfaceType mmType = __player_mused_convet_display_type(type);
+#endif
 	MMDisplaySurfaceType mmClientType = MM_DISPLAY_SURFACE_NULL;
 	MMPlayerPipelineType mmPipelineType = MM_PLAYER_PIPELINE_SERVER;
 
@@ -119,8 +123,11 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 	if (handle->display_type == PLAYER_DISPLAY_TYPE_NONE || type == handle->display_type) {
 		/* first time or same type */
 		LOGW("first time or same type");
+#ifdef USE_CLIENT_PIPELINE
 		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_surface_client_type", mmClientType, "display_overlay", set_handle, sizeof(void *), "pipeline_type", mmPipelineType, NULL);
-
+#else
+		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", type, "display_surface_client_type", mmClientType, "display_overlay", set_handle, sizeof(void *), "pipeline_type", mmPipelineType, NULL);
+#endif
 		if (ret != MM_ERROR_NONE) {
 			handle->display_handle = temp;
 			LOGE("[%s] Failed to display surface change :%d", __FUNCTION__, ret);
@@ -140,7 +147,11 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 		}
 	} else {
 		/* changing surface case */
+#ifdef USE_CLIENT_PIPELINE
 		ret = mm_player_change_videosink(handle->mm_handle, mmType, set_handle);
+#else
+		ret = mm_player_change_videosink(handle->mm_handle, type, set_handle);
+#endif
 		if (ret != MM_ERROR_NONE) {
 			handle->display_handle = temp;
 			if (ret == MM_ERROR_NOT_SUPPORT_API) {
@@ -170,8 +181,9 @@ int player_set_display_for_mused(player_h player, player_display_type_e type, un
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
 	void *set_handle = NULL;
+#ifdef USE_CLIENT_PIPELINE
 	MMDisplaySurfaceType mmType = __player_mused_convet_display_type(type);
-
+#endif
 	int ret;
 	if (!__player_state_validate(handle, PLAYER_STATE_IDLE)) {
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d", __FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
@@ -212,8 +224,11 @@ int player_set_display_for_mused(player_h player, player_display_type_e type, un
 	/* set display handle */
 	if (handle->display_type == PLAYER_DISPLAY_TYPE_NONE || type == handle->display_type) {
 		/* first time or same type */
+#ifdef USE_CLIENT_PIPELINE
 		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_overlay", set_handle, sizeof(xhandle), NULL);
-
+#else
+		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", type, "display_overlay", set_handle, sizeof(xhandle), NULL);
+#endif
 		if (ret != MM_ERROR_NONE) {
 			handle->display_handle = temp;
 			LOGE("[%s] Failed to display surface change :%d", __FUNCTION__, ret);
@@ -226,7 +241,11 @@ int player_set_display_for_mused(player_h player, player_display_type_e type, un
 		}
 	} else {
 		/* changing surface case */
+#ifdef USE_CLIENT_PIPELINE
 		ret = mm_player_change_videosink(handle->mm_handle, mmType, set_handle);
+#else
+		ret = mm_player_change_videosink(handle->mm_handle, type, set_handle);
+#endif
 		if (ret != MM_ERROR_NONE) {
 			handle->display_handle = temp;
 			if (ret == MM_ERROR_NOT_SUPPORT_API) {
@@ -280,6 +299,7 @@ int player_get_raw_video_caps(player_h player, char **caps)
 	return PLAYER_ERROR_NONE;
 }
 
+#ifdef USE_CLIENT_PIPELINE
 int player_set_video_bin_created_cb(player_h player, player_video_bin_created_cb callback, void *user_data)
 {
 	PLAYER_INSTANCE_CHECK(player);
@@ -304,6 +324,7 @@ int player_unset_video_bin_created_cb(player_h player)
 	LOGI("[%s] Event type : %d ", __FUNCTION__, type);
 	return PLAYER_ERROR_NONE;
 }
+#endif
 
 int player_sound_register(player_h player, int pid)
 {

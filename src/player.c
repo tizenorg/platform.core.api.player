@@ -783,6 +783,7 @@ static int __msg_callback(int message, void *param, void *user_data)
 #endif
 		}
 		break;
+#ifdef USE_CLIENT_PIPELINE
 	case MM_MESSAGE_VIDEO_BIN_CREATED:
 		if (handle->user_cb[_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED]) {
 			char *caps = (char *)msg->data;
@@ -791,6 +792,7 @@ static int __msg_callback(int message, void *param, void *user_data)
 			g_free(caps);
 		}
 		break;
+#endif
 	case MM_MESSAGE_UNKNOWN:	/* 0x00 */
 	case MM_MESSAGE_WARNING:	/* 0x02 */
 	case MM_MESSAGE_CONNECTING:	/* 0x100 */

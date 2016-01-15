@@ -88,7 +88,9 @@ typedef enum {
 	_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK,
 	_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED,
 	_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED,
+#ifdef USE_CLIENT_PIPELINE
 	_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED,
+#endif
 	_PLAYER_EVENT_TYPE_NUM
 }_player_event_e;
 
@@ -138,6 +140,8 @@ bool __player_state_validate(player_s * handle, player_state_e threshold);
 int player_sound_register(player_h player, int pid);
 int player_is_streaming(player_h player, bool *is_streaming);
 
+#ifdef USE_CLIENT_PIPELINE
+
 /**
  * @brief Called when the video sink bin is crated.
  * @since_tizen 3.0
@@ -175,7 +179,7 @@ int player_set_video_bin_created_cb(player_h player, player_video_bin_created_cb
  * @see player_unset_vidoe_bin_created_cb()
  */
 int player_unset_video_bin_created_cb(player_h player);
-
+#endif
 
 #ifdef __cplusplus
 }
