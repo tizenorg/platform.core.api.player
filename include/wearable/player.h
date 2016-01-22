@@ -81,6 +81,8 @@ typedef enum {
     PLAYER_ERROR_RESOURCE_LIMIT     = PLAYER_ERROR_CLASS | 0x0c,            /**< Resource limit */
     PLAYER_ERROR_PERMISSION_DENIED  = TIZEN_ERROR_PERMISSION_DENIED,        /**< Permission denied */
     PLAYER_ERROR_SERVICE_DISCONNECTED = PLAYER_ERROR_CLASS | 0x0d,          /**< Socket connection lost (Since 3.0) */
+    PLAYER_ERROR_BUFFER_SPACE         = TIZEN_ERROR_BUFFER_SPACE,           /**< No buffer space available (Since 3.0)*/
+
 } player_error_e;
 
 /**
@@ -452,7 +454,7 @@ int player_prepare(player_h player);
  * @remarks The mediastorage privilege(http://tizen.org/privilege/mediastorage) should be added if any video/audio files are used to play located in the internal storage.
  * @remarks The externalstorage privilege(http://tizen.org/privilege/externalstorage) should be added if any video/audio files are used to play located in the external storage.
  * @remarks The internet privilege(http://tizen.org/privilege/internet) should be added if any URLs are used to play from network.
- * @param[in]	player The handle to the media player
+ * @param[in] player The handle to the media player
  * @param[in] callback	The callback function to register
  * @param[in] user_data	The user data to be passed to the callback function
  * @return @c 0 on success,
@@ -596,8 +598,8 @@ int player_get_volume(player_h player, float *left, float *right);
  * @since_tizen 2.3.1
  * @remarks The default sound type of the player is #SOUND_TYPE_MEDIA.
  *          To get the current sound type, use sound_manager_get_current_sound_type().
- * @remarks If stream_info already exists by calling player_set_audio_policy_info(),
- *          It will return error.
+ * @remarks If stream_info already exists by calling sound_manager_create_stream_info(),
+ *          It will return error since 3.0.
  *
  * @param[in]   player The handle to the media player
  * @param[in]   type The sound type
@@ -911,6 +913,8 @@ int player_unset_media_packet_video_frame_decoded_cb(player_h player);
  * @brief  Pushes elementary stream to decode audio or video
  * @since_tizen 2.4
  * @remarks player_set_media_stream_info() should be called before using this API.
+ * @remarks The available buffer size can be set by calling player_set_media_stream_buffer_max_size() API.
+ *          If there is no available buffer space, this api will return error.
  * @param[in]  player   The handle to media player
  * @param[in]  packet   The media packet to decode
  * @return @c 0 on success,
@@ -919,8 +923,10 @@ int player_unset_media_packet_video_frame_decoded_cb(player_h player);
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
  * @retval #PLAYER_ERROR_NOT_SUPPORTED_FILE File not supported
- * @pre	The player state must be set to #PLAYER_STATE_IDLE at least.
- * @see  player_set_media_stream_info()
+ * @retval #PLAYER_ERROR_BUFFER_SPACE No buffer space available
+ * @pre The player state must be set to #PLAYER_STATE_IDLE at least.
+ * @see player_set_media_stream_info()
+ * @see player_set_media_stream_buffer_max_size()
  */
 int player_push_media_stream(player_h player, media_packet_h packet);
 
@@ -1021,7 +1027,7 @@ int player_unset_media_stream_seek_cb(player_h player, player_stream_type_e type
  * @remarks If the buffer level over the max size, player_media_stream_buffer_status_cb() will be invoked with overflow status.
  * @param[in] player The handle to the media player
  * @param[in] type   The type of target stream
- * @param[in] max_size The max bytes of buffer
+ * @param[in] max_size The max bytes of buffer, it has to be bigger than zero. (default: 200000)
  * @return @c 0 on success,
  *         otherwise a negative error value
  * @retval #PLAYER_ERROR_NONE Successful
@@ -1059,7 +1065,7 @@ int player_get_media_stream_buffer_max_size(player_h player, player_stream_type_
  * @remarks If the buffer level drops below the percent value, player_media_stream_buffer_status_cb() will be invoked with underrun status.
  * @param[in] player The handle to the media player
  * @param[in] type   The type of target stream
- * @param[in] percent The minimum threshold(0~100) of buffer
+ * @param[in] percent The minimum threshold(0~100) of buffer (default: 0)
  * @return @c 0 on success,
  *         otherwise a negative error value
  * @retval #PLAYER_ERROR_NONE Successful
