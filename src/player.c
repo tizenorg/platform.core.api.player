@@ -252,6 +252,13 @@ int __player_convert_error_code(int code, char *func_name)
 	case MM_ERROR_PLAYER_PERMISSION_DENIED:
 		ret = PLAYER_ERROR_PERMISSION_DENIED;
 		msg = "PLAYER_ERROR_PERMISSION_DENIED";
+		break;
+	case MM_ERROR_PLAYER_BUFFER_SPACE:
+		ret = PLAYER_ERROR_BUFFER_SPACE;
+		msg = "PLAYER_ERROR_BUFFER_SPACE";
+		break;
+	default:
+		break;
 	}
 	LOGE("[%s] %s(0x%08x) : core fw error(0x%x)", func_name, msg, ret, code);
 	return ret;
