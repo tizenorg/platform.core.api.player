@@ -27,6 +27,9 @@ extern "C" {
 
 #define PLAYER_ERROR_CLASS          TIZEN_ERROR_PLAYER | 0x20
 
+/* This is for custom defined player error. */
+#define PLAYER_CUSTOM_ERROR_CLASS   TIZEN_ERROR_PLAYER | 0x1000
+
 /**
  * @file player.h
  * @brief This file contains the media player API.
