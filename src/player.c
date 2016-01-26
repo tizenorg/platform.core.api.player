@@ -1024,7 +1024,7 @@ static MMDisplaySurfaceType __player_convet_display_type(player_display_type_e t
 {
 	switch (type) {
 	case PLAYER_DISPLAY_TYPE_OVERLAY:
-		return MM_DISPLAY_SURFACE_X;
+		return MM_DISPLAY_SURFACE_OVERLAY;
 #ifdef TIZEN_MOBILE
 	case PLAYER_DISPLAY_TYPE_EVAS:
 		return MM_DISPLAY_SURFACE_EVAS;
