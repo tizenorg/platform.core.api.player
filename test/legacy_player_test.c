@@ -993,13 +993,25 @@ static void get_duration()
 	g_print("                                                            ==> [Player_Test] Duration: [%d ] msec\n", duration);
 }
 
+static int get_download_progress()
+{
+	int ret;
+	int start=0, current=0;
+	ret = player_get_streaming_download_progress(g_player[0], &start, &current);
+	g_print("                                                            ==> [Player_Test] download progress: [%d ~ %d]\n", start, current);
+	return ret;
+}
 static void audio_frame_decoded_cb_ex()
 {
 	int ret;
 
 #if DUMP_OUTBUF
-	fp_out1 = fopen("/opt/usr/media/out1.pcm", "wb");
-	fp_out2 = fopen("/opt/usr/media/out2.pcm", "wb");
+	fp_out1 = fopen("/home/owner/content/out1.pcm", "wb");
+	fp_out2 = fopen("/home/owner/content/out2.pcm", "wb");
+	if (!fp_out1 || !fp_out2) {
+		g_print("File open error\n");
+		return;
+	}
 #endif
 
 	ret = player_set_pcm_extraction_mode(g_player[0], false, _audio_frame_decoded_cb_ex, &ret);
@@ -1512,6 +1524,8 @@ void _interpret_main_menu(char *cmd)
 			audio_frame_decoded_cb_ex();
 		} else if (strncmp(cmd, "X4", 2) == 0) {
 			set_pcm_spec();
+		} else if (strncmp(cmd, "dp", 2) == 0) {
+			get_download_progress();
 		} else {
 			g_print("unknown menu \n");
 		}
@@ -1556,6 +1570,7 @@ void display_sub_basic()
 	g_print("l. Get Position\n");
 	g_print("[trick] tr. set playback rate\n");
 	g_print("[duration] m. Get Duration\n");
+	g_print("[buffering] dp. Get Download Progress\n");
 	g_print("[Stream Info] n. Get stream info (Video Size, codec, audio stream info, and tag info)\n");
 	g_print("[Looping] o. Set Looping\t");
 	g_print("p. Get Looping\n");
