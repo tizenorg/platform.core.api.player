@@ -63,7 +63,25 @@ static MMDisplaySurfaceType __player_mused_convet_display_type(player_display_ty
 }
 
 #ifdef HAVE_WAYLAND
-int player_set_display_wl_for_mused(player_h player, player_display_type_e type, intptr_t surface, int x, int y, int w, int h)
+int player_resize_video_render_rect(player_h player, int x, int y, int w, int h)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s *handle = (player_s *)player;
+	int ret;
+
+	LOGD("<Enter>");
+
+	ret = mm_player_set_attribute(handle->mm_handle, NULL, "wl_window_render_x", x, "wl_window_render_y", y, "wl_window_render_width", w, "wl_window_render_height", h, (char *)NULL);
+
+	if (ret != MM_ERROR_NONE) {
+		handle->display_type = PLAYER_DISPLAY_TYPE_NONE;
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	} else {
+		return PLAYER_ERROR_NONE;
+	}
+}
+
+int player_set_display_wl_for_mused(player_h player, player_display_type_e type, unsigned int parent_id, int x, int y, int w, int h)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
@@ -99,13 +117,14 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 		temp = handle->display_handle;
 		if (type == PLAYER_DISPLAY_TYPE_OVERLAY) {
 			LOGI("Wayland overlay surface type");
-			handle->display_handle = (void *)surface;
+			LOGI("parent_id %d", parent_id);
+			handle->display_handle = (void *)(uintptr_t)parent_id;
 			set_handle = &(handle->display_handle);
 			mmClientType = MM_DISPLAY_SURFACE_OVERLAY;
 #ifdef TIZEN_MOBILE
 		} else if (type == PLAYER_DISPLAY_TYPE_EVAS) {
 			LOGI("Evas surface type");
-			handle->display_handle = (void *)surface;
+//			handle->display_handle = (void *)surface;
 			set_handle = &(handle->display_handle);
 			mmClientType = MM_DISPLAY_SURFACE_EVAS;
 #endif
@@ -119,7 +138,7 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 	if (handle->display_type == PLAYER_DISPLAY_TYPE_NONE || type == handle->display_type) {
 		/* first time or same type */
 		LOGW("first time or same type");
-		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_surface_client_type", mmClientType, "display_overlay", set_handle, sizeof(void *), "pipeline_type", mmPipelineType, NULL);
+		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_surface_client_type", mmClientType, "display_overlay", set_handle, sizeof(parent_id), "pipeline_type", mmPipelineType, NULL);
 
 		if (ret != MM_ERROR_NONE) {
 			handle->display_handle = temp;
