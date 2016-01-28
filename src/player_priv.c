@@ -120,7 +120,7 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 			LOGI("parent_id %d", parent_id);
 			handle->display_handle = (void *)(uintptr_t)parent_id;
 			set_handle = &(handle->display_handle);
-			mmClientType = MM_DISPLAY_SURFACE_X;
+			mmClientType = MM_DISPLAY_SURFACE_OVERLAY;
 #ifdef TIZEN_MOBILE
 		} else if (type == PLAYER_DISPLAY_TYPE_EVAS) {
 			LOGI("Evas surface type");

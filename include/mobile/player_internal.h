@@ -85,7 +85,6 @@ typedef void (*player_media_stream_buffer_status_cb_ex) (player_media_stream_buf
  * @retval #PLAYER_ERROR_NOT_SUPPORTD Not supported
  * @pre The player state must be #PLAYER_STATE_IDLE by player_create() or player_unprepare().
  * @post player_audio_pcm_extraction_cb() will be invoked.
- * @see player_unset_audio_frame_decoded_cb_ex()
  */
 int player_set_pcm_extraction_mode(player_h player, bool sync, player_audio_pcm_extraction_cb callback, void *user_data);
 
