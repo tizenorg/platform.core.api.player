@@ -1037,7 +1037,7 @@ int player_unset_media_stream_seek_cb(player_h player, player_stream_type_e type
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED. (since 3.0)
  * @see player_get_media_stream_buffer_max_size()
  * @see player_media_stream_buffer_status_cb()
  */
@@ -1056,7 +1056,7 @@ int player_set_media_stream_buffer_max_size(player_h player, player_stream_type_
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  * @see player_set_media_stream_buffer_max_size()
  * @see player_media_stream_buffer_status_cb()
  */
@@ -1075,7 +1075,7 @@ int player_get_media_stream_buffer_max_size(player_h player, player_stream_type_
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED. (since 3.0)
  * @see player_get_media_stream_buffer_min_threshold()
  * @see player_media_stream_buffer_status_cb()
  */
@@ -1094,7 +1094,7 @@ int player_set_media_stream_buffer_min_threshold(player_h player, player_stream_
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  * @see player_set_media_stream_buffer_min_threshold()
  * @see player_media_stream_buffer_status_cb()
  */

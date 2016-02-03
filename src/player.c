@@ -2850,7 +2850,10 @@ int player_set_media_stream_buffer_max_size(player_h player, player_stream_type_
 	int ret;
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
-	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
+	if (!__player_state_validate(handle, PLAYER_STATE_IDLE)) {
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d", __FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
 
 	ret = mm_player_set_media_stream_buffer_max_size(handle->mm_handle, type, max_size);
 
@@ -2881,7 +2884,10 @@ int player_set_media_stream_buffer_min_threshold(player_h player, player_stream_
 	int ret;
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
-	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
+	if (!__player_state_validate(handle, PLAYER_STATE_IDLE)) {
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d", __FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
 
 	ret = mm_player_set_media_stream_buffer_min_percent(handle->mm_handle, type, percent);
 
