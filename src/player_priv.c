@@ -81,7 +81,7 @@ int player_resize_video_render_rect(player_h player, int x, int y, int w, int h)
 	}
 }
 
-int player_set_display_wl_for_mused(player_h player, player_display_type_e type, unsigned int parent_id, int x, int y, int w, int h)
+int player_set_display_wl_for_mused(player_h player, player_display_type_e type, unsigned int wl_surface_id, int x, int y, int w, int h)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
@@ -117,8 +117,8 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 		temp = handle->display_handle;
 		if (type == PLAYER_DISPLAY_TYPE_OVERLAY) {
 			LOGI("Wayland overlay surface type");
-			LOGI("parent_id %d", parent_id);
-			handle->display_handle = (void *)(uintptr_t)parent_id;
+			LOGI("wl_surface_id %d", wl_surface_id);
+			handle->display_handle = (void *)(uintptr_t)wl_surface_id;
 			set_handle = &(handle->display_handle);
 			mmClientType = MM_DISPLAY_SURFACE_OVERLAY;
 #ifdef TIZEN_MOBILE
@@ -137,7 +137,7 @@ int player_set_display_wl_for_mused(player_h player, player_display_type_e type,
 	if (handle->display_type == PLAYER_DISPLAY_TYPE_NONE || type == handle->display_type) {
 		/* first time or same type */
 		LOGW("first time or same type");
-		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_surface_client_type", mmClientType, "display_overlay", set_handle, sizeof(parent_id), "pipeline_type", mmPipelineType, NULL);
+		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_surface_client_type", mmClientType, "display_overlay", set_handle, sizeof(wl_surface_id), "pipeline_type", mmPipelineType, NULL);
 
 		if (ret != MM_ERROR_NONE) {
 			handle->display_handle = temp;
