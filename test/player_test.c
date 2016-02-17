@@ -28,10 +28,23 @@
 #include <Ecore.h>
 #include <Ecore_Wayland.h>
 #endif
+#ifdef _ACTIVATE_EOM_
+#include <eom.h>
+#endif
+
+#ifdef PACKAGE
+#undef PACKAGE
+#endif
 #define PACKAGE "player_test"
-#define MAX_STRING_LEN 2048
+
+#ifdef LOG_TAG
+#undef LOG_TAG
+#endif
+#define LOG_TAG "PLAYER_TEST"
+
+#define MAX_STRING_LEN	2048
 #define MMTS_SAMPLELIST_INI_DEFAULT_PATH "/opt/etc/mmts_filelist.ini"
-#define PLAYER_TEST_DUMP_PATH_PREFIX "/home/owner/content/dump_pcm_"
+#define PLAYER_TEST_DUMP_PATH_PREFIX   "/home/owner/content/dump_pcm_"
 #define INI_SAMPLE_LIST_MAX 9
 #define DEFAULT_HTTP_TIMEOUT -1
 
@@ -49,7 +62,9 @@ static media_format_h g_audio_fmt = NULL;
 static media_packet_h g_video_pkt = NULL;
 static media_format_h g_video_fmt = NULL;
 
-/* #define DUMP_OUTBUF         1 */
+static int _save(unsigned char *src, int length);
+
+#define DUMP_OUTBUF         1
 #if DUMP_OUTBUF
 FILE *fp_out1 = NULL;
 FILE *fp_out2 = NULL;
@@ -75,48 +90,46 @@ enum {
 	CURRENT_STATUS_SUBTITLE_FILENAME,
 	CURRENT_STATUS_AUDIO_EQUALIZER,
 	CURRENT_STATUS_PLAYBACK_RATE,
+	CURRENT_STATUS_STREAMING_PLAYBACK_RATE,
 	CURRENT_STATUS_SWITCH_SUBTITLE,
 };
 
 #define MAX_HANDLE 20
 
 /* for video display */
-Evas_Object *g_xid;
-Evas_Object *g_eo_win;
-Evas_Object *g_eo[MAX_HANDLE] = {0, };
+static Evas_Object *g_xid;
+#ifdef _ACTIVATE_EOM_
+static Evas_Object *g_external_xid;
+#endif
+static Evas_Object *selected_xid;
+static Evas_Object *g_eo[MAX_HANDLE] = {0, };
 
-int g_current_surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
+static int g_current_surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
 
-struct appdata {
-
+typedef struct {
 	Evas_Object *win;
-	Evas_Object *bg;
-	Evas_Object *rect;
+	Evas_Object *layout_main;	/* layout widget based on EDJ */
 #ifdef HAVE_X11
 	Ecore_X_Window xid;
 #elif HAVE_WAYLAND
 	unsigned int xid;
 #endif
-	Evas_Object *layout_main;	/* layout widget based on EDJ */
 	/* add more variables here */
-};
+#ifdef _ACTIVATE_EOM_
+	int hdmi_output_id;
+#endif
+} appdata;
 
-static Evas_Object *create_bg(Evas_Object * pParent)
-{
-	if (!pParent)
-		return NULL;
+static appdata ad;
+static player_h g_player[MAX_HANDLE] = {0, };
 
-	Evas_Object *pObj = NULL;
+int g_handle_num = 1;
+int g_menu_state = CURRENT_STATUS_MAINMENU;
+char g_file_list[9][256];
+gboolean quit_pushing;
+sound_stream_info_h g_stream_info_h = NULL;
 
-	pObj = elm_bg_add(pParent);
-	evas_object_size_hint_weight_set(pObj, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	elm_win_resize_object_add(pParent, pObj);
-	evas_object_color_set(pObj, 0, 0, 0, 0);
-	evas_object_show(pObj);
-	return pObj;
-}
-
-static void win_del(void *data, Evas_Object * obj, void *event)
+static void win_del(void *data, Evas_Object *obj, void *event)
 {
 	elm_exit();
 }
@@ -145,7 +158,7 @@ static Evas_Object *create_win(const char *name)
 	return eo;
 }
 
-static Evas_Object *create_image_object(Evas_Object * eo_parent)
+static Evas_Object *create_image_object(Evas_Object *eo_parent)
 {
 	if (!eo_parent)
 		return NULL;
@@ -158,30 +171,231 @@ static Evas_Object *create_image_object(Evas_Object * eo_parent)
 	return eo;
 }
 
-static Evas_Object *create_render_rect(Evas_Object * pParent)
+void create_render_rect_and_bg(Evas_Object *win)
 {
-	if (!pParent)
-		return NULL;
+	if (!win) {
+		g_print("no win");
+		return;
+	}
+	Evas_Object *bg, *rect;
 
-	Evas *pEvas = evas_object_evas_get(pParent);
-	Evas_Object *pObj = evas_object_rectangle_add(pEvas);
-	if (pObj == NULL)
-		return NULL;
+	bg = elm_bg_add(win);
+	elm_win_resize_object_add(win, bg);
+	evas_object_size_hint_weight_set(bg, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_show(bg);
 
-	evas_object_size_hint_weight_set(pObj, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
-	evas_object_color_set(pObj, 0, 0, 0, 0);
-	evas_object_render_op_set(pObj, EVAS_RENDER_COPY);
-	evas_object_show(pObj);
-	elm_win_resize_object_add(pParent, pObj);
+	rect = evas_object_rectangle_add(evas_object_evas_get(win));
+	if (!rect) {
+		g_print("no rect");
+		return;
+	}
+	evas_object_color_set(rect, 0, 0, 0, 0);
+	evas_object_render_op_set(rect, EVAS_RENDER_COPY);
 
-	return pObj;
+	elm_win_resize_object_add(win, rect);
+	evas_object_size_hint_weight_set(rect, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
+	evas_object_show(rect);
+	evas_object_show(win);
+}
+#ifdef _ACTIVATE_EOM_
+int eom_get_output_id(const char *output_name)
+{
+	eom_output_id *output_ids = NULL;
+	eom_output_id output_id = 0;
+	eom_output_type_e output_type = EOM_OUTPUT_TYPE_UNKNOWN;
+	int id_cnt = 0;
+	int i;
+
+	/* get output_ids */
+	output_ids = eom_get_eom_output_ids(&id_cnt);
+	if (id_cnt == 0) {
+		g_print("[eom] no external outuputs supported\n");
+		return 0;
+	}
+
+	/* find output ids interested */
+	for (i = 0; i < id_cnt; i++) {
+		eom_get_output_type(output_ids[i], &output_type);
+		if (!strncmp(output_name, "HDMI", 4)) {
+			if (output_type == EOM_OUTPUT_TYPE_HDMIA || output_type == EOM_OUTPUT_TYPE_HDMIB) {
+				output_id = output_ids[i];
+				break;
+			}
+		} else if (!strncmp(output_name, "Virtual", 4)) {
+			if (output_type == EOM_OUTPUT_TYPE_VIRTUAL) {
+				output_id = output_ids[i];
+				break;
+			}
+		}
+	}
+
+	if (output_ids)
+		free(output_ids);
+
+	return output_id;
 }
 
+static void eom_notify_cb_output_add(eom_output_id output_id, void *user_data)
+{
+	appdata *info = (appdata *)user_data;
+
+	if (info->hdmi_output_id != output_id) {
+		g_print("[eom] OUTPUT ADDED. SKIP. my output ID is %d\n", info->hdmi_output_id);
+		return;
+	}
+	g_print("[eom] output(%d) connected\n", output_id);
+	/* it is for external window */
+	if (!g_external_xid) {
+		g_external_xid = elm_win_add(NULL, "External", ELM_WIN_BASIC);
+		if (eom_set_output_window(info->hdmi_output_id, g_external_xid) == EOM_ERROR_NONE) {
+			create_render_rect_and_bg(g_external_xid);
+			g_print("[eom] create external window\n");
+		} else {
+			evas_object_del(g_external_xid);
+			g_external_xid = NULL;
+			g_print("[eom] create external window fail\n");
+		}
+	}
+}
+
+static void eom_notify_cb_output_remove(eom_output_id output_id, void *user_data)
+{
+	appdata *info = (appdata *)user_data;
+	player_state_e state;
+
+	if (info->hdmi_output_id != output_id) {
+		g_print("[eom] OUTPUT REMOVED. SKIP. my output ID is %d\n", info->hdmi_output_id);
+		return;
+	}
+	g_print("[eom] output(%d) disconnected\n", output_id);
+
+	if (selected_xid == g_external_xid && g_player[0]) {
+		player_get_state(g_player[0], &state);
+		if (state >= PLAYER_STATE_READY) {
+			if (!g_xid) {
+				g_xid = create_win(PACKAGE);
+				if (g_xid == NULL)
+					return;
+				g_print("create xid %p\n", g_xid);
+				create_render_rect_and_bg(g_xid);
+				elm_win_activate(g_xid);
+				evas_object_show(g_xid);
+			}
+			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(g_xid));
+		}
+	}
+
+	/* it is for external window */
+	if (g_external_xid) {
+		evas_object_del(g_external_xid);
+		g_external_xid = NULL;
+	}
+	selected_xid = g_xid;
+}
+
+static void eom_notify_cb_mode_changed(eom_output_id output_id, void *user_data)
+{
+	appdata *info = (appdata *)user_data;
+	eom_output_mode_e mode = EOM_OUTPUT_MODE_NONE;
+
+	if (info->hdmi_output_id != output_id) {
+		g_print("[eom] MODE CHANGED. SKIP. my output ID is %d\n", info->hdmi_output_id);
+		return;
+	}
+
+	eom_get_output_mode(output_id, &mode);
+	g_print("[eom] output(%d) mode changed(%d)\n", output_id, mode);
+}
+
+static void eom_notify_cb_attribute_changed(eom_output_id output_id, void *user_data)
+{
+	appdata *info = (appdata *)user_data;
+
+	eom_output_attribute_e attribute = EOM_OUTPUT_ATTRIBUTE_NONE;
+	eom_output_attribute_state_e state = EOM_OUTPUT_ATTRIBUTE_STATE_NONE;
+
+	if (info->hdmi_output_id != output_id) {
+		g_print("[eom] ATTR CHANGED. SKIP. my output ID is %d\n", info->hdmi_output_id);
+		return;
+	}
+
+	eom_get_output_attribute(output_id, &attribute);
+	eom_get_output_attribute_state(output_id, &state);
+
+	g_print("[eom] output(%d) attribute changed(%d, %d)\n", output_id, attribute, state);
+	if (state == EOM_OUTPUT_ATTRIBUTE_STATE_ACTIVE) {
+		g_print("[eom] active\n");
+		if (!g_external_xid) {
+			g_external_xid = elm_win_add(NULL, "External", ELM_WIN_BASIC);
+			if (eom_set_output_window(info->hdmi_output_id, g_external_xid) == EOM_ERROR_NONE) {
+				create_render_rect_and_bg(g_external_xid);
+				g_print("[eom] create external window\n");
+			} else {
+				evas_object_del(g_external_xid);
+				g_external_xid = NULL;
+				g_print("[eom] create external window fail\n");
+			}
+		}
+		selected_xid = g_external_xid;
+		/* play video on external window */
+		if (g_player[0])
+			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_xid));
+	} else if (state == EOM_OUTPUT_ATTRIBUTE_STATE_INACTIVE) {
+		g_print("[eom] inactive\n");
+		if (!g_xid) {
+			g_xid = create_win(PACKAGE);
+			if (g_xid == NULL)
+				return;
+			g_print("create xid %p\n", g_xid);
+			create_render_rect_and_bg(g_xid);
+			elm_win_activate(g_xid);
+			evas_object_show(g_xid);
+		}
+		selected_xid = g_xid;
+		if (g_player[0])
+			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_xid));
+
+		if (g_external_xid) {
+			evas_object_del(g_external_xid);
+			g_external_xid = NULL;
+		}
+	} else if (state == EOM_OUTPUT_ATTRIBUTE_STATE_LOST) {
+		g_print("[eom] lost\n");
+		if (!g_xid) {
+			g_xid = create_win(PACKAGE);
+			if (g_xid == NULL)
+				return;
+			g_print("create xid %p\n", g_xid);
+			create_render_rect_and_bg(g_xid);
+			elm_win_activate(g_xid);
+			evas_object_show(g_xid);
+		}
+		selected_xid = g_xid;
+
+		if (g_player[0])
+			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_xid));
+
+		if (g_external_xid) {
+			evas_object_del(g_external_xid);
+			g_external_xid = NULL;
+		}
+
+		eom_unset_output_added_cb(eom_notify_cb_output_add);
+		eom_unset_output_removed_cb(eom_notify_cb_output_remove);
+		eom_unset_mode_changed_cb(eom_notify_cb_mode_changed);
+		eom_unset_attribute_changed_cb(eom_notify_cb_attribute_changed);
+
+		eom_deinit();
+	}
+}
+#endif
 static int app_create(void *data)
 {
-	struct appdata *ad = data;
+	appdata *ad = data;
 	Evas_Object *win = NULL;
-
+#ifdef _ACTIVATE_EOM_
+	eom_output_mode_e output_mode = EOM_OUTPUT_MODE_NONE;
+#endif
 	/* use gl backend */
 	elm_config_preferred_engine_set("3d");
 
@@ -190,10 +404,9 @@ static int app_create(void *data)
 	if (win == NULL)
 		return -1;
 	ad->win = win;
-	g_eo_win = win;
-	ad->bg = create_bg(ad->win);
-	ad->rect = create_render_rect(ad->win);
-	g_xid = ad->win;
+	g_xid = win;
+	selected_xid = g_xid;
+	create_render_rect_and_bg(ad->win);
 	/* Create evas image object for EVAS surface */
 	g_eo[0] = create_image_object(ad->win);
 	evas_object_image_size_set(g_eo[0], 500, 500);
@@ -202,13 +415,47 @@ static int app_create(void *data)
 
 	elm_win_activate(win);
 	evas_object_show(win);
+#ifdef _ACTIVATE_EOM_
+	/* check external device */
+	eom_init();
+	ad->hdmi_output_id = eom_get_output_id("HDMI");
+	if (ad->hdmi_output_id == 0) {
+		g_print("[eom] error : HDMI output id is NULL.\n");
+		return 0;
+	}
 
+	g_print("eom_set_output_attribute EOM_OUTPUT_ATTRIBUTE_NORMAL(id:%d)\n", ad->hdmi_output_id);
+	if (eom_set_output_attribute(ad->hdmi_output_id, EOM_OUTPUT_ATTRIBUTE_NORMAL) != EOM_ERROR_NONE) {
+		g_print("attribute set fail. cannot use external output\n");
+		eom_deinit();
+	}
+
+	eom_get_output_mode(ad->hdmi_output_id, &output_mode);
+	if (output_mode != EOM_OUTPUT_MODE_NONE) {
+		g_external_xid = elm_win_add(NULL, "External", ELM_WIN_BASIC);
+		if (eom_set_output_window(ad->hdmi_output_id, g_external_xid) == EOM_ERROR_NONE) {
+			create_render_rect_and_bg(g_external_xid);
+			g_print("[eom] create external window\n");
+		} else {
+			evas_object_del(g_external_xid);
+			g_external_xid = NULL;
+			g_print("[eom] create external window fail\n");
+		}
+		selected_xid = g_external_xid;
+	}
+
+	/* set callback for detecting external device */
+	eom_set_output_added_cb(eom_notify_cb_output_add, ad);
+	eom_set_output_removed_cb(eom_notify_cb_output_remove, ad);
+	eom_set_mode_changed_cb(eom_notify_cb_mode_changed, ad);
+	eom_set_attribute_changed_cb(eom_notify_cb_attribute_changed, ad);
+#endif
 	return 0;
 }
 
 static int app_terminate(void *data)
 {
-	struct appdata *ad = data;
+	appdata *ad = data;
 	int i = 0;
 
 	for (i = 0; i < MAX_HANDLE; i++) {
@@ -217,11 +464,26 @@ static int app_terminate(void *data)
 			g_eo[i] = NULL;
 		}
 	}
-	if (g_eo_win) {
-		evas_object_del(g_eo_win);
-		g_eo_win = NULL;
+	if (g_xid) {
+		evas_object_del(g_xid);
+		g_xid = NULL;
 	}
+#ifdef _ACTIVATE_EOM_
+	if (g_external_xid) {
+		evas_object_del(g_external_xid);
+		g_external_xid = NULL;
+	}
+#endif
 	ad->win = NULL;
+	selected_xid = NULL;
+#ifdef _ACTIVATE_EOM_
+	eom_unset_output_added_cb(eom_notify_cb_output_add);
+	eom_unset_output_removed_cb(eom_notify_cb_output_remove);
+	eom_unset_mode_changed_cb(eom_notify_cb_mode_changed);
+	eom_unset_attribute_changed_cb(eom_notify_cb_attribute_changed);
+
+	eom_deinit();
+#endif
 	return 0;
 }
 
@@ -229,15 +491,6 @@ struct appcore_ops ops = {
 	.create = app_create,
 	.terminate = app_terminate,
 };
-
-struct appdata ad;
-static player_h g_player[MAX_HANDLE] = {0, };
-
-int g_handle_num = 1;
-int g_menu_state = CURRENT_STATUS_MAINMENU;
-char g_file_list[9][256];
-gboolean quit_pushing;
-sound_stream_info_h g_stream_info_h = NULL;
 
 static void prepared_cb(void *user_data)
 {
@@ -254,10 +507,10 @@ static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s *audio_raw_frame,
 	g_print("[Player_Test] decoded_cb_ex! channel: %d channel_mask: %" G_GUINT64_FORMAT "\n", audio_raw->channel, audio_raw->channel_mask);
 
 #ifdef DUMP_OUTBUF
-	if (audio_raw->channel_mask == 1)
-		fwrite((guint8 *) audio_raw->data, 1, audio_raw->size, fp_out1);
-	else if (audio_raw->channel_mask == 2)
-		fwrite((guint8 *) audio_raw->data, 1, audio_raw->size, fp_out2);
+	if (audio_raw->channel_mask == 1 && fp_out1)
+		fwrite((guint8 *)audio_raw->data, 1, audio_raw->size, fp_out1);
+	else if (audio_raw->channel_mask == 2 && fp_out2)
+		fwrite((guint8 *)audio_raw->data, 1, audio_raw->size, fp_out2);
 #endif
 }
 
@@ -298,7 +551,6 @@ static void audio_frame_decoded_cb(unsigned char *data, unsigned int size, void 
 
 	if (data && g_pcm_fd)
 		fwrite(data, 1, size, g_pcm_fd);
-
 	player_get_play_position(g_player[0], &pos);
 	g_print("[Player_Test] audio_frame_decoded_cb [size: %d] --- current pos : %d!!!!\n", size, pos);
 }
@@ -312,17 +564,17 @@ static void subtitle_updated_cb(unsigned long duration, char *text, void *user_d
 static void video_captured_cb(unsigned char *data, int width, int height, unsigned int size, void *user_data)
 {
 	g_print("[Player_Test] video_captured_cb!!!! width: %d, height : %d, size : %d \n", width, height, size);
+	_save(data, size);
 }
 
-int _save(unsigned char *src, int length)
+static int _save(unsigned char *src, int length)
 {
 	/* unlink(CAPTUERD_IMAGE_SAVE_PATH); */
 	FILE *fp;
 	char filename[256] = {0, };
 	static int WRITE_COUNT = 0;
-
 	/* gchar *filename  = CAPTUERD_IMAGE_SAVE_PATH; */
-	snprintf(filename, 256, "ALBUM_ART_IMAGE_%d", WRITE_COUNT);
+	snprintf(filename, 256, "IMAGE_client%d", WRITE_COUNT);
 	WRITE_COUNT++;
 	fp = fopen(filename, "w+");
 	if (fp == NULL) {
@@ -353,7 +605,6 @@ static void reset_display()
 			g_eo[i] = NULL;
 		}
 	}
-
 }
 
 static void input_filename(char *filename)
@@ -361,7 +612,7 @@ static void input_filename(char *filename)
 	int len = strlen(filename);
 	int i = 0;
 
-	if (len < 0 || len > MAX_STRING_LEN)
+	if (len < 0 || len > MAX_STRING_LEN - 1)
 		return;
 
 	for (i = 0; i < g_handle_num; i++) {
@@ -376,6 +627,7 @@ static void input_filename(char *filename)
 	}
 
 	strncpy(g_uri, filename, len);
+	g_uri[len] = '\0';
 
 #if 0
 	/* ned(APPSRC_TEST) */
@@ -400,11 +652,12 @@ static void input_filename(char *filename)
 	/* player_set_uri(g_player[0], filename); */
 #endif
 	/* APPSRC_TEST */
+
 	int ret;
 	player_state_e state;
 	for (i = 0; i < g_handle_num; i++) {
 		ret = player_get_state(g_player[i], &state);
-		g_print("player_get_state returned [%d]", ret);
+		g_print("player_get_state returned [%d]\n", ret);
 		g_print("1. After player_create() - Current State : %d \n", state);
 	}
 }
@@ -418,7 +671,7 @@ static void player_set_memory_buffer_test()
 
 	file = g_mapped_file_new(g_uri, FALSE, NULL);
 	file_size = g_mapped_file_get_length(file);
-	g_media_mem = (guint8 *) g_mapped_file_get_contents(file);
+	g_media_mem = (guint8 *)g_mapped_file_get_contents(file);
 
 	int ret = player_set_memory_buffer(g_player[0], (void *)g_media_mem, file_size);
 	g_print("player_set_memory_buffer ret : %d\n", ret);
@@ -431,7 +684,7 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 	int real_read_len = 0;
 	char fname[128];
 	char fptsname[128];
-	static guint64 pts = 0L;
+	static unsigned long long pts = 0L;
 
 	FILE *fp = NULL;
 	guint8 *buff_ptr = NULL;
@@ -444,10 +697,12 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 
 	if (video_packet_count > 1000) {
 		g_print("EOS.\n");
+
 		/* player_submit_packet(g_player[0], NULL, 0, 0, 1); */
 		player_push_media_stream(g_player[0], NULL);
 		g_thread_end = TRUE;
 	}
+
 	/* snprintf(fname, 128, "/opt/storage/usb/test/packet/packet_%d.dat", video_packet_count); */
 	/* snprintf(fptsname, 128, "/opt/storage/usb/test/packet/gstpts_%d.dat", video_packet_count); */
 	snprintf(fname, 128, "/home/developer/test/packet/packet_%d.dat", video_packet_count);
@@ -456,24 +711,22 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 	fp = fopen(fptsname, "rb");
 	if (fp) {
 		int pts_len = 0;
-		pts_len = fread(&pts, 1, sizeof(guint64), fp);
-		if (pts_len != sizeof(guint64))
+		pts_len = fread(&pts, 1, sizeof(unsigned long long), fp);
+		if (pts_len != sizeof(unsigned long long))
 			g_print("Warning, pts value can be wrong.\n");
-
 		fclose(fp);
 		fp = NULL;
 	}
 
 	fp = fopen(fname, "rb");
 	if (fp) {
-		buff_ptr = (guint8 *) g_malloc0(1048576);
+		buff_ptr = (guint8 *)g_malloc0(1048576);
 		if (!buff_ptr) {
 			g_print("no free space\n");
 			fclose(fp);
 			fp = NULL;
 			return;
 		}
-
 		real_read_len = fread(buff_ptr, 1, size, fp);
 		fclose(fp);
 		fp = NULL;
@@ -498,7 +751,7 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 	if (media_packet_set_pts(g_video_pkt, (uint64_t)pts) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
-	if (media_packet_set_buffer_size(g_video_pkt, (uint64_t) real_read_len) != MEDIA_PACKET_ERROR_NONE)
+	if (media_packet_set_buffer_size(g_video_pkt, (uint64_t)real_read_len) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
 	memcpy(src, buff_ptr, real_read_len);
@@ -532,22 +785,22 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 		player_push_media_stream(g_player[0], NULL);
 		g_thread_end = TRUE;
 	}
+
 	/* snprintf(fname, 128, "/opt/storage/usb/test/audio_packet/packet_%d.dat", audio_packet_count); */
 	snprintf(fname, 128, "/home/developer/test/audio_packet/packet_%d.dat", audio_packet_count);
 
-	static guint64 audio_pts = 0;
-	guint64 audio_dur = 21333333;
+	static unsigned long long audio_pts = 0;
+	unsigned long long audio_dur = 21333333;
 
 	fp = fopen(fname, "rb");
 	if (fp) {
-		buff_ptr = (guint8 *) g_malloc0(1048576);
+		buff_ptr = (guint8 *)g_malloc0(1048576);
 		if (!buff_ptr) {
 			g_print("no free space\n");
 			fclose(fp);
 			fp = NULL;
 			return;
 		}
-
 		real_read_len = fread(buff_ptr, 1, size, fp);
 		fclose(fp);
 		fp = NULL;
@@ -572,7 +825,7 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 	if (media_packet_set_pts(g_audio_pkt, (uint64_t)audio_pts) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
-	if (media_packet_set_buffer_size(g_audio_pkt, (uint64_t) real_read_len) != MEDIA_PACKET_ERROR_NONE)
+	if (media_packet_set_buffer_size(g_audio_pkt, (uint64_t)real_read_len) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
 	memcpy(src, buff_ptr, real_read_len);
@@ -582,7 +835,6 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 #endif
 
 	audio_pts += audio_dur;
-
 EXIT:
 	if (buff_ptr) {
 		g_free(buff_ptr);
@@ -626,7 +878,7 @@ static void set_content_info(bool is_push_mode)
 	/* audio--aac--StarWars.mp4 */
 	/* audio_info->mime = g_strdup("audio/mpeg"); */
 	/* audio_info->version = 2; */
-	/* audio_info->user_info = 0;*/ /* raw */
+	/* audio_info->user_info = 0; */ /* raw */
 #endif
 
 #ifdef _ES_PULL_
@@ -656,7 +908,7 @@ static void _player_prepare(bool async)
 		player_set_subtitle_updated_cb(g_player[0], subtitle_updated_cb, (void *)g_player[0]);
 	}
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
-		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(g_xid));
+		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(selected_xid));
 		player_set_buffering_cb(g_player[0], buffering_cb, (void *)g_player[0]);
 		player_set_completed_cb(g_player[0], completed_cb, (void *)g_player[0]);
 		player_set_interrupted_cb(g_player[0], interrupted_cb, (void *)g_player[0]);
@@ -689,11 +941,11 @@ static void _player_prepare(bool async)
 			set_content_info(TRUE);
 			async = TRUE;
 			is_es_push_mode = TRUE;
-		}
 #ifdef _ES_PULL_
-		else
+		} else {
 			set_content_info(FALSE);
 #endif
+		}
 	}
 
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
@@ -728,6 +980,7 @@ static void _player_prepare(bool async)
 
 	if (is_es_push_mode)
 		pthread_create(&g_feed_video_thread_id, NULL, (void *)feed_video_data_thread_func, NULL);
+
 }
 
 static void _player_unprepare()
@@ -738,6 +991,7 @@ static void _player_unprepare()
 		ret = player_unprepare(g_player[0]);
 		if (ret != PLAYER_ERROR_NONE)
 			g_print("unprepare is failed (errno = %d) \n", ret);
+
 		ret = player_unset_subtitle_updated_cb(g_player[0]);
 		g_print("player_unset_subtitle_updated_cb ret %d\n", ret);
 
@@ -776,6 +1030,7 @@ static void _player_unprepare()
 			}
 		}
 	}
+	/* attention! surface(evas) -> unprepare -> surface(evas) : evas object will disappear. */
 	reset_display();
 	memset(g_subtitle_uri, 0, sizeof(g_subtitle_uri));
 	player_state_e state;
@@ -835,6 +1090,10 @@ static void _player_play()
 	int bRet = FALSE;
 	int i = 0;
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
+#ifdef _ACTIVATE_EOM_
+		/* for checking external display.... */
+		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(selected_xid));
+#endif
 		bRet = player_start(g_player[0]);
 		g_print("player_start returned [%d]", bRet);
 	} else {
@@ -872,6 +1131,10 @@ static void _player_resume()
 	int bRet = FALSE;
 	int i = 0;
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
+#ifdef _ACTIVATE_EOM_
+		/* for checking external display.... */
+		player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_xid));
+#endif
 		bRet = player_start(g_player[0]);
 		g_print("player_start returned [%d]", bRet);
 	} else {
@@ -908,6 +1171,14 @@ static void _player_set_progressive_download()
 {
 	player_set_progressive_download_path(g_player[0], "/home/owner/test.pd");
 	player_set_progressive_download_message_cb(g_player[0], progress_down_cb, (void *)g_player[0]);
+}
+
+static void _player_get_progressive_download_status()
+{
+	int bRet;
+	unsigned long curr, total;
+	bRet = player_get_progressive_download_status(g_player[0], &curr, &total);
+	g_print("player_get_progressive_download_status return[%d]           ==> [Player_Test] progressive download status : %lu/%lu\n", bRet, curr, total);
 }
 
 static void set_volume(float volume)
@@ -978,10 +1249,15 @@ static void set_position(int position)
 		g_print("failed to set position\n");
 }
 
-static void set_playback_rate(float rate)
+static void set_playback_rate(float rate, bool streaming)
 {
-	if (player_set_playback_rate(g_player[0], rate) != PLAYER_ERROR_NONE)
-		g_print("failed to set playback rate\n");
+	if (streaming) {
+		if (player_set_streaming_playback_rate(g_player[0], rate) != PLAYER_ERROR_NONE)
+			g_print("failed to set streaming playback rate\n");
+	} else {
+		if (player_set_playback_rate(g_player[0], rate) != PLAYER_ERROR_NONE)
+			g_print("failed to set playback rate\n");
+	}
 }
 
 static void get_duration()
@@ -993,14 +1269,6 @@ static void get_duration()
 	g_print("                                                            ==> [Player_Test] Duration: [%d ] msec\n", duration);
 }
 
-static int get_download_progress()
-{
-	int ret;
-	int start=0, current=0;
-	ret = player_get_streaming_download_progress(g_player[0], &start, &current);
-	g_print("                                                            ==> [Player_Test] download progress: [%d ~ %d]\n", start, current);
-	return ret;
-}
 static void audio_frame_decoded_cb_ex()
 {
 	int ret;
@@ -1020,7 +1288,7 @@ static void audio_frame_decoded_cb_ex()
 
 static void set_pcm_spec()
 {
-	int ret;
+	int ret = 0;
 
 	ret = player_set_pcm_spec(g_player[0], "F32LE", 44100, 2);
 	g_print("[Player_Test] set_pcm_spec return: %d\n", ret);
@@ -1092,7 +1360,7 @@ static void set_looping(bool looping)
 	}
 }
 
-static void get_looping(bool * looping)
+static void get_looping(bool *looping)
 {
 	player_is_looping(g_player[0], looping);
 	g_print("                                                            ==> [Player_Test] looping = %d\n", *looping);
@@ -1102,7 +1370,10 @@ static void change_surface(int option)
 {
 	player_display_type_e surface_type = 0;
 	int ret = PLAYER_ERROR_NONE;
-
+#ifdef _ACTIVATE_EOM_
+	int hdmi_output_id;
+	eom_output_mode_e output_mode;
+#endif
 	switch (option) {
 	case 0:
 		/* X surface */
@@ -1134,35 +1405,63 @@ static void change_surface(int option)
 		if (ret)
 			g_print("failed to player_get_state(), ret(0x%x)\n", ret);
 
-		/* state check */
-		if (player_state == PLAYER_STATE_NONE || player_state == PLAYER_STATE_IDLE) {
-			reset_display();
+		reset_display();
 
-			if (surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
-				g_xid = g_eo_win;
-				ret = player_set_display(g_player[0], surface_type, GET_DISPLAY(g_xid));
-			} else {
-				int i = 0;
-				for (i = 0; i < g_handle_num; i++) {
-					/* Create evas image object for EVAS surface */
-					if (!g_eo[i]) {
-						g_eo[i] = create_image_object(g_eo_win);
-						evas_object_image_size_set(g_eo[i], 500, 500);
-						evas_object_image_fill_set(g_eo[i], 0, 0, 500, 500);
-						evas_object_resize(g_eo[i], 500, 500);
-						evas_object_move(g_eo[i], i * 20, i * 20);
-					}
-					ret = player_set_display(g_player[i], surface_type, g_eo[i]);
+		if (surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
+#ifdef _ACTIVATE_EOM_
+			hdmi_output_id = eom_get_output_id("HDMI");
+			if (hdmi_output_id == 0)
+				g_print("[eom] error : HDMI output id is NULL.\n");
+
+			eom_get_output_mode(hdmi_output_id, &output_mode);
+			if (output_mode == EOM_OUTPUT_MODE_NONE) {
+#endif
+				if (!g_xid) {
+					g_xid = create_win(PACKAGE);
+					if (g_xid == NULL)
+						return;
+					g_print("create xid %p\n", g_xid);
+					create_render_rect_and_bg(g_xid);
+					elm_win_activate(g_xid);
+					evas_object_show(g_xid);
+					g_xid = selected_xid;
 				}
+#ifdef _ACTIVATE_EOM_
+			} else {
+				/* for external */
 			}
-			if (ret) {
-				g_print("failed to set display, surface_type(%d)\n", surface_type);
-				return;
-			}
-			g_current_surface_type = surface_type;
+#endif
+			ret = player_set_display(g_player[0], surface_type, GET_DISPLAY(selected_xid));
 		} else {
-			g_print("could not change surface type, current_state(%d)\n", player_state);
+			if (!g_xid) {
+				g_xid = create_win(PACKAGE);
+				if (g_xid == NULL)
+					return;
+				g_print("create xid %p\n", g_xid);
+				create_render_rect_and_bg(g_xid);
+				elm_win_activate(g_xid);
+				evas_object_show(g_xid);
+			}
+			int i = 0;
+			for (i = 0; i < g_handle_num; i++) {
+				/* Create evas image object for EVAS surface */
+				if (!g_eo[i]) {
+					g_eo[i] = create_image_object(g_xid);
+					g_print("create eo[%d] %p\n", i, g_eo[i]);
+					evas_object_image_size_set(g_eo[i], 500, 500);
+					evas_object_image_fill_set(g_eo[i], 0, 0, 500, 500);
+					evas_object_resize(g_eo[i], 500, 500);
+					evas_object_move(g_eo[i], i * 20, i * 20);
+				}
+				ret = player_set_display(g_player[i], surface_type, g_eo[i]);
+
+			}
 		}
+		if (ret) {
+			g_print("failed to set display, surface_type(%d)\n", surface_type);
+			return;
+		}
+		g_current_surface_type = surface_type;
 	}
 	return;
 }
@@ -1199,7 +1498,7 @@ static void set_display_visible(bool visible)
 		g_print("failed to player_set_x11_display_visible\n");
 }
 
-static void get_display_visible(bool * visible)
+static void get_display_visible(bool *visible)
 {
 	player_is_display_visible(g_player[0], visible);
 	g_print("                                                            ==> [Player_Test] X11 Display Visible = %d\n", *visible);
@@ -1325,7 +1624,6 @@ static void decoding_audio()
 	ret = player_set_audio_frame_decoded_cb(g_player[0], 0, 0, audio_frame_decoded_cb, (void *)g_player[0]);
 	if (ret != PLAYER_ERROR_NONE)
 		g_print("player_set_audio_frame_decoded_cb is failed (errno = %d) \n", ret);
-
 #endif
 }
 
@@ -1339,7 +1637,9 @@ static void set_audio_eq(int value)
 			g_print("failed to player_audio_effect_equalizer_is_available\n");
 
 		if (available) {
-			if ((player_audio_effect_get_equalizer_bands_count(g_player[0], &index) != PLAYER_ERROR_NONE) || (player_audio_effect_get_equalizer_level_range(g_player[0], &min, &max) != PLAYER_ERROR_NONE) || (player_audio_effect_set_equalizer_band_level(g_player[0], index / 2, max) != PLAYER_ERROR_NONE))
+			if ((player_audio_effect_get_equalizer_bands_count(g_player[0], &index) != PLAYER_ERROR_NONE) ||
+				(player_audio_effect_get_equalizer_level_range(g_player[0], &min, &max) != PLAYER_ERROR_NONE) ||
+				(player_audio_effect_set_equalizer_band_level(g_player[0], index / 2, max) != PLAYER_ERROR_NONE))
 				g_print("failed to player_audio_effect_set_equalizer_band_level index %d, level %d\n", index / 2, max);
 		}
 	}
@@ -1500,15 +1800,19 @@ void _interpret_main_menu(char *cmd)
 		}
 	} else if (len == 2) {
 		if (strncmp(cmd, "pr", 2) == 0) {
-			_player_prepare(FALSE);	/* sync */
+			/* sync */
+			_player_prepare(FALSE);
 		} else if (strncmp(cmd, "pa", 2) == 0) {
-			_player_prepare(TRUE);	/* async */
+			/* async */
+			_player_prepare(TRUE);
 		} else if (strncmp(cmd, "un", 2) == 0) {
 			_player_unprepare();
 		} else if (strncmp(cmd, "dt", 2) == 0) {
 			_player_destroy();
 		} else if (strncmp(cmd, "sp", 2) == 0) {
 			_player_set_progressive_download();
+		} else if (strncmp(cmd, "gp", 2) == 0) {
+			_player_get_progressive_download_status();
 		} else if (strncmp(cmd, "mp", 2) == 0) {
 			g_memory_playback = (g_memory_playback ? FALSE : TRUE);
 			g_print("memory playback = %d\n", g_memory_playback);
@@ -1524,13 +1828,14 @@ void _interpret_main_menu(char *cmd)
 			audio_frame_decoded_cb_ex();
 		} else if (strncmp(cmd, "X4", 2) == 0) {
 			set_pcm_spec();
-		} else if (strncmp(cmd, "dp", 2) == 0) {
-			get_download_progress();
 		} else {
 			g_print("unknown menu \n");
 		}
 	} else {
-		g_print("unknown menu \n");
+		if (strncmp(cmd, "trs", 3) == 0)
+			g_menu_state = CURRENT_STATUS_STREAMING_PLAYBACK_RATE;
+		else
+			g_print("unknown menu \n");
 	}
 }
 
@@ -1570,7 +1875,6 @@ void display_sub_basic()
 	g_print("l. Get Position\n");
 	g_print("[trick] tr. set playback rate\n");
 	g_print("[duration] m. Get Duration\n");
-	g_print("[buffering] dp. Get Download Progress\n");
 	g_print("[Stream Info] n. Get stream info (Video Size, codec, audio stream info, and tag info)\n");
 	g_print("[Looping] o. Set Looping\t");
 	g_print("p. Get Looping\n");
@@ -1585,6 +1889,7 @@ void display_sub_basic()
 	g_print("[subtitle] ss. Select(or change) subtitle track\n");
 	g_print("[Video Capture] C. Capture \n");
 	g_print("[etc] sp. Set Progressive Download\t");
+	g_print("gp. Get Progressive Download status\n");
 	g_print("mp. memory playback\n");
 	g_print("[audio_frame_decoded_cb_ex] X3. (input) set audio_frame_decoded_cb_ex callback \n");
 	g_print("\n");
@@ -1629,7 +1934,7 @@ static void displaymenu()
 		g_print(" *** input  subtitle file path.\n");
 	} else if (g_menu_state == CURRENT_STATUS_AUDIO_EQUALIZER) {
 		g_print(" *** input audio eq value.(0: UNSET, 1: SET) \n");
-	} else if (g_menu_state == CURRENT_STATUS_PLAYBACK_RATE) {
+	} else if (g_menu_state == CURRENT_STATUS_PLAYBACK_RATE || g_menu_state == CURRENT_STATUS_STREAMING_PLAYBACK_RATE) {
 		g_print(" *** input playback rate.(-5.0 ~ 5.0)\n");
 	} else if (g_menu_state == CURRENT_STATUS_SWITCH_SUBTITLE) {
 		int count = 0, cur_index = 0;
@@ -1853,7 +2158,14 @@ static void interpret(char *cmd)
 	case CURRENT_STATUS_PLAYBACK_RATE:
 		{
 			float rate = atof(cmd);
-			set_playback_rate(rate);
+			set_playback_rate(rate, FALSE);
+			reset_menu_state();
+		}
+		break;
+	case CURRENT_STATUS_STREAMING_PLAYBACK_RATE:
+		{
+			float rate = atof(cmd);
+			set_playback_rate(rate, TRUE);
 			reset_menu_state();
 		}
 		break;
@@ -1887,10 +2199,10 @@ int main(int argc, char *argv[])
 	GIOChannel *stdin_channel;
 	stdin_channel = g_io_channel_unix_new(0);
 	g_io_channel_set_flags(stdin_channel, G_IO_FLAG_NONBLOCK, NULL);
-	g_io_add_watch(stdin_channel, G_IO_IN, (GIOFunc) input, NULL);
+	g_io_add_watch(stdin_channel, G_IO_IN, (GIOFunc)input, NULL);
 
 	displaymenu();
-	memset(&ad, 0x0, sizeof(struct appdata));
+	memset(&ad, 0x0, sizeof(appdata));
 	ops.data = &ad;
 
 	return appcore_efl_main(PACKAGE, &argc, &argv, &ops);

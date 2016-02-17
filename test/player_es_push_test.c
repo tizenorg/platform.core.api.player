@@ -153,7 +153,8 @@ static void create_base_gui(appdata_s *ad)
 	elm_config_preferred_engine_set("3d");
 
 	/* Window */
-	ad->win = create_win(PACKAGE);	/* elm_win_util_standard_add(PACKAGE, PACKAGE); */
+	/* elm_win_util_standard_add(PACKAGE, PACKAGE); */
+	ad->win = create_win(PACKAGE);
 	ad->rect = create_render_rect(ad->win);
 	/* This is not supported in 3.0
 	   elm_win_wm_desktop_layout_support_set(ad->win, EINA_TRUE); */
@@ -200,7 +201,7 @@ static int app_pause(void *data)
 	}
 
 	if (ad->player_handle == NULL) {
-		LOGE("player_handle is NULL");
+		g_print("player_handle is NULL");
 		return -1;
 	}
 
@@ -216,7 +217,7 @@ static int app_pause(void *data)
 
 	ret = player_unprepare(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_unprepare failed : 0x%x", ret);
+		g_print("player_unprepare failed : 0x%x", ret);
 		return false;
 	}
 
@@ -229,7 +230,7 @@ static int app_pause(void *data)
 	/* destroy player handle */
 	ret = player_destroy(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_destroy failed : 0x%x", ret);
+		g_print("player_destroy failed : 0x%x", ret);
 		return false;
 	}
 
@@ -263,7 +264,7 @@ static void _player_prepared_cb(void *user_data)
 	LOGD("done");
 }
 
-int bytestream2nalunit(FILE *fd, unsigned char *nal)
+int bytestream2nalunit(FILE * fd, unsigned char *nal)
 {
 	int nal_length = 0;
 	size_t result;
@@ -280,19 +281,17 @@ int bytestream2nalunit(FILE *fd, unsigned char *nal)
 	result = fread(buffer, 1, read_size, fd);
 
 	if (result != read_size)
-		return -1;
+	return -1;
 
 	val = buffer[0];
 	while (!val) {
 		if ((zero_count == 2 || zero_count == 3) && val == 1)
 			break;
-
 		zero_count++;
 		result = fread(buffer, 1, read_size, fd);
 
 		if (result != read_size)
 			break;
-
 		val = buffer[0];
 	}
 	nal[nal_length++] = 0;
@@ -325,7 +324,6 @@ int bytestream2nalunit(FILE *fd, unsigned char *nal)
 			} else {
 				for (i = 0; i < zero_count; i++)
 					nal[nal_length++] = 0;
-
 				nal[nal_length++] = val;
 				zero_count = 0;
 			}
@@ -359,13 +357,8 @@ static void feed_eos_data(appdata_s *appdata)
 
 	LOGD("push EOS");
 
-	if (media_packet_create_alloc(ad->video_fmt, NULL, NULL, &ad->video_pkt) != MEDIA_PACKET_ERROR_NONE) {
+	if (media_packet_create(ad->video_fmt, NULL, NULL, &ad->video_pkt) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_create_alloc failed\n");
-		return;
-	}
-
-	if (media_packet_set_buffer_size(ad->video_pkt, (uint64_t)0) != MEDIA_PACKET_ERROR_NONE) {
-		LOGE("media_packet_set_buffer_size failed\n");
 		return;
 	}
 
@@ -383,7 +376,7 @@ static bool feed_video_data(appdata_s *appdata)
 {
 	bool ret = FALSE;
 	int read = 0;
-	static guint64 pts = 0L;
+	static unsigned long long pts = 0L;
 	void *buf_data_ptr = NULL;
 	appdata_s *ad = appdata;
 
@@ -413,7 +406,13 @@ static bool feed_video_data(appdata_s *appdata)
 		goto ERROR;
 	} else if (read < 0) {
 		LOGD("push EOS");
-		media_packet_set_buffer_size(ad->video_pkt, (uint64_t)0);
+		media_packet_destroy(ad->video_pkt);
+		ad->video_pkt = NULL;
+
+		if (media_packet_create(ad->video_fmt, NULL, NULL, &ad->video_pkt) != MEDIA_PACKET_ERROR_NONE) {
+			LOGE("media_packet_create failed\n");
+			goto ERROR;
+		}
 		media_packet_set_flags(ad->video_pkt, MEDIA_PACKET_END_OF_STREAM);
 		if (player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE)
 			LOGE("fail to push media packet\n");
@@ -443,7 +442,6 @@ static void feed_video_data_thread_func(void *data)
 
 	while (TRUE) {
 		static int frame_count = 0;
-
 		if (frame_count < ES_DEFAULT_NUMBER_OF_FEED) {
 			if (!feed_video_data(ad))
 				break;

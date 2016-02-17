@@ -1,6 +1,6 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-SET(fw_name "legacy-capi-media-player")
+SET(fw_name "capi-media-player")
 
 PROJECT(${fw_name})
 
@@ -19,8 +19,7 @@ SET(INC_COM_DIR include)
 
 INCLUDE_DIRECTORIES(${INC_DIR}, ${INC_COM_DIR})
 
-SET(dependents "libtbm capi-media-tool dlog mm-player capi-base-common capi-media-sound-manager gstreamer-1.0 evas ecore elementary capi-system-info mm-sound")
-SET(pc_dependents "libtbm capi-media-tool capi-base-common capi-media-sound-manager")
+SET(dependents "dlog libtbm capi-media-tool mused mmsvc-player mm-common tizen-extension-client evas elementary")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})
@@ -28,7 +27,7 @@ FOREACH(flag ${${fw_name}_CFLAGS})
     SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
 ENDFOREACH(flag)
 
-SET(CMAKE_C_FLAGS "-I./${INC_DIR} ${CMAKE_C_FLAGS} ${EXTRA_CFLAGS} -fPIC -Wall -Werror -Wno-deprecated -Wno-deprecated-declarations -DGST_EXT_TIME_ANALYSIS")
+SET(CMAKE_C_FLAGS "-I./${INC_DIR} ${CMAKE_C_FLAGS} ${EXTRA_CFLAGS} -fPIC -Wall -Werror -Wno-deprecated -Wno-deprecated-declarations")
 SET(CMAKE_C_FLAGS_DEBUG "-O0 -g")
 
 IF("${ARCH}" STREQUAL "arm")
@@ -51,9 +50,7 @@ ENDIF(TIZEN_MOBILE)
 
 SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--rpath=${LIB_INSTALL_DIR}")
 
-#aux_source_directory(src SOURCES)
-SET(SOURCES src/player.c src/player_internal.c src/player_priv.c)
-
+aux_source_directory(src SOURCES)
 ADD_LIBRARY(${fw_name} SHARED ${SOURCES})
 
 TARGET_LINK_LIBRARIES(${fw_name} ${${fw_name}_LDFLAGS})

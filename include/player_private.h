@@ -16,9 +16,12 @@
 
 #ifndef __TIZEN_MEDIA_PLAYER_PRIVATE_H__
 #define	__TIZEN_MEDIA_PLAYER_PRIVATE_H__
-#include <player.h>
-#include <mm_player.h>
-#include <system_info.h>
+#include <tbm_bufmgr.h>
+#include <Evas.h>
+#include <media_format.h>
+#include <muse_player.h>
+#include "player.h"
+#include "player_wayland.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,7 +31,6 @@ extern "C" {
 #undef LOG_TAG
 #endif
 #define LOG_TAG "TIZEN_N_PLAYER"
-//#define USE_ECORE_FUNCTIONS
 
 #define PLAYER_CHECK_CONDITION(condition,error,msg)     \
                 if(condition) {} else \
@@ -43,139 +45,90 @@ extern "C" {
 #define PLAYER_NULL_ARG_CHECK(arg)      \
         PLAYER_CHECK_CONDITION(arg != NULL,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER")
 
-#define PLAYER_RANGE_ARG_CHECK(arg, min, max)      \
-        PLAYER_CHECK_CONDITION(arg <= max,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER")		\
-        PLAYER_CHECK_CONDITION(arg >= min,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER")
+#define CALLBACK_TIME_OUT 5
 
-#ifdef TIZEN_TTRACE
-#include <ttrace.h>
-#define PLAYER_TRACE_BEGIN(NAME) traceBegin(TTRACE_TAG_VIDEO, NAME)
-#define PLAYER_TRACE_END() traceEnd(TTRACE_TAG_VIDEO)
-#define PLAYER_TRACE_ASYNC_BEGIN(NAME, COOKIE) traceAsyncBegin (TTRACE_TAG_VIDEO, COOKIE, NAME);
-#define PLAYER_TRACE_ASYNC_END(NAME, COOKIE) traceAsyncEnd(TTRACE_TAG_VIDEO, COOKIE, NAME);
-#else
-#define PLAYER_TRACE_BEGIN(NAME)
-#define PLAYER_TRACE_END()
-#define PLAYER_TRACE_ASYNC_BEGIN(NAME, KEY)
-#define PLAYER_TRACE_ASYNC_END(NAME, KEY)
-#endif
 
-typedef enum {
-	_PLAYER_EVENT_TYPE_PREPARE,
-	_PLAYER_EVENT_TYPE_COMPLETE,
-	_PLAYER_EVENT_TYPE_INTERRUPT,
-	_PLAYER_EVENT_TYPE_ERROR,
-	_PLAYER_EVENT_TYPE_BUFFERING,
-	_PLAYER_EVENT_TYPE_SUBTITLE,
-	_PLAYER_EVENT_TYPE_CAPTURE,
-	_PLAYER_EVENT_TYPE_SEEK,
-	_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME,
-	_PLAYER_EVENT_TYPE_AUDIO_FRAME,
-	_PLAYER_EVENT_TYPE_VIDEO_FRAME_RENDER_ERROR,
-	_PLAYER_EVENT_TYPE_PD,
-	_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT,
-	_PLAYER_EVENT_TYPE_SUPPORTED_AUDIO_EFFECT_PRESET,
-	_PLAYER_EVENT_TYPE_MISSED_PLUGIN,
-#ifdef _PLAYER_FOR_PRODUCT
-	_PLAYER_EVENT_TYPE_IMAGE_BUFFER,
-	_PLAYER_EVENT_TYPE_SELECTED_SUBTITLE_LANGUAGE,
-#endif
-	_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS,
-	_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS,
-	_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO,
-	_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO,
-	_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK,
-	_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK,
-	_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED,
-	_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED,
-	_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED,
-	_PLAYER_EVENT_TYPE_NUM
-}_player_event_e;
+typedef struct _ret_msg_s{
+	gint api;
+	gchar *msg;
+	struct _ret_msg_s *next;
+} ret_msg_s;
 
-#ifndef USE_ECORE_FUNCTIONS
-typedef enum {
-	PLAYER_MESSAGE_NONE,
-	PLAYER_MESSAGE_PREPARED,
-	PLAYER_MESSAGE_ERROR,
-	PLAYER_MESSAGE_SEEK_DONE,
-	PLAYER_MESSAGE_EOS,
-	PLAYER_MESSAGE_LOOP_EXIT,
-	PLAYER_MESSAGE_MAX
-}_player_message_e;
-#endif
+typedef struct {
+	gint bufLen;
+	gchar *recvMsg;
+	gint recved;
+	ret_msg_s *retMsgHead;
+} msg_buff_s;
 
-typedef struct _player_s{
-	MMHandleType mm_handle;
-	const void* user_cb[_PLAYER_EVENT_TYPE_NUM];
-	void* user_data[_PLAYER_EVENT_TYPE_NUM];
-#ifdef HAVE_WAYLAND
-	void* wl_display;
-#endif
-	void* display_handle;
-	player_display_type_e display_type;
-	int state;
-	bool is_set_pixmap_cb;
-	bool is_stopped;
-	bool is_display_visible;
-	bool is_progressive_download;
-	pthread_t prepare_async_thread;
-#ifdef USE_ECORE_FUNCTIONS
-	GHashTable *ecore_jobs;
-#else
-	pthread_t message_thread;
-	GQueue *message_queue;
-	GMutex message_queue_lock;
-	GCond message_queue_cond;
-	int current_message;
-#endif
-	player_error_e error_code;
-	bool is_doing_jobs;
+typedef struct _player_data{
+	void *data;
+	struct _player_data *next;
+} player_data_s;
+
+typedef struct {
+	GThread *thread;
+	GQueue *queue;
+	GMutex qlock;
+	GMutex mutex;
+	GCond cond;
+	gboolean running;
+} player_event_queue;
+
+typedef struct _callback_cb_info {
+	GThread *thread;
+	gint running;
+	gint fd;
+	gint data_fd;
+	gpointer user_cb[MUSE_PLAYER_EVENT_TYPE_NUM];
+	gpointer user_data[MUSE_PLAYER_EVENT_TYPE_NUM];
+	GMutex player_mutex;
+	GCond player_cond[MUSE_PLAYER_API_MAX];
+	msg_buff_s buff;
+	player_event_queue event_queue;
 	media_format_h pkt_fmt;
-} player_s;
+//	MMHandleType local_handle;
+	tbm_bufmgr bufmgr;
+} callback_cb_info_s;
 
-int __player_convert_error_code(int code, char* func_name);
-bool __player_state_validate(player_s * handle, player_state_e threshold);
-int player_sound_register(player_h player, int pid);
-int player_is_streaming(player_h player, bool *is_streaming);
+typedef struct {
+	intptr_t bo;
+	gboolean is_streaming;
+	gint timeout;
+} server_info_s;	// to check
 
-/**
- * @brief Called when the video sink bin is crated.
- * @since_tizen 3.0
- * @param[out] caps			video sink current caps
- * @param[out ] user_data	The user data passed from the callback registration function
- * @see player_set_vidoe_bin_created_cb()
- * @see player_unset_vidoe_bin_created_cb()
- */
-typedef void (*player_video_bin_created_cb)(const char *caps, void *user_data);
+typedef struct _player_cli_s{
+	callback_cb_info_s *cb_info;
+	player_data_s *head;
+	server_info_s server;
+	wl_client *wlclient;
+	Evas_Object * eo;
+	gboolean have_evas_callback;
+} player_cli_s;
 
-/**
- * @brief Registers a callback function to be invoked when video sink bin is created.
- * @since_tizen 3.0
- * @param[in] player    The handle to the media player
- * @param[in] callback The callback function to register
- * @param[in] user_data The user data to be passed to the callback function
- * @return @c 0 on success,
- *         otherwise a negative error value
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @post player_video_bin_created_cb() will be invoked.
- * @see player_unset_vidoe_bin_created_cb()
- */
-int player_set_video_bin_created_cb(player_h player, player_video_bin_created_cb callback, void *user_data);
+/* Internal handle */
+#define INT_HANDLE(h)		((h)->cb_info->local_handle)
 
-/**
- * @brief Unregisters a callback function to be invoked when video sink bin is created.
- * @since_tizen 3.0
- * @param[in] player    The handle to the media player
- * @return @c 0 on success,
- *         otherwise a negative error value
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @post player_video_bin_created_cb() will be invoked.
- * @see player_unset_vidoe_bin_created_cb()
- */
-int player_unset_video_bin_created_cb(player_h player);
+/* player callback infomatnio */
+#define CALLBACK_INFO(h)	((h)->cb_info)
+/* MSG Channel socket fd */
+#define MSG_FD(h)			(CALLBACK_INFO(h)->fd)
+/* Data Channel socket fd */
+#define DATA_FD(h)			(CALLBACK_INFO(h)->data_fd)
+/* TBM buffer manager */
+#define TBM_BUFMGR(h)		(CALLBACK_INFO(h)->bufmgr)
 
+/* server tbm bo */
+#define SERVER_TBM_BO(h)	((h)->server.bo)
+/* content type is streaming */
+#define IS_STREAMING_CONTENT(h)		((h)->server.is_streaming)
+/* server state change timeout */
+#define SERVER_TIMEOUT(h)		((h)->server.timeout)
+
+int _get_api_timeout(player_cli_s *pc, muse_player_api_e api);
+int wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info, char **ret_buf, int time_out);
+int player_set_evas_object_cb(player_h player, Evas_Object * eo);
+int player_unset_evas_object_cb(player_h player);
 
 #ifdef __cplusplus
 }

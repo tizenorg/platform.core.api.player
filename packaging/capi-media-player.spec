@@ -1,21 +1,21 @@
 %bcond_with wayland
 %bcond_with x
 
-Name:       legacy-capi-media-player
-Summary:    A Media Player library in Tizen Native API
-Version:    0.2.8
+Name:       capi-media-player
+Summary:    A Media Player API
+Version:    0.3.4
 Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
-Source1001: 	legacy-capi-media-player.manifest
+Source1001: 	capi-media-player.manifest
 BuildRequires:  cmake
-BuildRequires:  pkgconfig(gstreamer-1.0)
-BuildRequires:  pkgconfig(gstreamer-plugins-base-1.0)
 BuildRequires:  pkgconfig(dlog)
-BuildRequires:  pkgconfig(mm-player)
+BuildRequires:  pkgconfig(mused)
+BuildRequires:  pkgconfig(mm-common)
 BuildRequires:  pkgconfig(capi-base-common)
 BuildRequires:  pkgconfig(capi-media-sound-manager)
+BuildRequires:  pkgconfig(tizen-extension-client)
 BuildRequires:  pkgconfig(appcore-efl)
 BuildRequires:  pkgconfig(elementary)
 BuildRequires:  pkgconfig(ecore)
@@ -27,10 +27,10 @@ BuildRequires:  pkgconfig(ecore-x)
 BuildRequires:  pkgconfig(ecore-wayland)
 %endif
 BuildRequires:  pkgconfig(capi-media-tool)
+BuildRequires:  pkgconfig(mmsvc-player)
+BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(libtbm)
-#BuildRequires:  pkgconfig(ttrace)
-BuildRequires:  pkgconfig(capi-system-info)
-BuildRequires:  pkgconfig(mm-sound)
+BuildRequires:  pkgconfig(eom)
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
@@ -83,12 +83,10 @@ make %{?jobs:-j%jobs}
 
 %install
 rm -rf %{buildroot}
-mkdir -p %{buildroot}/usr/share/license
 mkdir -p %{buildroot}/usr/bin
-cp LICENSE.APLv2 %{buildroot}/usr/share/license/%{name}
-cp test/legacy_player_test %{buildroot}/usr/bin
-cp test/legacy_player_media_packet_test %{buildroot}/usr/bin
-cp test/legacy_player_es_push_test %{buildroot}/usr/bin
+cp test/player_test %{buildroot}/usr/bin
+cp test/player_media_packet_test %{buildroot}/usr/bin
+cp test/player_es_push_test %{buildroot}/usr/bin
 
 %make_install
 
@@ -100,15 +98,13 @@ cp test/legacy_player_es_push_test %{buildroot}/usr/bin
 %files
 %manifest %{name}.manifest
 %license LICENSE.APLv2
-%manifest legacy-capi-media-player.manifest
-%{_libdir}/liblegacy-capi-media-player.so.*
-%{_datadir}/license/%{name}
+%{_libdir}/libcapi-media-player.so.*
 %{_bindir}/*
 
 %files devel
 %manifest %{name}.manifest
-%{_includedir}/media/*.h
+%{_includedir}/media/player.h
+%{_includedir}/media/player_internal.h
 %{_libdir}/pkgconfig/*.pc
-%{_libdir}/liblegacy-capi-media-player.so
-
+%{_libdir}/libcapi-media-player.so
 
