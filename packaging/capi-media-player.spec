@@ -11,6 +11,7 @@ Source0:    %{name}-%{version}.tar.gz
 Source1001: 	capi-media-player.manifest
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(dlog)
+BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(mused)
 BuildRequires:  pkgconfig(mm-common)
 BuildRequires:  pkgconfig(capi-base-common)

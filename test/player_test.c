@@ -684,7 +684,7 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 	int real_read_len = 0;
 	char fname[128];
 	char fptsname[128];
-	static unsigned long long pts = 0L;
+	static guint64 pts = 0L;
 
 	FILE *fp = NULL;
 	guint8 *buff_ptr = NULL;
@@ -711,8 +711,8 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 	fp = fopen(fptsname, "rb");
 	if (fp) {
 		int pts_len = 0;
-		pts_len = fread(&pts, 1, sizeof(unsigned long long), fp);
-		if (pts_len != sizeof(unsigned long long))
+		pts_len = fread(&pts, 1, sizeof(guint64), fp);
+		if (pts_len != sizeof(guint64))
 			g_print("Warning, pts value can be wrong.\n");
 		fclose(fp);
 		fp = NULL;
@@ -789,8 +789,8 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 	/* snprintf(fname, 128, "/opt/storage/usb/test/audio_packet/packet_%d.dat", audio_packet_count); */
 	snprintf(fname, 128, "/home/developer/test/audio_packet/packet_%d.dat", audio_packet_count);
 
-	static unsigned long long audio_pts = 0;
-	unsigned long long audio_dur = 21333333;
+	static guint64 audio_pts = 0;
+	guint64 audio_dur = 21333333;
 
 	fp = fopen(fname, "rb");
 	if (fp) {

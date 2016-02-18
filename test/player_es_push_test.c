@@ -376,7 +376,7 @@ static bool feed_video_data(appdata_s *appdata)
 {
 	bool ret = FALSE;
 	int read = 0;
-	static unsigned long long pts = 0L;
+	static guint64 pts = 0L;
 	void *buf_data_ptr = NULL;
 	appdata_s *ad = appdata;
 

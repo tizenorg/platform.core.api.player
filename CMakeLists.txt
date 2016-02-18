@@ -19,7 +19,8 @@ SET(INC_COM_DIR include)
 
 INCLUDE_DIRECTORIES(${INC_DIR}, ${INC_COM_DIR})
 
-SET(dependents "dlog libtbm capi-media-tool mused mmsvc-player mm-common tizen-extension-client evas elementary")
+SET(dependents "dlog glib-2.0 libtbm capi-media-tool capi-media-sound-manager capi-base-common mused mmsvc-player mm-common tizen-extension-client evas ecore elementary")
+SET(pc_dependents "libtbm capi-media-tool capi-base-common capi-media-sound-manager")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})

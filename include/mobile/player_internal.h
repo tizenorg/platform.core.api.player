@@ -16,6 +16,7 @@
 
 #ifndef __TIZEN_MEDIA_PLAYER_INTERNAL_H__
 #define	__TIZEN_MEDIA_PLAYER_INTERNAL_H__
+#include <glib.h>
 #include <player.h>
 #ifdef __cplusplus
 extern "C" {
@@ -41,7 +42,7 @@ typedef struct {
 	int rate;            /**<  Samplerate */
 	int depth;           /**< Depth */
 	bool little_endian;  /**< Endianness */
-	unsigned long long channel_mask;	/**< channel_mask */
+	guint64 channel_mask;	/**< channel_mask */
 } player_audio_raw_data_s;
 
 /**
