@@ -45,8 +45,7 @@ extern "C" {
 #define PLAYER_NULL_ARG_CHECK(arg)      \
         PLAYER_CHECK_CONDITION(arg != NULL,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER")
 
-#define CALLBACK_TIME_OUT 5
-
+#define CALLBACK_TIME_OUT 30 /* FIXME: need to consider the type of playback */
 
 typedef struct _ret_msg_s{
 	gint api;

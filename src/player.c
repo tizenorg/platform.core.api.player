@@ -1184,7 +1184,6 @@ int player_prepare_async(player_h player, player_prepared_cb callback, void *use
 		pc->cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_PREPARE] = user_data;
 	}
 	player_msg_send(api, pc, ret_buf, ret);
-
 	g_free(ret_buf);
 	return ret;
 }
@@ -1200,7 +1199,6 @@ int player_prepare(player_h player)
 	LOGD("ENTER");
 
 	player_msg_send(api, pc, ret_buf, ret);
-
 	g_free(ret_buf);
 	return ret;
 }
@@ -1798,17 +1796,20 @@ int player_get_display_mode(player_h player, player_display_mode_e *pmode)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pmode);
 	int ret = PLAYER_ERROR_NONE;
-//	player_cli_s *pc = (player_cli_s *)player;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_DISPLAY_MODE;
+	player_cli_s *pc = (player_cli_s *)player;
+	char *ret_buf = NULL;
 	int mode = -1;
 
 	LOGD("ENTER");
 
-#if 0
-	ret = mm_player_get_attribute(INT_HANDLE(pc), NULL, "display_method", &mode, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
-#endif
-	*pmode = mode;
+	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_get_type(mode, ret_buf, INT);
+		*pmode = mode;
+	}
+
+	g_free(ret_buf);
 	return ret;
 }
 
@@ -1847,18 +1848,20 @@ int player_get_display_rotation(player_h player, player_display_rotation_e *prot
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(protation);
 	int ret = PLAYER_ERROR_NONE;
-//	player_cli_s *pc = (player_cli_s *)player;
+	player_cli_s *pc = (player_cli_s *)player;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_DISPLAY_ROTATION;
+	char *ret_buf = NULL;
 	int rotation = -1;
 
 	LOGD("ENTER");
 
-#ifdef PREV_PLAYER
-	ret = mm_player_get_attribute(INT_HANDLE(pc), NULL, "display_rotation", &rotation, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
-#endif
-	*protation = rotation;
+	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_get_type(rotation, ret_buf, INT);
+		*protation = rotation;
+	}
 
+	g_free(ret_buf);
 	return ret;
 }
 
@@ -1866,17 +1869,13 @@ int player_set_display_visible(player_h player, bool visible)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-#if 0
 	player_cli_s *pc = (player_cli_s *)player;
-	int value = 0;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_DISPLAY_VISIBLE;
+	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-	if (visible == TRUE)
-		value = 1;
-	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_visible", value, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
-#endif
+	player_msg_send1(api, pc, ret_buf, ret, INT, visible);
+	g_free(ret_buf);
 	return ret;
 }
 
@@ -1885,22 +1884,24 @@ int player_is_display_visible(player_h player, bool *pvisible)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pvisible);
 	int ret = PLAYER_ERROR_NONE;
-//	player_cli_s *pc = (player_cli_s *)player;
-	int value = 0;
+	player_cli_s *pc = (player_cli_s *)player;
+	muse_player_api_e api = MUSE_PLAYER_API_IS_DISPLAY_VISIBLE;
+	char *ret_buf = NULL;
+	int value = -1;
 
 	LOGD("ENTER");
-#ifdef PREV_PLAYER
-	ret = mm_player_get_attribute(INT_HANDLE(pc), NULL, "display_visible", &value, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
-	else
-#endif
-	{
+
+	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_get_type(value, ret_buf, INT);
+
 		if (value)
 			*pvisible = TRUE;
 		else
 			*pvisible = FALSE;
 	}
+
+	g_free(ret_buf);
 	return ret;
 }
 
