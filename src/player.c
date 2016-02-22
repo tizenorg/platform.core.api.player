@@ -1003,7 +1003,7 @@ static void callback_destroy(callback_cb_info_s *cb_info)
 	g_free(cb_info);
 }
 
-int _get_api_timeout(player_cli_s *pc, muse_player_api_e api)
+int client_get_api_timeout(player_cli_s *pc, muse_player_api_e api)
 {
 	int timeout = 0;
 
@@ -1026,7 +1026,7 @@ int _get_api_timeout(player_cli_s *pc, muse_player_api_e api)
 	return timeout;
 }
 
-int wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info, char **ret_buf, int time_out)
+int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info, char **ret_buf, int time_out)
 {
 	int ret = PLAYER_ERROR_NONE;
 	gint64 end_time = g_get_monotonic_time() + time_out * G_TIME_SPAN_SECOND;
@@ -1106,7 +1106,7 @@ int player_create(player_h *player)
 		goto ErrorExit;
 	}
 
-	ret = wait_for_cb_return(api, pc->cb_info, &ret_buf, CALLBACK_TIME_OUT);
+	ret = client_wait_for_cb_return(api, pc->cb_info, &ret_buf, CALLBACK_TIME_OUT);
 	if (ret == PLAYER_ERROR_NONE) {
 		intptr_t module_addr;
 		*player = (player_h)pc;
@@ -1115,6 +1115,7 @@ int player_create(player_h *player)
 			muse_core_send_client_addr(module_addr, pc->cb_info->data_fd);
 			LOGD("Data channel fd %d, muse module addr %p", pc->cb_info->data_fd, module_addr);
 		}
+		SERVER_TIMEOUT(pc) = MAX_SERVER_TIME_OUT; /* will be update after prepare phase. */
 	} else
 		goto ErrorExit;
 
@@ -1184,6 +1185,14 @@ int player_prepare_async(player_h player, player_prepared_cb callback, void *use
 		pc->cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_PREPARE] = user_data;
 	}
 	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		int timeout = 0;
+		player_msg_get_type(timeout, ret_buf, INT);
+
+		LOGD("server timeout will be %d", timeout);
+		SERVER_TIMEOUT(pc) = timeout;
+	}
+
 	g_free(ret_buf);
 	return ret;
 }
@@ -1199,6 +1208,14 @@ int player_prepare(player_h player)
 	LOGD("ENTER");
 
 	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		int timeout = 0;
+		player_msg_get_type(timeout, ret_buf, INT);
+
+		LOGD("server timeout will be %d", timeout);
+		SERVER_TIMEOUT(pc) = timeout;
+	}
+
 	g_free(ret_buf);
 	return ret;
 }

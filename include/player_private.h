@@ -45,7 +45,8 @@ extern "C" {
 #define PLAYER_NULL_ARG_CHECK(arg)      \
         PLAYER_CHECK_CONDITION(arg != NULL,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER")
 
-#define CALLBACK_TIME_OUT 30 /* FIXME: need to consider the type of playback */
+#define CALLBACK_TIME_OUT 5
+#define MAX_SERVER_TIME_OUT 35
 
 typedef struct _ret_msg_s{
 	gint api;
@@ -92,7 +93,6 @@ typedef struct _callback_cb_info {
 
 typedef struct {
 	intptr_t bo;
-	gboolean is_streaming;
 	gint timeout;
 } server_info_s;	// to check
 
@@ -119,15 +119,13 @@ typedef struct _player_cli_s{
 
 /* server tbm bo */
 #define SERVER_TBM_BO(h)	((h)->server.bo)
-/* content type is streaming */
-#define IS_STREAMING_CONTENT(h)		((h)->server.is_streaming)
 /* server state change timeout */
 #define SERVER_TIMEOUT(h)		((h)->server.timeout)
 
-int _get_api_timeout(player_cli_s *pc, muse_player_api_e api);
-int wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info, char **ret_buf, int time_out);
 int player_set_evas_object_cb(player_h player, Evas_Object * eo);
 int player_unset_evas_object_cb(player_h player);
+int client_get_api_timeout(player_cli_s *pc, muse_player_api_e api);
+int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info, char **ret_buf, int time_out);
 
 #ifdef __cplusplus
 }
