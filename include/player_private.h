@@ -87,7 +87,7 @@ typedef struct _callback_cb_info {
 	msg_buff_s buff;
 	player_event_queue event_queue;
 	media_format_h pkt_fmt;
-//	MMHandleType local_handle;
+	MMHandleType local_handle;
 	tbm_bufmgr bufmgr;
 } callback_cb_info_s;
 
