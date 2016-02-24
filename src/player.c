@@ -2761,7 +2761,7 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 	media_packet_is_video(packet, &is_video);
 	media_packet_is_audio(packet, &is_audio);
 	if (is_video)
-		media_format_get_video_info(format, &push_media.mimetype, NULL, NULL, NULL, NULL);
+		media_format_get_video_info(format, &push_media.mimetype, &push_media.width, &push_media.height, NULL, NULL);
 	else if (is_audio)
 		media_format_get_audio_info(format, &push_media.mimetype, NULL, NULL, NULL, NULL);
 
