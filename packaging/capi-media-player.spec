@@ -32,6 +32,8 @@ BuildRequires:  pkgconfig(mmsvc-player)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(libtbm)
 BuildRequires:  pkgconfig(eom)
+BuildRequires:  pkgconfig(gstreamer-1.0)
+BuildRequires:  pkgconfig(gstreamer-plugins-base-1.0)
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
