@@ -23,6 +23,7 @@
 #include <mm_error.h>
 #include <dlog.h>
 #include <Evas.h>
+#include <Ecore_Evas.h>
 #include <muse_player.h>
 #include <muse_player_msg.h>
 #include "player_private.h"
@@ -174,14 +175,27 @@ static void __evas_resize_cb (void *data, Evas *e, Evas_Object *eo, void *event_
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
 	char *ret_buf = NULL;
+	int rotation;
+	Ecore_Evas *ecore_evas;
 	muse_player_api_e api = MUSE_PLAYER_API_RESIZE_VIDEO_RENDER_RECT;
 	int ret = PLAYER_ERROR_NONE;
 	LOGD("ret =%d",ret);
 
 	evas_object_geometry_get(eo, &wl_win.wl_window_x, &wl_win.wl_window_y, &wl_win.wl_window_width, &wl_win.wl_window_height);
+	ecore_evas =  ecore_evas_ecore_evas_get(e);
+	rotation = ecore_evas_rotation_get(ecore_evas);
+	LOGD("rotation(%d)",rotation);
 	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
 			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
-
+	if (rotation ==  270 || rotation == 90){
+		LOGD("swap w and h");
+		int temp;
+		temp = wl_win.wl_window_width;
+		wl_win.wl_window_width = wl_win.wl_window_height;
+		wl_win.wl_window_height = temp;
+	}
+	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
+			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
 	wl_win.type = 0; /*init  but not use */
 	wl_win.wl_surface_id = 0; /*init  but not use */
 
