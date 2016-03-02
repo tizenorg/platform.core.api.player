@@ -380,7 +380,7 @@ static void __buffering_cb_handler(callback_cb_info_s *cb_info, char *recvMsg)
 static void __subtitle_cb_handler(callback_cb_info_s *cb_info, char *recvMsg)
 {
 	int duration = 0;
-	char text[MUSE_URI_MAX_LENGTH];
+	char text[MUSE_URI_MAX_LENGTH] = { 0, };
 	muse_player_event_e ev = MUSE_PLAYER_EVENT_TYPE_SUBTITLE;
 
 	if (player_msg_get(duration, recvMsg)
@@ -725,6 +725,7 @@ static void (*_user_callbacks[MUSE_PLAYER_EVENT_TYPE_NUM])(callback_cb_info_s *c
 static void _player_event_job_function(_player_cb_data *data)
 {
 	muse_player_event_e ev = data->int_data;
+
 	if (data->cb_info->user_cb[ev])
 		_user_callbacks[ev] (data->cb_info, data->buf);
 	else
@@ -934,6 +935,7 @@ static void *client_cb_handler(gpointer data)
 						char *buffer;
 						g_mutex_lock(&cb_info->player_mutex);
 						buffer = strndup(recvMsg + offset, parse_len);
+
 						g_mutex_unlock(&cb_info->player_mutex);
 						if (player_msg_get(event, buffer))
 							_user_callback_handler(cb_info, event, buffer);
