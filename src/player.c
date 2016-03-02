@@ -380,7 +380,7 @@ static void __buffering_cb_handler(callback_cb_info_s *cb_info, char *recvMsg)
 static void __subtitle_cb_handler(callback_cb_info_s *cb_info, char *recvMsg)
 {
 	int duration = 0;
-	char text[MUSE_URI_MAX_LENGTH];
+	char text[MUSE_URI_MAX_LENGTH] = { 0, };
 	muse_player_event_e ev = MUSE_PLAYER_EVENT_TYPE_SUBTITLE;
 
 	if (player_msg_get(duration, recvMsg)
