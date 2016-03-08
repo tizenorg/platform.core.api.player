@@ -177,7 +177,7 @@ evas_pipe_cb (void *data, void *buffer, update_info info)
 	LOGD ("[ENTER]");
 
 	if (!evas_info || !evas_info->eo) {
-		LOGW ("evas_info %p or eo %p is NULL", evas_info, evas_info->eo);
+		LOGW ("evas_info %p or eo is NULL", evas_info);
 		goto ERROR;
 	}
 
@@ -396,11 +396,12 @@ void decoded_callback_for_evas (media_packet_h packet, void *data)
 		goto ERROR;
 	}
 	/* FIXME: when setCaps occurs, _get_video_size should be called */
+	/* currently we are always checking it */
 	if(has && _get_video_size(packet, handle)) {
 		/* Attention! if this error occurs, we need to consider managing buffer */
 		if(handle->sent_buffer_cnt>4) {
 			LOGE("too many buffers are not released %d", handle->sent_buffer_cnt);
-			/* FIXME: fix this logic*/
+			/* FIXME: fix this logic */
 			/* destroy all media packets and reset pipe at present */
 			g_mutex_lock (&handle->free_lock);
 			_reset_pipe(handle);
