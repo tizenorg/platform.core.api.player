@@ -574,7 +574,7 @@ static int _save(unsigned char *src, int length)
 	char filename[256] = {0, };
 	static int WRITE_COUNT = 0;
 	/* gchar *filename  = CAPTUERD_IMAGE_SAVE_PATH; */
-	snprintf(filename, 256, "IMAGE_client%d", WRITE_COUNT);
+	snprintf(filename, 256, "/tmp/IMAGE_client%d", WRITE_COUNT);
 	WRITE_COUNT++;
 	fp = fopen(filename, "w+");
 	if (fp == NULL) {
@@ -1314,6 +1314,7 @@ static void get_stream_info()
 	int size;
 	player_get_album_art(g_player[0], &album, &size);
 	g_print("                                                            ==> [Player_Test] Album art : [ data : %p, size : %d ]\n", (unsigned int *)album, size);
+	_save(album, size);
 	if (value != NULL) {
 		free(value);
 		value = NULL;

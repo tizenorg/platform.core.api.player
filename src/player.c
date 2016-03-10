@@ -2121,21 +2121,56 @@ int player_get_album_art(player_h player, void **palbum_art, int *psize)
 	char *ret_buf = NULL;
 	char *album_art;
 	int size = 0;
+	tbm_bo bo;
+	tbm_bo_handle thandle;
+	tbm_key key;
 
 	LOGD("ENTER");
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
 		player_msg_get(size, ret_buf);
+		LOGD("size : %d", size);
 		if (size > 0) {
+			if (!player_msg_get(key, ret_buf)) {
+				ret = PLAYER_ERROR_INVALID_OPERATION;
+				goto exit;
+			}
+
+			bo = tbm_bo_import(pc->cb_info->bufmgr, key);
+			if (bo == NULL) {
+				LOGE("TBM get error : bo is NULL");
+				ret = PLAYER_ERROR_INVALID_OPERATION;
+				goto exit;
+			}
+			thandle = tbm_bo_map(bo, TBM_DEVICE_CPU, TBM_OPTION_WRITE | TBM_OPTION_READ);
+			if (thandle.ptr == NULL) {
+				LOGE("TBM get error : handle pointer is NULL");
+				tbm_bo_unref(bo);
+				ret = PLAYER_ERROR_INVALID_OPERATION;
+				goto exit;
+			}
 			album_art = _get_mem(pc, size);
-			player_msg_get_array(album_art, ret_buf);
-			*palbum_art = album_art;
+			if (album_art) {
+				memcpy(album_art, thandle.ptr, size);
+				*palbum_art = album_art;
+			} else {
+				LOGE("g_new failure");
+				ret = PLAYER_ERROR_INVALID_OPERATION;
+			}
+
+			/* mark to read */
+			*((char *)thandle.ptr + size) = 0;
+
+			tbm_bo_unmap(bo);
+			tbm_bo_unref(bo);
 		} else
 			*palbum_art = NULL;
 
 		*psize = size;
 	}
+exit:
+
 	g_free(ret_buf);
 	return ret;
 }
