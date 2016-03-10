@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 SET(fw_test "${fw_name}-test")
 
-INCLUDE_DIRECTORIES(../include/mobile)
+INCLUDE_DIRECTORIES(../include/common)
 link_directories(${CMAKE_SOURCE_DIR}/../)
 
 IF(X11_SUPPORT)
