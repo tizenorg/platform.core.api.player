@@ -19,7 +19,7 @@ SET(INC_COM_DIR include)
 
 INCLUDE_DIRECTORIES(${INC_DIR}, ${INC_COM_DIR})
 
-SET(dependents "dlog glib-2.0 libtbm capi-media-tool capi-media-sound-manager capi-base-common mused mmsvc-player mm-common tizen-extension-client evas ecore elementary")
+SET(dependents "dlog glib-2.0 libtbm capi-media-tool capi-media-sound-manager capi-base-common mused mm-common tizen-extension-client evas ecore elementary")
 SET(pc_dependents "libtbm capi-media-tool capi-base-common capi-media-sound-manager")
 
 INCLUDE(FindPkgConfig)
@@ -27,6 +27,11 @@ pkg_check_modules(${fw_name} REQUIRED ${dependents})
 FOREACH(flag ${${fw_name}_CFLAGS})
     SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
 ENDFOREACH(flag)
+
+pkg_check_modules(MMSVC_PLAYER mmsvc-player)
+FOREACH(mmsvcflag ${MMSVC_PLAYER_CFLAGS})
+    SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${mmsvcflag}")
+ENDFOREACH(mmsvcflag)
 
 SET(CMAKE_C_FLAGS "-I./${INC_DIR} ${CMAKE_C_FLAGS} ${EXTRA_CFLAGS} -fPIC -Wall -Werror -Wno-deprecated -Wno-deprecated-declarations")
 SET(CMAKE_C_FLAGS_DEBUG "-O0 -g")
