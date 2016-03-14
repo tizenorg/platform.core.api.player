@@ -2476,7 +2476,7 @@ int player_set_streaming_user_agent(player_h player, const char *user_agent, int
 	PLAYER_NULL_ARG_CHECK(user_agent);
 	PLAYER_CHECK_CONDITION(size >= 0, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER");
 	int ret = PLAYER_ERROR_NONE;
-	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_COOKIE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_USER_AGENT;
 	player_cli_s *pc = (player_cli_s *)player;
 	char *ret_buf = NULL;
 
