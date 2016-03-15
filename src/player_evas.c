@@ -113,6 +113,8 @@ int _player_set_evas_info (mm_evas_info * evas_info, Evas_Object *eo);
 int _player_reset_evas_info (mm_evas_info * evas_info);
 void _player_update_geometry_evas_info (mm_evas_info *evas_info, rect_info *result);
 int _player_apply_geometry_evas_info (mm_evas_info *evas_info);
+static void _set_evas_callback (mm_evas_info * evas_info);
+static void _unset_evas_callback (mm_evas_info * evas_info);
 
 static void
 _evas_resize_cb (void *data, Evas *e, Evas_Object *obj, void *event_info)
@@ -163,8 +165,11 @@ _evas_del_cb (void *data, Evas *e, Evas_Object *obj, void *event_info)
 	if (!evas_info || !evas_info->eo) {
 		return;
 	}
-	/* FIXME:del callback will be called once again */
-	_player_destroy_evas_info(evas_info);
+	if (evas_info->eo) {
+		_unset_evas_callback(evas_info);
+		evas_object_image_data_set(evas_info->eo, NULL);
+		evas_info->eo = NULL;
+	}
 	LOGD ("[LEAVE]");
 }
 
@@ -342,7 +347,7 @@ void _reset_pipe (mm_evas_info * evas_info)
 
 	/* delete old pipe */
 	if (evas_info->epipe) {
-		LOGD("pipe will be deleted");
+		LOGD("pipe %p will be deleted", evas_info->epipe);
 		ecore_pipe_del (evas_info->epipe);
 		evas_info->epipe = NULL;
 	}
@@ -368,6 +373,7 @@ void _reset_pipe (mm_evas_info * evas_info)
 		if (!evas_info->epipe) {
 			LOGE("pipe is not created");
 		}
+		LOGD("created pipe %p", evas_info->epipe);
 	}
 
 	return;
@@ -492,6 +498,7 @@ _player_set_evas_info (mm_evas_info * evas_info, Evas_Object *eo)
 		LOGE("pipe is not created");
 		return MM_ERROR_PLAYER_NO_OP;
 	}
+	LOGD("created pipe %p", evas_info->epipe);
 	g_mutex_init (&evas_info->free_lock);
 	_set_evas_callback(evas_info);
 
@@ -508,21 +515,23 @@ _player_reset_evas_info (mm_evas_info * evas_info)
 {
 	MMPLAYER_CHECK_NULL(evas_info);
 
-	_unset_evas_callback(evas_info);
-
 	int i;
 	int ret = MEDIA_PACKET_ERROR_NONE;
+
+	if (evas_info->eo) {
+		_unset_evas_callback(evas_info);
+		evas_object_image_data_set(evas_info->eo, NULL);
+		evas_info->eo = NULL;
+	}
 	if (evas_info->epipe) {
-		LOGD("pipe will be deleted");
+		LOGD("pipe %p will be deleted", evas_info->epipe);
 		ecore_pipe_del (evas_info->epipe);
 		evas_info->epipe = NULL;
 	}
-	evas_object_image_data_set(evas_info->eo, NULL);
 
 	evas_info->eo_size.x = evas_info->eo_size.y =
 	evas_info->eo_size.w = evas_info->eo_size.h = 0;
 	evas_info->w = evas_info->h = 0;
-	evas_info->eo = NULL;
 	evas_info->tbm_surf = NULL;
 
 	g_mutex_lock (&evas_info->free_lock);
