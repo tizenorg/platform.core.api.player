@@ -181,8 +181,13 @@ evas_pipe_cb (void *data, void *buffer, update_info info)
 	g_mutex_lock (&evas_info->free_lock);
 	LOGD ("[ENTER]");
 
-	if (!evas_info || !evas_info->eo) {
-		LOGW ("evas_info %p or eo is NULL", evas_info);
+	if (!evas_info) {
+		LOGW ("evas_info is NULL", evas_info);
+		return;
+	}
+
+	if (!evas_info->eo) {
+		LOGW ("evas_info %p", evas_info);
 		goto ERROR;
 	}
 
