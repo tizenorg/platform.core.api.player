@@ -133,7 +133,7 @@ typedef enum {
 
 /**
  * @brief Enumeration for stream type.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  */
 typedef enum {
     PLAYER_STREAM_TYPE_DEFAULT,	/**< Container type */
@@ -144,7 +144,7 @@ typedef enum {
 
 /**
  * @brief Enumeration of media stream buffer status
- * @since_tizen 2.4
+ * @since_tizen 3.0
  */
 typedef enum {
     PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN,
@@ -358,7 +358,7 @@ typedef void (*player_media_packet_video_decoded_cb)(media_packet_h pkt, void *u
 
 /**
  * @brief Called when the buffer level drops below the threshold of max size or no free space in buffer.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks This API is used for media stream playback only.
  * @param[in] user_data The user data passed from the callback registration function
  * @see player_set_media_stream_buffer_status_cb()
@@ -369,7 +369,7 @@ typedef void (*player_media_stream_buffer_status_cb) (player_media_stream_buffer
 
 /**
  * @brief Called to notify the next push-buffer offset when seeking is occurred.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks This API is used for media stream playback only.
  * @details The next push-buffer should produce buffers from the new offset.
  * @param[in] offset The new byte position to seek
@@ -379,7 +379,7 @@ typedef void (*player_media_stream_seek_cb) (unsigned long long offset, void *us
 
 /**
  * @brief Called to notify the video stream changed.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @details The video stream changing is detected just before rendering operation.
  * @param[in] width	The width of the captured image
  * @param[in] height The height of the captured image
@@ -914,7 +914,7 @@ int player_unset_media_packet_video_frame_decoded_cb(player_h player);
 
 /**
  * @brief  Pushes elementary stream to decode audio or video
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks player_set_media_stream_info() should be called before using this API.
  * @remarks The available buffer size can be set by calling player_set_media_stream_buffer_max_size() API.
  *          If there is no available buffer space, this api will return error since 3.0.
@@ -935,7 +935,7 @@ int player_push_media_stream(player_h player, media_packet_h packet);
 
 /**
  * @brief  Sets contents information for media stream
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks AV format should be set before pushing elementary stream with player_push_media_stream().
  * @remarks AAC can be supported.
  * @remarks H.264 can be supported.
@@ -956,7 +956,7 @@ int player_set_media_stream_info(player_h player, player_stream_type_e type, med
 
 /**
  * @brief Registers a callback function to be invoked when buffer underrun or overflow is occurred.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks This API is used for media stream playback only.
  * @param[in] player   The handle to the media player
  * @param[in] type     The type of target stream
@@ -976,7 +976,7 @@ int player_set_media_stream_buffer_status_cb(player_h player, player_stream_type
 
 /**
  * @brief Unregisters the buffer status callback function.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks This API is used for media stream playback only.
  * @param[in] player The handle to the media player
  * @param[in] type   The type of target stream
@@ -991,7 +991,7 @@ int player_unset_media_stream_buffer_status_cb(player_h player, player_stream_ty
 
 /**
  * @brief Registers a callback function to be invoked when seeking is occurred.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks This API is used for media stream playback only.
  * @param[in] player    The handle to the media player
  * @param[in] type      The type of target stream
@@ -1011,7 +1011,7 @@ int player_set_media_stream_seek_cb(player_h player, player_stream_type_e type, 
 
 /**
  * @brief Unregisters the seek callback function.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @param[in] player The handle to the media player
  * @param[in] type   The type of target stream
  * @return @c 0 on success,
@@ -1025,7 +1025,7 @@ int player_unset_media_stream_seek_cb(player_h player, player_stream_type_e type
 
 /**
  * @brief Sets the max size bytes of buffer.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks This API is used for media stream playback only.
  * @remarks If the buffer level over the max size, player_media_stream_buffer_status_cb() will be invoked with overflow status.
  * @param[in] player The handle to the media player
@@ -1044,7 +1044,7 @@ int player_set_media_stream_buffer_max_size(player_h player, player_stream_type_
 
 /**
  * @brief Gets the max size bytes of buffer.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks This API is used for media stream playback only.
  * @remarks If the buffer level over the max size, player_media_stream_buffer_status_cb() will be invoked with overflow status.
  * @param[in] player The handle to the media player
@@ -1063,7 +1063,7 @@ int player_get_media_stream_buffer_max_size(player_h player, player_stream_type_
 
 /**
  * @brief Sets the buffer threshold percent of buffer.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks This API is used for media stream playback only.
  * @remarks If the buffer level drops below the percent value, player_media_stream_buffer_status_cb() will be invoked with underrun status.
  * @param[in] player The handle to the media player
@@ -1082,7 +1082,7 @@ int player_set_media_stream_buffer_min_threshold(player_h player, player_stream_
 
 /**
  * @brief Gets the buffer threshold percent of buffer.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks This API is used for media stream playback only.
  * @remarks If the buffer level drops below the percent value, player_media_stream_buffer_status_cb() will be invoked with underrun status.
  * @param[in] player The handle to the media player
@@ -1862,7 +1862,7 @@ int player_set_subtitle_position_offset(player_h player, int millisecond);
 
 /**
  * @brief Registers a callback function to be invoked when video stream is changed.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks The stream changing is detected just before rendering operation.
  * @param[in] player   The handle to the media player
  * @param[in] callback The stream changed callback function to register
@@ -1881,7 +1881,7 @@ int player_set_video_stream_changed_cb (player_h player, player_video_stream_cha
 
 /**
  * @brief Unregisters the video stream changed callback function.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @param[in] player The handle to the media player
  * @return @c 0 on success,
  *         otherwise a negative error value
@@ -1894,7 +1894,7 @@ int player_unset_video_stream_changed_cb (player_h player);
 
 /**
  * @brief Gets current track index.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @details Index starts from 0.
  * @remarks PLAYER_STREAM_TYPE_VIDEO is not supported.
  * @param[in] player The handle to the media player
@@ -1913,7 +1913,7 @@ int player_get_current_track(player_h player, player_stream_type_e type, int *in
 
 /**
  * @brief Gets language code of a track.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks @a code must be released with @c free() by caller
  * @remarks PLAYER_STREAM_TYPE_VIDEO is not supported.
  * @param[in] player The handle to the media player
@@ -1933,7 +1933,7 @@ int player_get_track_language_code(player_h player, player_stream_type_e type, i
 
 /**
  * @brief Gets the track count.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks PLAYER_STREAM_TYPE_VIDEO is not supported.
  * @param[in] player The handle to the media player
  * @param[in] type The type of target stream
@@ -1951,7 +1951,7 @@ int player_get_track_count(player_h player, player_stream_type_e type, int *coun
 
 /**
  * @brief Selects a track to play.
- * @since_tizen 2.4
+ * @since_tizen 3.0
  * @remarks PLAYER_STREAM_TYPE_VIDEO is not supported.
  * @param[in] player The handle to the media player
  * @param[in] type The type of target stream
