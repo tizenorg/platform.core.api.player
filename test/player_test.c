@@ -1221,6 +1221,9 @@ void focus_callback(sound_stream_info_h stream_info, sound_stream_focus_change_r
 
 static void set_sound_stream_info(int type)
 {
+	sound_device_list_h device_list = NULL;
+	int ret = SOUND_MANAGER_ERROR_NONE;
+
 	if (g_stream_info_h) {
 		g_print("stream information is already set, please destory handle and try again\n");
 		return;
@@ -1229,10 +1232,47 @@ static void set_sound_stream_info(int type)
 		g_print("failed to create stream_information()\n");
 		return;
 	}
+	/* In case of MEDIA_EXTERNAL_ONLY, we need to set external device manually */
+	if (type == (int)SOUND_STREAM_TYPE_MEDIA_EXTERNAL_ONLY) {
+		sound_device_h device = NULL;
+		sound_device_type_e device_type;
+
+		if ((ret = sound_manager_get_current_device_list(SOUND_DEVICE_ALL_MASK, &device_list))) {
+			g_print("failed to sound_manager_get_current_device_list(), ret(0x%x)\n", ret);
+			return;
+		}
+		while (!(ret = sound_manager_get_next_device(device_list, &device))) {
+			if ((ret = sound_manager_get_device_type (device, &device_type))) {
+				g_print("failed to sound_manager_get_device_type(), ret(0x%x)\n", ret);
+				goto END;
+			}
+			if (device_type == SOUND_DEVICE_BLUETOOTH || device_type == SOUND_DEVICE_USB_AUDIO) {
+				if ((ret = sound_manager_add_device_for_stream_routing (g_stream_info_h, device))) {
+					g_print("failed to sound_manager_add_device_for_stream_routing(), ret(0x%x)\n", ret);
+					goto END;
+				}
+				if ((ret = sound_manager_apply_stream_routing (g_stream_info_h))) {
+					g_print("failed to sound_manager_apply_stream_routing(), ret(0x%x)\n", ret);
+					goto END;
+				}
+				break;
+			}
+		}
+		if (ret != SOUND_MANAGER_ERROR_NONE) {
+			g_print("failed to sound_manager_get_next_device(), ret(0x%x)\n", ret);
+			goto END;
+		}
+	}
+
 	if (player_set_audio_policy_info(g_player[0], g_stream_info_h) != PLAYER_ERROR_NONE)
 		g_print("failed to set sound stream information(%p)\n", g_stream_info_h);
 	else
 		g_print("set stream information(%p) success", g_stream_info_h);
+
+END:
+	if (device_list)
+		sound_manager_free_device_list(device_list);
+	return;
 }
 
 static void get_position()
@@ -1910,7 +1950,7 @@ static void displaymenu()
 	} else if (g_menu_state == CURRENT_STATUS_SOUND_TYPE) {
 		g_print("*** input sound type.(0:SYSTEM 1:NOTIFICATION 2:ALARM 3:RINGTONE 4:MEDIA 5:CALL 6:VOIP 7:FIXED)\n");
 	} else if (g_menu_state == CURRENT_STATUS_SOUND_STREAM_INFO) {
-		g_print("*** input sound stream type.(0:MEDIA 1:SYSTEM 2:ALARM 3:NOTIFICATION 4:RINGTONE 5:CALL 6:VOIP)\n");
+		g_print("*** input sound stream type.(0:MEDIA 1:SYSTEM 2:ALARM 3:NOTIFICATION 4:EMERGENCY 5:VOICE_INFORMATION 9:MEDIA_EXT_ONLY)\n");
 	} else if (g_menu_state == CURRENT_STATUS_MUTE) {
 		g_print("*** input mute value.(0: Not Mute, 1: Mute) \n");
 	} else if (g_menu_state == CURRENT_STATUS_POSITION_TIME) {
