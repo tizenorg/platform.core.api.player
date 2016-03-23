@@ -178,13 +178,14 @@ evas_pipe_cb (void *data, void *buffer, update_info info)
 {
 	mm_evas_info *evas_info = data;
 	int ret;
-	g_mutex_lock (&evas_info->free_lock);
 	LOGD ("[ENTER]");
 
 	if (!evas_info) {
 		LOGW ("evas_info is NULL", evas_info);
-		goto ERROR;
+		return;
 	}
+
+	g_mutex_lock (&evas_info->free_lock);
 
 	if (!evas_info->eo) {
 		LOGW ("evas_info %p", evas_info);
