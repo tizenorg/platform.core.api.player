@@ -150,7 +150,7 @@ static Evas_Object *create_render_rect(Evas_Object *pParent)
 static void create_base_gui(appdata_s *ad)
 {
 	/* Enable GLES Backened */
-	elm_config_preferred_engine_set("3d");
+	elm_config_accel_preference_set("opengl");
 
 	/* Window */
 	/* elm_win_util_standard_add(PACKAGE, PACKAGE); */
