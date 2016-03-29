@@ -397,7 +397,7 @@ static int app_create(void *data)
 	eom_output_mode_e output_mode = EOM_OUTPUT_MODE_NONE;
 #endif
 	/* use gl backend */
-	elm_config_preferred_engine_set("3d");
+	elm_config_accel_preference_set("opengl");
 
 	/* create window */
 	win = create_win(PACKAGE);

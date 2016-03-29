@@ -87,7 +87,7 @@ static Eina_Bool keydown_cb(void *data, int type, void *event)
 static void create_base_gui(appdata_s *ad)
 {
 	/* Enable GLES Backened */
-	elm_config_preferred_engine_set("3d");
+	elm_config_accel_preference_set("opengl");
 
 	/* Window */
 	ad->win = elm_win_util_standard_add(PACKAGE, PACKAGE);
