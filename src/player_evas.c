@@ -411,7 +411,7 @@ void decoded_callback_for_evas (media_packet_h packet, void *data)
 	/* currently we are always checking it */
 	if(has && _get_video_size(packet, handle)) {
 		/* Attention! if this error occurs, we need to consider managing buffer */
-		if(handle->sent_buffer_cnt>4) {
+		if(handle->sent_buffer_cnt>14) {
 			LOGE("too many buffers are not released %d", handle->sent_buffer_cnt);
 			/* FIXME: fix this logic */
 			/* destroy all media packets and reset pipe at present */
