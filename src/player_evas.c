@@ -411,13 +411,16 @@ void decoded_callback_for_evas (media_packet_h packet, void *data)
 	/* currently we are always checking it */
 	if(has && _get_video_size(packet, handle)) {
 		/* Attention! if this error occurs, we need to consider managing buffer */
-		if(handle->sent_buffer_cnt>4) {
+		if(handle->sent_buffer_cnt>14) {
 			LOGE("too many buffers are not released %d", handle->sent_buffer_cnt);
+			goto ERROR;
+#if 0
 			/* FIXME: fix this logic */
 			/* destroy all media packets and reset pipe at present */
 			g_mutex_lock (&handle->free_lock);
 			_reset_pipe(handle);
 			g_mutex_unlock (&handle->free_lock);
+#endif
 		}
 		handle->cur_idx = _find_empty_index(handle);
 		if(handle->cur_idx == -1)
