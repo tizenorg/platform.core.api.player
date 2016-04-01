@@ -40,7 +40,7 @@
 #include <sound_manager_internal.h>
 #include "player_internal.h"
 #include "player_private.h"
-#include "player_evas.h"
+#include <mm_evas_renderer.h>
 
 typedef struct {
 	int int_data;
@@ -1242,7 +1242,7 @@ int player_unprepare(player_h player)
 		_player_deinit_memory_buffer(pc);
 	}
 
-	if (player_unset_evas_info(INT_HANDLE(pc)) != MM_ERROR_NONE)
+	if (mm_evas_renderer_destroy(&INT_HANDLE(pc)) != MM_ERROR_NONE)
 		LOGW("fail to unset evas client");
 
 	g_free(ret_buf);
@@ -1505,7 +1505,7 @@ int player_start(player_h player)
 
 	if (INT_HANDLE(pc))
 	{
-		ret = player_update_video_param(INT_HANDLE(pc));
+		ret = mm_evas_renderer_update_param(INT_HANDLE(pc));
 		if (ret != PLAYER_ERROR_NONE)
 			return ret;
 	}
@@ -1783,13 +1783,13 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 
 				if(INT_HANDLE(pc)) {
 					LOGW("evas client already exists");
-					if (player_unset_evas_info(INT_HANDLE(pc)) != MM_ERROR_NONE)
+					if (mm_evas_renderer_destroy(&INT_HANDLE(pc)) != MM_ERROR_NONE)
 						LOGW("fail to unset evas client");
 				}
-				if(player_set_evas_info(&INT_HANDLE(pc), obj) != MM_ERROR_NONE) {
+				if(mm_evas_renderer_create(&INT_HANDLE(pc), obj) != MM_ERROR_NONE) {
 					LOGW("fail to set evas client");
 				}
-				if(player_set_media_packet_video_frame_decoded_cb(player, decoded_callback_for_evas , (void*) INT_HANDLE(pc)) != PLAYER_ERROR_NONE) {
+				if(player_set_media_packet_video_frame_decoded_cb(player, mm_evas_renderer_write, (void*) INT_HANDLE(pc)) != PLAYER_ERROR_NONE) {
 					LOGW("fail to set decoded callback");
 				}
 			}
@@ -1827,7 +1827,7 @@ int player_set_display_mode(player_h player, player_display_mode_e mode)
 
 	LOGD("ENTER");
 
-	ret = player_set_geometry_evas_info (INT_HANDLE(pc), mode);
+	ret = mm_evas_renderer_set_geometry (INT_HANDLE(pc), mode);
 	if (ret == PLAYER_ERROR_NONE) {
 		return ret;
 	}/* FIXME : devide server and client and consider which error code will be returned */
@@ -1849,7 +1849,7 @@ int player_get_display_mode(player_h player, player_display_mode_e *pmode)
 
 	LOGD("ENTER");
 
-	ret = player_get_geometry_evas_info (INT_HANDLE(pc), &mode);
+	ret = mm_evas_renderer_get_geometry (INT_HANDLE(pc), &mode);
 	if (ret == PLAYER_ERROR_NONE && mode != -1) {
 		*pmode = (player_display_mode_e) mode;
 		return ret;
@@ -1891,7 +1891,7 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
 
 	LOGD("ENTER");
 
-	ret = player_set_rotation_evas_info (INT_HANDLE(pc), rotation);
+	ret = mm_evas_renderer_set_rotation (INT_HANDLE(pc), rotation);
 	if (ret == PLAYER_ERROR_NONE) {
 		return ret;
 	}
@@ -1913,7 +1913,7 @@ int player_get_display_rotation(player_h player, player_display_rotation_e *prot
 
 	LOGD("ENTER");
 
-	ret = player_get_rotation_evas_info (INT_HANDLE(pc), &rotation);
+	ret = mm_evas_renderer_get_rotation (INT_HANDLE(pc), &rotation);
 	if (ret == PLAYER_ERROR_NONE && rotation != -1) {
 		*protation = (player_display_rotation_e) rotation;
 		return ret;
@@ -1939,7 +1939,7 @@ int player_set_display_visible(player_h player, bool visible)
 
 	LOGD("ENTER");
 
-	ret = player_set_visible_evas_info(INT_HANDLE(pc), visible);
+	ret = mm_evas_renderer_set_visible(INT_HANDLE(pc), visible);
 	if (ret == PLAYER_ERROR_NONE) {
 		return ret;
 	}
@@ -1962,7 +1962,7 @@ int player_is_display_visible(player_h player, bool *pvisible)
 
 	LOGD("ENTER");
 
-	ret = player_get_visible_evas_info (INT_HANDLE(pc), &visible);
+	ret = mm_evas_renderer_get_visible (INT_HANDLE(pc), &visible);
 	if (ret == PLAYER_ERROR_NONE) {
 		if (visible)
 			*pvisible = TRUE;
