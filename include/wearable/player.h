@@ -477,7 +477,7 @@ int player_prepare(player_h player);
  * @see player_unprepare()
  * @see player_set_uri()
  */
-int player_prepare_async (player_h player, player_prepared_cb callback, void* user_data);
+int player_prepare_async(player_h player, player_prepared_cb callback, void* user_data);
 
 /**
  * @brief Resets the media player.
@@ -560,9 +560,9 @@ int  player_get_state(player_h player, player_state_e *state);
  * @brief Sets the player's volume.
  * @since_tizen 2.3.1
  * @details  Setting this volume adjusts the player's instance volume, not the system volume.
- *	      The valid range is from 0 to 1.0, inclusive (1.0 = 100%). Default value is 1.0.
- *          To change system volume, use the @ref CAPI_MEDIA_SOUND_MANAGER_MODULE API.
- * 	      Finally, it does not support to set other value into each channel currently.
+ *           The valid range is from 0 to 1.0, inclusive (1.0 = 100%). Default value is 1.0.
+ *           To change system volume, use the @ref CAPI_MEDIA_SOUND_MANAGER_MODULE API.
+ *           Finally, it does not support to set other value into each channel currently.
  *
  * @param[in]   player The handle to the media player
  * @param[in]   left The left volume scalar
@@ -1193,7 +1193,7 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
  * @retval  #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @see     player_set_display_rotation()
  */
-int player_get_display_rotation( player_h player, player_display_rotation_e *rotation);
+int player_get_display_rotation(player_h player, player_display_rotation_e *rotation);
 
 /**
  * @}
@@ -1364,7 +1364,7 @@ int player_get_duration(player_h player, int *duration);
  * @see player_audio_effect_set_equalizer_band_level()
  * @see player_audio_effect_set_equalizer_all_bands()
  */
-int player_audio_effect_get_equalizer_bands_count (player_h player, int *count);
+int player_audio_effect_get_equalizer_bands_count(player_h player, int *count);
 
 /**
  * @brief Sets the gain set for the given equalizer band.
@@ -1809,7 +1809,7 @@ int player_set_playback_rate(player_h player, float rate);
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  * @pre The path value can be @c NULL for reset when the player state is set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
  */
-int player_set_subtitle_path(player_h player,const char *path);
+int player_set_subtitle_path(player_h player, const char *path);
 
 /**
  * @brief Registers a callback function to be invoked when a subtitle updates.
@@ -1877,7 +1877,7 @@ int player_set_subtitle_position_offset(player_h player, int millisecond);
  * @see player_unset_video_stream_changed_cb()
  * @see player_video_stream_changed_cb()
  */
-int player_set_video_stream_changed_cb (player_h player, player_video_stream_changed_cb callback, void *user_data);
+int player_set_video_stream_changed_cb(player_h player, player_video_stream_changed_cb callback, void *user_data);
 
 /**
  * @brief Unregisters the video stream changed callback function.
@@ -1890,7 +1890,7 @@ int player_set_video_stream_changed_cb (player_h player, player_video_stream_cha
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @see player_set_video_stream_changed_cb()
  */
-int player_unset_video_stream_changed_cb (player_h player);
+int player_unset_video_stream_changed_cb(player_h player);
 
 /**
  * @brief Gets current track index.
