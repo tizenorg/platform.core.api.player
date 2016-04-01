@@ -52,7 +52,7 @@ static int sps_len, pps_len;
 #define LOG_TAG "PLAYER_TEST"
 
 static int app_create(void *data);
-static int app_reset(bundle *b, void *data);
+static int app_reset(bundle * b, void *data);
 static int app_resume(void *data);
 static int app_pause(void *data);
 static int app_terminate(void *data);
@@ -75,7 +75,7 @@ typedef struct appdata {
 	pthread_t feeding_thread_id;
 } appdata_s;
 
-static void win_delete_request_cb(void *data, Evas_Object *obj, void *event_info)
+static void win_delete_request_cb(void *data, Evas_Object * obj, void *event_info)
 {
 	elm_exit();
 }
@@ -101,7 +101,7 @@ static Eina_Bool keydown_cb(void *data, int type, void *event)
 	return ECORE_CALLBACK_PASS_ON;
 }
 
-static void win_del(void *data, Evas_Object *obj, void *event)
+static void win_del(void *data, Evas_Object * obj, void *event)
 {
 	elm_exit();
 }
@@ -128,7 +128,7 @@ static Evas_Object *create_win(const char *name)
 	return eo;
 }
 
-static Evas_Object *create_render_rect(Evas_Object *pParent)
+static Evas_Object *create_render_rect(Evas_Object * pParent)
 {
 	if (!pParent)
 		return NULL;
@@ -147,7 +147,7 @@ static Evas_Object *create_render_rect(Evas_Object *pParent)
 	return pObj;
 }
 
-static void create_base_gui(appdata_s *ad)
+static void create_base_gui(appdata_s * ad)
 {
 	/* Enable GLES Backened */
 	elm_config_accel_preference_set("opengl");
@@ -190,7 +190,7 @@ static int app_create(void *data)
 static int app_pause(void *data)
 {
 	/* Take necessary actions when application becomes invisible. */
-	appdata_s *ad = (appdata_s *)data;
+	appdata_s *ad = (appdata_s *) data;
 	int ret = PLAYER_ERROR_NONE;
 
 	LOGD("start");
@@ -253,7 +253,7 @@ static int app_resume(void *data)
 static void _player_prepared_cb(void *user_data)
 {
 	int ret = PLAYER_ERROR_NONE;
-	appdata_s *ad = (appdata_s *)user_data;
+	appdata_s *ad = (appdata_s *) user_data;
 
 	LOGD("prepared");
 
@@ -281,7 +281,7 @@ int bytestream2nalunit(FILE * fd, unsigned char *nal)
 	result = fread(buffer, 1, read_size, fd);
 
 	if (result != read_size)
-	return -1;
+		return -1;
 
 	val = buffer[0];
 	while (!val) {
@@ -351,7 +351,7 @@ int bytestream2nalunit(FILE * fd, unsigned char *nal)
 	return nal_length;
 }
 
-static void feed_eos_data(appdata_s *appdata)
+static void feed_eos_data(appdata_s * appdata)
 {
 	appdata_s *ad = appdata;
 
@@ -372,7 +372,7 @@ static void feed_eos_data(appdata_s *appdata)
 	return;
 }
 
-static bool feed_video_data(appdata_s *appdata)
+static bool feed_video_data(appdata_s * appdata)
 {
 	bool ret = FALSE;
 	int read = 0;
@@ -390,7 +390,7 @@ static bool feed_video_data(appdata_s *appdata)
 		goto ERROR;
 	}
 
-	if (media_packet_set_pts(ad->video_pkt, (uint64_t)pts) != MEDIA_PACKET_ERROR_NONE) {
+	if (media_packet_set_pts(ad->video_pkt, (uint64_t) pts) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_set_pts failed\n");
 		goto ERROR;
 	}
@@ -419,7 +419,7 @@ static bool feed_video_data(appdata_s *appdata)
 		goto ERROR;
 	}
 
-	if (media_packet_set_buffer_size(ad->video_pkt, (uint64_t)read) != MEDIA_PACKET_ERROR_NONE) {
+	if (media_packet_set_buffer_size(ad->video_pkt, (uint64_t) read) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_set_buffer_size failed\n");
 		goto ERROR;
 	}
@@ -429,7 +429,7 @@ static bool feed_video_data(appdata_s *appdata)
 	pts += ES_DEFAULT_VIDEO_PTS_OFFSET;
 	ret = TRUE;
 
-ERROR:
+ ERROR:
 	/* destroy media packet after use */
 	media_packet_destroy(ad->video_pkt);
 	ad->video_pkt = NULL;
@@ -438,7 +438,7 @@ ERROR:
 
 static void feed_video_data_thread_func(void *data)
 {
-	appdata_s *ad = (appdata_s *)data;
+	appdata_s *ad = (appdata_s *) data;
 
 	while (TRUE) {
 		static int frame_count = 0;
@@ -457,8 +457,7 @@ void _video_buffer_status_cb_ex(player_media_stream_buffer_status_e status, unsi
 {
 	if (status == PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN) {
 		LOGE("video buffer is underrun state, current level byte = %llu", bytes);
-	}
-	else if (status == PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW) {
+	} else if (status == PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW) {
 		LOGE("video buffer is overrun state, current level byte = %llu", bytes);
 	}
 }
@@ -467,8 +466,7 @@ void _audio_buffer_status_cb_ex(player_media_stream_buffer_status_e status, unsi
 {
 	if (status == PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN) {
 		LOGE("audio buffer is underrun state, current level byte = %llu", bytes);
-	}
-	else if (status == PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW) {
+	} else if (status == PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW) {
 		LOGE("audio buffer is overrun state, current level byte = %llu", bytes);
 	}
 }
@@ -483,10 +481,10 @@ void _audio_seek_data_cb(unsigned long long offset, void *user_data)
 	LOGE("seek offset of audio is %llu", offset);
 }
 
-static int app_reset(bundle *b, void *data)
+static int app_reset(bundle * b, void *data)
 {
 	/* Take necessary actions when application becomes visible. */
-	appdata_s *ad = (appdata_s *)data;
+	appdata_s *ad = (appdata_s *) data;
 	int ret = PLAYER_ERROR_NONE;
 
 	LOGD("start");
@@ -520,7 +518,7 @@ static int app_reset(bundle *b, void *data)
 	media_format_set_video_width(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_WIDTH);
 	media_format_set_video_height(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_HEIGHT);
 
-	player_set_media_stream_buffer_max_size(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, (unsigned long long)3*1024*1024);
+	player_set_media_stream_buffer_max_size(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, (unsigned long long)3 * 1024 * 1024);
 	player_set_media_stream_buffer_min_threshold(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, 50);
 
 	ret = player_set_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_buffer_status_cb_ex, (void *)ad);
@@ -560,7 +558,7 @@ static int app_reset(bundle *b, void *data)
 
 	return 0;
 
-FAILED:
+ FAILED:
 	if (ad->player_handle) {
 		player_destroy(ad->player_handle);
 		ad->player_handle = NULL;
@@ -572,7 +570,7 @@ FAILED:
 static int app_terminate(void *data)
 {
 	/* Release all resources. */
-	appdata_s *ad = (appdata_s *)data;
+	appdata_s *ad = (appdata_s *) data;
 
 	LOGD("start");
 
@@ -591,7 +589,7 @@ static int app_terminate(void *data)
 int main(int argc, char *argv[])
 {
 	int ret = 0;
-	static appdata_s ad = {0, };
+	static appdata_s ad = { 0, };
 
 	LOGD("start");
 

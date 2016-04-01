@@ -32,23 +32,23 @@ extern "C" {
 #endif
 #define LOG_TAG "TIZEN_N_PLAYER"
 
-#define PLAYER_CHECK_CONDITION(condition,error,msg)     \
-                if(condition) {} else \
-                { LOGE("[%s] %s(0x%08x)",__FUNCTION__, msg,error); return error;}; \
+#define PLAYER_CHECK_CONDITION(condition, error, msg)     \
+                if (condition) {} else \
+                { LOGE("[%s] %s(0x%08x)", __FUNCTION__, msg, error); return error; }; \
 
 #define PLAYER_INSTANCE_CHECK(player)   \
-        PLAYER_CHECK_CONDITION(player != NULL, PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER")
+        PLAYER_CHECK_CONDITION(player != NULL, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER")
 
-#define PLAYER_STATE_CHECK(player,expected_state)       \
-        PLAYER_CHECK_CONDITION(player->state == expected_state,PLAYER_ERROR_INVALID_STATE,"PLAYER_ERROR_INVALID_STATE")
+#define PLAYER_STATE_CHECK(player, expected_state)       \
+        PLAYER_CHECK_CONDITION(player->state == expected_state, PLAYER_ERROR_INVALID_STATE, "PLAYER_ERROR_INVALID_STATE")
 
 #define PLAYER_NULL_ARG_CHECK(arg)      \
-        PLAYER_CHECK_CONDITION(arg != NULL,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER")
+        PLAYER_CHECK_CONDITION(arg != NULL, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER")
 
 #define CALLBACK_TIME_OUT 5
 #define MAX_SERVER_TIME_OUT 35
 
-typedef struct _ret_msg_s{
+typedef struct _ret_msg_s {
 	gint api;
 	gchar *msg;
 	struct _ret_msg_s *next;
@@ -61,7 +61,7 @@ typedef struct {
 	ret_msg_s *retMsgHead;
 } msg_buff_s;
 
-typedef struct _player_data{
+typedef struct _player_data {
 	void *data;
 	struct _player_data *next;
 } player_data_s;
@@ -94,14 +94,14 @@ typedef struct _callback_cb_info {
 typedef struct {
 	intptr_t bo;
 	gint timeout;
-} server_info_s;	// to check
+} server_info_s;			// to check
 
-typedef struct _player_cli_s{
+typedef struct _player_cli_s {
 	callback_cb_info_s *cb_info;
 	player_data_s *head;
 	server_info_s server;
 	wl_client *wlclient;
-	Evas_Object * eo;
+	Evas_Object *eo;
 	gboolean have_evas_callback;
 } player_cli_s;
 
@@ -124,14 +124,10 @@ typedef struct _player_cli_s{
 
 int player_set_evas_object_cb(player_h player, Evas_Object * eo);
 int player_unset_evas_object_cb(player_h player);
-int client_get_api_timeout(player_cli_s *pc, muse_player_api_e api);
-int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info, char **ret_buf, int time_out);
+int client_get_api_timeout(player_cli_s * pc, muse_player_api_e api);
+int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s * cb_info, char **ret_buf, int time_out);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif //__TIZEN_MEDIA_PLAYER_PRIVATE_H__
-
-
-
+#endif	//__TIZEN_MEDIA_PLAYER_PRIVATE_H__
