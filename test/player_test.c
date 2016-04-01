@@ -102,7 +102,7 @@ static Evas_Object *g_xid;
 static Evas_Object *g_external_xid;
 #endif
 static Evas_Object *selected_xid;
-static Evas_Object *g_eo[MAX_HANDLE] = {0, };
+static Evas_Object *g_eo[MAX_HANDLE] = { 0, };
 
 static int g_current_surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
 
@@ -121,7 +121,7 @@ typedef struct {
 } appdata;
 
 static appdata ad;
-static player_h g_player[MAX_HANDLE] = {0, };
+static player_h g_player[MAX_HANDLE] = { 0, };
 
 int g_handle_num = 1;
 int g_menu_state = CURRENT_STATUS_MAINMENU;
@@ -129,7 +129,7 @@ char g_file_list[9][256];
 gboolean quit_pushing;
 sound_stream_info_h g_stream_info_h = NULL;
 
-static void win_del(void *data, Evas_Object *obj, void *event)
+static void win_del(void *data, Evas_Object * obj, void *event)
 {
 	elm_exit();
 }
@@ -158,7 +158,7 @@ static Evas_Object *create_win(const char *name)
 	return eo;
 }
 
-static Evas_Object *create_image_object(Evas_Object *eo_parent)
+static Evas_Object *create_image_object(Evas_Object * eo_parent)
 {
 	if (!eo_parent)
 		return NULL;
@@ -171,7 +171,7 @@ static Evas_Object *create_image_object(Evas_Object *eo_parent)
 	return eo;
 }
 
-void create_render_rect_and_bg(Evas_Object *win)
+void create_render_rect_and_bg(Evas_Object * win)
 {
 	if (!win) {
 		g_print("no win");
@@ -197,6 +197,7 @@ void create_render_rect_and_bg(Evas_Object *win)
 	evas_object_show(rect);
 	evas_object_show(win);
 }
+
 #ifdef _ACTIVATE_EOM_
 int eom_get_output_id(const char *output_name)
 {
@@ -237,7 +238,7 @@ int eom_get_output_id(const char *output_name)
 
 static void eom_notify_cb_output_add(eom_output_id output_id, void *user_data)
 {
-	appdata *info = (appdata *)user_data;
+	appdata *info = (appdata *) user_data;
 
 	if (info->hdmi_output_id != output_id) {
 		g_print("[eom] OUTPUT ADDED. SKIP. my output ID is %d\n", info->hdmi_output_id);
@@ -260,7 +261,7 @@ static void eom_notify_cb_output_add(eom_output_id output_id, void *user_data)
 
 static void eom_notify_cb_output_remove(eom_output_id output_id, void *user_data)
 {
-	appdata *info = (appdata *)user_data;
+	appdata *info = (appdata *) user_data;
 	player_state_e state;
 
 	if (info->hdmi_output_id != output_id) {
@@ -295,7 +296,7 @@ static void eom_notify_cb_output_remove(eom_output_id output_id, void *user_data
 
 static void eom_notify_cb_mode_changed(eom_output_id output_id, void *user_data)
 {
-	appdata *info = (appdata *)user_data;
+	appdata *info = (appdata *) user_data;
 	eom_output_mode_e mode = EOM_OUTPUT_MODE_NONE;
 
 	if (info->hdmi_output_id != output_id) {
@@ -309,7 +310,7 @@ static void eom_notify_cb_mode_changed(eom_output_id output_id, void *user_data)
 
 static void eom_notify_cb_attribute_changed(eom_output_id output_id, void *user_data)
 {
-	appdata *info = (appdata *)user_data;
+	appdata *info = (appdata *) user_data;
 
 	eom_output_attribute_e attribute = EOM_OUTPUT_ATTRIBUTE_NONE;
 	eom_output_attribute_state_e state = EOM_OUTPUT_ATTRIBUTE_STATE_NONE;
@@ -497,7 +498,7 @@ static void prepared_cb(void *user_data)
 	g_print("[Player_Test] prepared_cb!!!!\n");
 }
 
-static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s *audio_raw_frame, void *user_data)
+static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s * audio_raw_frame, void *user_data)
 {
 	player_audio_raw_data_s *audio_raw = audio_raw_frame;
 
@@ -508,9 +509,9 @@ static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s *audio_raw_frame,
 
 #ifdef DUMP_OUTBUF
 	if (audio_raw->channel_mask == 1 && fp_out1)
-		fwrite((guint8 *)audio_raw->data, 1, audio_raw->size, fp_out1);
+		fwrite((guint8 *) audio_raw->data, 1, audio_raw->size, fp_out1);
 	else if (audio_raw->channel_mask == 2 && fp_out2)
-		fwrite((guint8 *)audio_raw->data, 1, audio_raw->size, fp_out2);
+		fwrite((guint8 *) audio_raw->data, 1, audio_raw->size, fp_out2);
 #endif
 }
 
@@ -571,7 +572,7 @@ static int _save(unsigned char *src, int length)
 {
 	/* unlink(CAPTUERD_IMAGE_SAVE_PATH); */
 	FILE *fp;
-	char filename[256] = {0, };
+	char filename[256] = { 0, };
 	static int WRITE_COUNT = 0;
 	/* gchar *filename  = CAPTUERD_IMAGE_SAVE_PATH; */
 	snprintf(filename, 256, "/tmp/IMAGE_client%d", WRITE_COUNT);
@@ -671,7 +672,7 @@ static void player_set_memory_buffer_test()
 
 	file = g_mapped_file_new(g_uri, FALSE, NULL);
 	file_size = g_mapped_file_get_length(file);
-	g_media_mem = (guint8 *)g_mapped_file_get_contents(file);
+	g_media_mem = (guint8 *) g_mapped_file_get_contents(file);
 
 	int ret = player_set_memory_buffer(g_player[0], (void *)g_media_mem, file_size);
 	g_print("player_set_memory_buffer ret : %d\n", ret);
@@ -720,7 +721,7 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 
 	fp = fopen(fname, "rb");
 	if (fp) {
-		buff_ptr = (guint8 *)g_malloc0(1048576);
+		buff_ptr = (guint8 *) g_malloc0(1048576);
 		if (!buff_ptr) {
 			g_print("no free space\n");
 			fclose(fp);
@@ -748,10 +749,10 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 	if (media_packet_get_buffer_data_ptr(g_video_pkt, &src) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
-	if (media_packet_set_pts(g_video_pkt, (uint64_t)pts) != MEDIA_PACKET_ERROR_NONE)
+	if (media_packet_set_pts(g_video_pkt, (uint64_t) pts) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
-	if (media_packet_set_buffer_size(g_video_pkt, (uint64_t)real_read_len) != MEDIA_PACKET_ERROR_NONE)
+	if (media_packet_set_buffer_size(g_video_pkt, (uint64_t) real_read_len) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
 	memcpy(src, buff_ptr, real_read_len);
@@ -760,7 +761,7 @@ static void buffer_need_video_data_cb(unsigned int size, void *user_data)
 	player_push_media_stream(g_player[0], g_video_pkt);
 #endif
 
-EXIT:
+ EXIT:
 	if (buff_ptr) {
 		g_free(buff_ptr);
 		buff_ptr = NULL;
@@ -794,7 +795,7 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 
 	fp = fopen(fname, "rb");
 	if (fp) {
-		buff_ptr = (guint8 *)g_malloc0(1048576);
+		buff_ptr = (guint8 *) g_malloc0(1048576);
 		if (!buff_ptr) {
 			g_print("no free space\n");
 			fclose(fp);
@@ -822,10 +823,10 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 	if (media_packet_get_buffer_data_ptr(g_audio_pkt, &src) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
-	if (media_packet_set_pts(g_audio_pkt, (uint64_t)audio_pts) != MEDIA_PACKET_ERROR_NONE)
+	if (media_packet_set_pts(g_audio_pkt, (uint64_t) audio_pts) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
-	if (media_packet_set_buffer_size(g_audio_pkt, (uint64_t)real_read_len) != MEDIA_PACKET_ERROR_NONE)
+	if (media_packet_set_buffer_size(g_audio_pkt, (uint64_t) real_read_len) != MEDIA_PACKET_ERROR_NONE)
 		goto EXIT;
 
 	memcpy(src, buff_ptr, real_read_len);
@@ -835,7 +836,7 @@ static void buffer_need_audio_data_cb(unsigned int size, void *user_data)
 #endif
 
 	audio_pts += audio_dur;
-EXIT:
+ EXIT:
 	if (buff_ptr) {
 		g_free(buff_ptr);
 		buff_ptr = NULL;
@@ -864,7 +865,7 @@ static void set_content_info(bool is_push_mode)
 	media_format_set_audio_samplerate(g_audio_fmt, 48000);
 	/* player_set_media_stream_info(g_player[0], PLAYER_STREAM_TYPE_AUDIO, g_audio_fmt); */
 #if 0
-	/* video_info->mime = g_strdup("video/mpeg"); */ /* CODEC_ID_MPEG4VIDEO */
+	/* video_info->mime = g_strdup("video/mpeg"); *//* CODEC_ID_MPEG4VIDEO */
 	video_info->width = 640;
 	video_info->height = 272;
 	video_info->version = 4;
@@ -878,7 +879,7 @@ static void set_content_info(bool is_push_mode)
 	/* audio--aac--StarWars.mp4 */
 	/* audio_info->mime = g_strdup("audio/mpeg"); */
 	/* audio_info->version = 2; */
-	/* audio_info->user_info = 0; */ /* raw */
+	/* audio_info->user_info = 0; *//* raw */
 #endif
 
 #ifdef _ES_PULL_
@@ -1242,16 +1243,16 @@ static void set_sound_stream_info(int type)
 			return;
 		}
 		while (!(ret = sound_manager_get_next_device(device_list, &device))) {
-			if ((ret = sound_manager_get_device_type (device, &device_type))) {
+			if ((ret = sound_manager_get_device_type(device, &device_type))) {
 				g_print("failed to sound_manager_get_device_type(), ret(0x%x)\n", ret);
 				goto END;
 			}
 			if (device_type == SOUND_DEVICE_BLUETOOTH || device_type == SOUND_DEVICE_USB_AUDIO) {
-				if ((ret = sound_manager_add_device_for_stream_routing (g_stream_info_h, device))) {
+				if ((ret = sound_manager_add_device_for_stream_routing(g_stream_info_h, device))) {
 					g_print("failed to sound_manager_add_device_for_stream_routing(), ret(0x%x)\n", ret);
 					goto END;
 				}
-				if ((ret = sound_manager_apply_stream_routing (g_stream_info_h))) {
+				if ((ret = sound_manager_apply_stream_routing(g_stream_info_h))) {
 					g_print("failed to sound_manager_apply_stream_routing(), ret(0x%x)\n", ret);
 					goto END;
 				}
@@ -1269,7 +1270,7 @@ static void set_sound_stream_info(int type)
 	else
 		g_print("set stream information(%p) success", g_stream_info_h);
 
-END:
+ END:
 	if (device_list)
 		sound_manager_free_device_list(device_list);
 	return;
@@ -1401,7 +1402,7 @@ static void set_looping(bool looping)
 	}
 }
 
-static void get_looping(bool *looping)
+static void get_looping(bool * looping)
 {
 	player_is_looping(g_player[0], looping);
 	g_print("                                                            ==> [Player_Test] looping = %d\n", *looping);
@@ -1539,7 +1540,7 @@ static void set_display_visible(bool visible)
 		g_print("failed to player_set_x11_display_visible\n");
 }
 
-static void get_display_visible(bool *visible)
+static void get_display_visible(bool * visible)
 {
 	player_is_display_visible(g_player[0], visible);
 	g_print("                                                            ==> [Player_Test] X11 Display Visible = %d\n", *visible);
@@ -1678,9 +1679,7 @@ static void set_audio_eq(int value)
 			g_print("failed to player_audio_effect_equalizer_is_available\n");
 
 		if (available) {
-			if ((player_audio_effect_get_equalizer_bands_count(g_player[0], &index) != PLAYER_ERROR_NONE) ||
-				(player_audio_effect_get_equalizer_level_range(g_player[0], &min, &max) != PLAYER_ERROR_NONE) ||
-				(player_audio_effect_set_equalizer_band_level(g_player[0], index / 2, max) != PLAYER_ERROR_NONE))
+			if ((player_audio_effect_get_equalizer_bands_count(g_player[0], &index) != PLAYER_ERROR_NONE) || (player_audio_effect_get_equalizer_level_range(g_player[0], &min, &max) != PLAYER_ERROR_NONE) || (player_audio_effect_set_equalizer_band_level(g_player[0], index / 2, max) != PLAYER_ERROR_NONE))
 				g_print("failed to player_audio_effect_set_equalizer_band_level index %d, level %d\n", index / 2, max);
 		}
 	}
@@ -2221,7 +2220,7 @@ static void interpret(char *cmd)
 	g_timeout_add(100, timeout_menu_display, 0);
 }
 
-gboolean input(GIOChannel *channel)
+gboolean input(GIOChannel * channel)
 {
 	gchar buf[MAX_STRING_LEN];
 	gsize read;
@@ -2240,7 +2239,7 @@ int main(int argc, char *argv[])
 	GIOChannel *stdin_channel;
 	stdin_channel = g_io_channel_unix_new(0);
 	g_io_channel_set_flags(stdin_channel, G_IO_FLAG_NONBLOCK, NULL);
-	g_io_add_watch(stdin_channel, G_IO_IN, (GIOFunc)input, NULL);
+	g_io_add_watch(stdin_channel, G_IO_IN, (GIOFunc) input, NULL);
 
 	displaymenu();
 	memset(&ad, 0x0, sizeof(appdata));

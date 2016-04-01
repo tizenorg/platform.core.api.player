@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 
-
 #ifndef __TIZEN_MEDIA_PLAYER_WLCLIENT_H__
 #define __TIZEN_MEDIA_PLAYER_WLCLIENT_H__
 #include <stdio.h>
@@ -25,23 +24,20 @@
 #include <mm_debug.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-typedef struct
-{
-	struct wl_display *display;
-	struct wl_registry *registry;
-	struct tizen_surface *tz_surface;
-	struct tizen_resource *tz_resource;
-} wl_client;
-int _wlclient_create (wl_client ** wlclient);
-int _wlclient_get_wl_window_wl_surface_id (wl_client * wlclient, struct wl_surface *surface, struct wl_display *display);
-void _wlclient_finalize (wl_client * wlclient);
+	typedef struct {
+		struct wl_display *display;
+		struct wl_registry *registry;
+		struct tizen_surface *tz_surface;
+		struct tizen_resource *tz_resource;
+	} wl_client;
+	int _wlclient_create(wl_client ** wlclient);
+	int _wlclient_get_wl_window_wl_surface_id(wl_client * wlclient, struct wl_surface *surface, struct wl_display *display);
+	void _wlclient_finalize(wl_client * wlclient);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif                          /* __TIZEN_MEDIA_PLAYER_WLCLIENT_H__ */
+#endif							/* __TIZEN_MEDIA_PLAYER_WLCLIENT_H__ */

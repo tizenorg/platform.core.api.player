@@ -35,7 +35,7 @@ int player_set_pcm_extraction_mode(player_h player, bool sync, player_audio_pcm_
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_PCM_EXTRACTION_MODE;
-	player_cli_s *pc = (player_cli_s *)player;
+	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	muse_player_event_e event = MUSE_PLAYER_EVENT_TYPE_AUDIO_FRAME;
 
@@ -58,7 +58,7 @@ int player_set_pcm_spec(player_h player, const char *format, int samplerate, int
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_PCM_SPEC;
-	player_cli_s *pc = (player_cli_s *)player;
+	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
@@ -74,7 +74,7 @@ int player_set_streaming_playback_rate(player_h player, float rate)
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_PLAYBACK_RATE;
-	player_cli_s *pc = (player_cli_s *)player;
+	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
@@ -89,7 +89,7 @@ int player_set_media_stream_buffer_status_cb_ex(player_h player, player_stream_t
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
-	player_cli_s *pc = (player_cli_s *)player;
+	player_cli_s *pc = (player_cli_s *) player;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	muse_player_event_e type;
@@ -118,7 +118,7 @@ int player_set_media_stream_buffer_status_cb_ex(player_h player, player_stream_t
 	return ret;
 }
 
-static void set_null_user_cb(callback_cb_info_s *cb_info, muse_player_event_e event)
+static void set_null_user_cb(callback_cb_info_s * cb_info, muse_player_event_e event)
 {
 	if (cb_info && event < MUSE_PLAYER_EVENT_TYPE_NUM) {
 		cb_info->user_cb[event] = NULL;
@@ -126,7 +126,7 @@ static void set_null_user_cb(callback_cb_info_s *cb_info, muse_player_event_e ev
 	}
 }
 
-static void set_null_user_cb_lock(callback_cb_info_s *cb_info, muse_player_event_e event)
+static void set_null_user_cb_lock(callback_cb_info_s * cb_info, muse_player_event_e event)
 {
 	bool lock = g_thread_self() != cb_info->event_queue.thread;
 
@@ -143,7 +143,7 @@ int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	player_cli_s *pc = (player_cli_s *)player;
+	player_cli_s *pc = (player_cli_s *) player;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	muse_player_event_e type;
@@ -168,10 +168,10 @@ int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream
 	return ret;
 }
 
-static void __evas_resize_cb (void *data, Evas *e, Evas_Object *eo, void *event_info)
+static void __evas_resize_cb(void *data, Evas * e, Evas_Object * eo, void *event_info)
 {
 
-	player_cli_s *pc = (player_cli_s *)data;
+	player_cli_s *pc = (player_cli_s *) data;
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
 	char *ret_buf = NULL;
@@ -179,25 +179,23 @@ static void __evas_resize_cb (void *data, Evas *e, Evas_Object *eo, void *event_
 	Ecore_Evas *ecore_evas;
 	muse_player_api_e api = MUSE_PLAYER_API_RESIZE_VIDEO_RENDER_RECT;
 	int ret = PLAYER_ERROR_NONE;
-	LOGD("ret =%d",ret);
+	LOGD("ret =%d", ret);
 
 	evas_object_geometry_get(eo, &wl_win.wl_window_x, &wl_win.wl_window_y, &wl_win.wl_window_width, &wl_win.wl_window_height);
-	ecore_evas =  ecore_evas_ecore_evas_get(e);
+	ecore_evas = ecore_evas_ecore_evas_get(e);
 	rotation = ecore_evas_rotation_get(ecore_evas);
-	LOGD("rotation(%d)",rotation);
-	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
-			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
-	if (rotation ==  270 || rotation == 90){
+	LOGD("rotation(%d)", rotation);
+	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)", wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
+	if (rotation == 270 || rotation == 90) {
 		LOGD("swap w and h");
 		int temp;
 		temp = wl_win.wl_window_width;
 		wl_win.wl_window_width = wl_win.wl_window_height;
 		wl_win.wl_window_height = temp;
 	}
-	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
-			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
-	wl_win.type = 0; /*init  but not use */
-	wl_win.wl_surface_id = 0; /*init  but not use */
+	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)", wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
+	wl_win.type = 0;			/*init  but not use */
+	wl_win.wl_surface_id = 0;	/*init  but not use */
 
 	player_msg_send_array(api, pc, ret_buf, ret, wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
 
@@ -206,13 +204,13 @@ static void __evas_resize_cb (void *data, Evas *e, Evas_Object *eo, void *event_
 
 }
 
-static void __evas_del_cb (void *data, Evas *e, Evas_Object *eo, void *event_info)
+static void __evas_del_cb(void *data, Evas * e, Evas_Object * eo, void *event_info)
 {
 
-	player_cli_s *pc = (player_cli_s *)data;
+	player_cli_s *pc = (player_cli_s *) data;
 
-	evas_object_event_callback_del (eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb);
-	evas_object_event_callback_del (eo, EVAS_CALLBACK_DEL, __evas_del_cb);
+	evas_object_event_callback_del(eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb);
+	evas_object_event_callback_del(eo, EVAS_CALLBACK_DEL, __evas_del_cb);
 
 	LOGD("evas callback del %p", eo);
 	pc->have_evas_callback = FALSE;
@@ -226,15 +224,15 @@ int player_set_evas_object_cb(player_h player, Evas_Object * eo)
 	PLAYER_INSTANCE_CHECK(player);
 	return_val_if_fail(eo != NULL, MM_ERROR_INVALID_ARGUMENT);
 
-	player_cli_s *pc = (player_cli_s *)player;
+	player_cli_s *pc = (player_cli_s *) player;
 
-	if(pc->have_evas_callback && pc->eo == eo) {
+	if (pc->have_evas_callback && pc->eo == eo) {
 		LOGW("evas object had callback already %p", pc->eo);
 		return MM_ERROR_UNKNOWN;
 	}
 	pc->eo = eo;
-	evas_object_event_callback_add (eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb, player);
-	evas_object_event_callback_add (eo, EVAS_CALLBACK_DEL, __evas_del_cb, player);
+	evas_object_event_callback_add(eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb, player);
+	evas_object_event_callback_add(eo, EVAS_CALLBACK_DEL, __evas_del_cb, player);
 	LOGD("evas callback add %p", pc->eo);
 	pc->have_evas_callback = TRUE;
 
@@ -244,11 +242,11 @@ int player_set_evas_object_cb(player_h player, Evas_Object * eo)
 int player_unset_evas_object_cb(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
-	player_cli_s *pc = (player_cli_s *)player;
+	player_cli_s *pc = (player_cli_s *) player;
 	return_val_if_fail(pc->eo != NULL, MM_ERROR_INVALID_ARGUMENT);
 
-	evas_object_event_callback_del (pc->eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb);
-	evas_object_event_callback_del (pc->eo, EVAS_CALLBACK_DEL, __evas_del_cb);
+	evas_object_event_callback_del(pc->eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb);
+	evas_object_event_callback_del(pc->eo, EVAS_CALLBACK_DEL, __evas_del_cb);
 	LOGD("evas callback del %p", pc->eo);
 	pc->eo = NULL;
 	pc->have_evas_callback = FALSE;
