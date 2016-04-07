@@ -1113,7 +1113,7 @@ int player_create(player_h * player)
 		*player = (player_h) pc;
 		if (player_msg_get_type(module_addr, ret_buf, POINTER)) {
 			pc->cb_info->data_fd = muse_core_client_new_data_ch();
-			muse_core_send_client_addr(module_addr, pc->cb_info->data_fd);
+			muse_core_send_module_addr(module_addr, pc->cb_info->data_fd);
 			LOGD("Data channel fd %d, muse module addr %p", pc->cb_info->data_fd, module_addr);
 		}
 		SERVER_TIMEOUT(pc) = MAX_SERVER_TIME_OUT;	/* will be update after prepare phase. */
