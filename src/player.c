@@ -42,6 +42,27 @@
 #include "player_private.h"
 #include "player_evas.h"
 
+/**
+ * @brief Create and send address of server side module infomation structure.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] module The server side module infomation.
+ * @param[in] fd socket fd
+ */
+#define muse_core_send_module_addr(module, fd) \
+        do {\
+                char *__sndMsg__; \
+                int __len__; \
+                __sndMsg__ = muse_core_msg_json_factory_new(0, \
+                                MUSE_TYPE_POINTER, #module, module, \
+                                0); \
+                __len__ = muse_core_ipc_send_msg(fd, __sndMsg__); \
+                muse_core_msg_json_factory_free(__sndMsg__); \
+                if (__len__ <= 0) { \
+                        LOGE("sending message failed"); \
+                        return PLAYER_ERROR_INVALID_OPERATION; \
+                } \
+        } while (0)
+
 typedef struct {
 	int int_data;
 	char *buf;
@@ -1113,7 +1134,7 @@ int player_create(player_h *player)
 		*player = (player_h)pc;
 		if (player_msg_get_type(module_addr, ret_buf, POINTER)) {
 			pc->cb_info->data_fd = muse_core_client_new_data_ch();
-			muse_core_send_client_addr(module_addr, pc->cb_info->data_fd);
+			muse_core_send_module_addr(module_addr, pc->cb_info->data_fd);
 			LOGD("Data channel fd %d, muse module addr %p", pc->cb_info->data_fd, module_addr);
 		}
 		SERVER_TIMEOUT(pc) = MAX_SERVER_TIME_OUT; /* will be update after prepare phase. */
