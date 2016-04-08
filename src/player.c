@@ -2836,10 +2836,10 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 	player_push_media_msg_type push_media;
 	char *push_media_msg = (char *)&push_media;
 	int msg_size = sizeof(player_push_media_msg_type);
+	int buf_size = 0;
 #ifdef __UN_USED
 	tbm_bo bo = NULL;
 	tbm_bo_handle thandle;
-	int buf_size;
 #endif
 	char *buf;
 	media_format_h format;
@@ -2893,7 +2893,8 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 	} else
 #endif
 	if (push_media.buf_type == PUSH_MEDIA_BUF_TYPE_RAW) {
-		muse_core_ipc_push_data(pc->cb_info->data_fd, buf, push_media.size, push_media.pts);
+		buf_size = (int)push_media.size;
+		muse_core_ipc_push_data(pc->cb_info->data_fd, buf, buf_size, push_media.pts);
 		player_msg_send_array(api, pc, ret_buf, ret, push_media_msg, msg_size, sizeof(char));
 	}
 
