@@ -32,6 +32,7 @@ BuildRequires:  pkgconfig(mmsvc-player)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(libtbm)
 BuildRequires:  pkgconfig(eom)
+BuildRequires:  pkgconfig(mm-evas-renderer)
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
