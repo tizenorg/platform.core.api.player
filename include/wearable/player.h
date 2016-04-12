@@ -443,6 +443,7 @@ int player_destroy(player_h player);
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @retval #PLAYER_ERROR_PERMISSION_DENIED Permission denied
+ * @retval #PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE Unsupported feature
  * @pre	The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare(). After that, call player_set_uri() to load the media content you want to play.
  * @post The player state will be #PLAYER_STATE_READY.
  * @see player_prepare_async()
@@ -689,6 +690,7 @@ int player_get_audio_latency_mode(player_h player, audio_latency_mode_e *latency
  * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
  * @retval #PLAYER_ERROR_CONNECTION_FAILED Network connection failed
  * @retval #PLAYER_ERROR_SOUND_POLICY Sound policy error
+ * @retval #PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE Unsupported feature
  * @pre player_prepare() must be called before calling this function.
  * @pre The player state must be set to #PLAYER_STATE_READY by calling player_prepare() or set to #PLAYER_STATE_PAUSED by calling player_pause().
  * @post The player state will be #PLAYER_STATE_PLAYING.
