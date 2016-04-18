@@ -1785,7 +1785,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 					if (mm_evas_renderer_destroy(&INT_HANDLE(pc)) != MM_ERROR_NONE)
 						LOGW("fail to unset evas client");
 				}
-				if(mm_evas_renderer_create(&INT_HANDLE(pc), obj) != MM_ERROR_NONE) {
+				if (mm_evas_renderer_create(&INT_HANDLE(pc), obj) != MM_ERROR_NONE) {
 					LOGW("fail to set evas client");
 				}
 				if (player_set_media_packet_video_frame_decoded_cb(player, mm_evas_renderer_write, (void *)INT_HANDLE(pc)) != PLAYER_ERROR_NONE) {

@@ -33,17 +33,17 @@ extern "C" {
 #define LOG_TAG "TIZEN_N_PLAYER"
 
 #define PLAYER_CHECK_CONDITION(condition, error, msg)     \
-                if (condition) {} else \
-                { LOGE("[%s] %s(0x%08x)", __FUNCTION__, msg, error); return error; }; \
+		if (condition) {} else \
+		{ LOGE("[%s] %s(0x%08x)", __FUNCTION__, msg, error); return error; }; \
 
 #define PLAYER_INSTANCE_CHECK(player)   \
-        PLAYER_CHECK_CONDITION(player != NULL, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER")
+		PLAYER_CHECK_CONDITION(player != NULL, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER")
 
 #define PLAYER_STATE_CHECK(player, expected_state)       \
-        PLAYER_CHECK_CONDITION(player->state == expected_state, PLAYER_ERROR_INVALID_STATE, "PLAYER_ERROR_INVALID_STATE")
+		PLAYER_CHECK_CONDITION(player->state == expected_state, PLAYER_ERROR_INVALID_STATE, "PLAYER_ERROR_INVALID_STATE")
 
 #define PLAYER_NULL_ARG_CHECK(arg)      \
-        PLAYER_CHECK_CONDITION(arg != NULL, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER")
+		PLAYER_CHECK_CONDITION(arg != NULL, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER")
 
 #define CALLBACK_TIME_OUT 5
 #define MAX_SERVER_TIME_OUT 35
@@ -94,7 +94,7 @@ typedef struct _callback_cb_info {
 typedef struct {
 	intptr_t bo;
 	gint timeout;
-} server_info_s;			// to check
+} server_info_s;
 
 typedef struct _player_cli_s {
 	callback_cb_info_s *cb_info;
@@ -130,4 +130,4 @@ int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s * cb_inf
 #ifdef __cplusplus
 }
 #endif
-#endif	//__TIZEN_MEDIA_PLAYER_PRIVATE_H__
+#endif	/*__TIZEN_MEDIA_PLAYER_PRIVATE_H__*/

@@ -164,6 +164,5 @@ int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream
 }
 #endif
 
-#endif //__TIZEN_MEDIA_PLAYER_INTERNAL_H__
-
+#endif /*__TIZEN_MEDIA_PLAYER_INTERNAL_H__*/
 

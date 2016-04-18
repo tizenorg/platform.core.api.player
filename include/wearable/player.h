@@ -51,11 +51,11 @@ typedef struct player_s *player_h;
  * @since_tizen 2.3.1
  */
 typedef enum {
-    PLAYER_STATE_NONE,          /**< Player is not created */
-    PLAYER_STATE_IDLE,          /**< Player is created, but not prepared */
-    PLAYER_STATE_READY,         /**< Player is ready to play media */
-    PLAYER_STATE_PLAYING,       /**< Player is playing media */
-    PLAYER_STATE_PAUSED,        /**< Player is paused while playing media */
+	PLAYER_STATE_NONE,          /**< Player is not created */
+	PLAYER_STATE_IDLE,          /**< Player is created, but not prepared */
+	PLAYER_STATE_READY,         /**< Player is ready to play media */
+	PLAYER_STATE_PLAYING,       /**< Player is playing media */
+	PLAYER_STATE_PAUSED,        /**< Player is paused while playing media */
 } player_state_e;
 
 /**
@@ -63,29 +63,28 @@ typedef enum {
  * @since_tizen 2.3.1
  */
 typedef enum {
-    PLAYER_ERROR_NONE   = TIZEN_ERROR_NONE,                                 /**< Successful */
-    PLAYER_ERROR_OUT_OF_MEMORY  = TIZEN_ERROR_OUT_OF_MEMORY,                /**< Out of memory */
-    PLAYER_ERROR_INVALID_PARAMETER  = TIZEN_ERROR_INVALID_PARAMETER,        /**< Invalid parameter */
-    PLAYER_ERROR_NO_SUCH_FILE   = TIZEN_ERROR_NO_SUCH_FILE,                 /**< No such file or directory */
-    PLAYER_ERROR_INVALID_OPERATION  = TIZEN_ERROR_INVALID_OPERATION,        /**< Invalid operation */
-    PLAYER_ERROR_FILE_NO_SPACE_ON_DEVICE    = TIZEN_ERROR_FILE_NO_SPACE_ON_DEVICE,  /**< No space left on the device */
-    PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE    = TIZEN_ERROR_NOT_SUPPORTED,    /**< Not supported */
-    PLAYER_ERROR_SEEK_FAILED    = PLAYER_ERROR_CLASS | 0x01,                /**< Seek operation failure */
-    PLAYER_ERROR_INVALID_STATE  = PLAYER_ERROR_CLASS | 0x02,                /**< Invalid state */
-    PLAYER_ERROR_NOT_SUPPORTED_FILE = PLAYER_ERROR_CLASS | 0x03,            /**< File format not supported */
-    PLAYER_ERROR_INVALID_URI    = PLAYER_ERROR_CLASS | 0x04,                /**< Invalid URI */
-    PLAYER_ERROR_SOUND_POLICY   = PLAYER_ERROR_CLASS | 0x05,                /**< Sound policy error */
-    PLAYER_ERROR_CONNECTION_FAILED  = PLAYER_ERROR_CLASS | 0x06,            /**< Streaming connection failed */
-    PLAYER_ERROR_VIDEO_CAPTURE_FAILED   = PLAYER_ERROR_CLASS | 0x07,        /**< Video capture failed */
-    PLAYER_ERROR_DRM_EXPIRED    = PLAYER_ERROR_CLASS | 0x08,                /**< Expired license */
-    PLAYER_ERROR_DRM_NO_LICENSE 	= PLAYER_ERROR_CLASS | 0x09,            /**< No license */
-    PLAYER_ERROR_DRM_FUTURE_USE 	= PLAYER_ERROR_CLASS | 0x0a,            /**< License for future use */
-    PLAYER_ERROR_DRM_NOT_PERMITTED  = PLAYER_ERROR_CLASS | 0x0b,            /**< Format not permitted */
-    PLAYER_ERROR_RESOURCE_LIMIT     = PLAYER_ERROR_CLASS | 0x0c,            /**< Resource limit */
-    PLAYER_ERROR_PERMISSION_DENIED  = TIZEN_ERROR_PERMISSION_DENIED,        /**< Permission denied */
-    PLAYER_ERROR_SERVICE_DISCONNECTED = PLAYER_ERROR_CLASS | 0x0d,          /**< Socket connection lost (Since 3.0) */
-    PLAYER_ERROR_BUFFER_SPACE         = TIZEN_ERROR_BUFFER_SPACE,           /**< No buffer space available (Since 3.0)*/
-
+	PLAYER_ERROR_NONE   = TIZEN_ERROR_NONE,                                 /**< Successful */
+	PLAYER_ERROR_OUT_OF_MEMORY  = TIZEN_ERROR_OUT_OF_MEMORY,                /**< Out of memory */
+	PLAYER_ERROR_INVALID_PARAMETER  = TIZEN_ERROR_INVALID_PARAMETER,        /**< Invalid parameter */
+	PLAYER_ERROR_NO_SUCH_FILE   = TIZEN_ERROR_NO_SUCH_FILE,                 /**< No such file or directory */
+	PLAYER_ERROR_INVALID_OPERATION  = TIZEN_ERROR_INVALID_OPERATION,        /**< Invalid operation */
+	PLAYER_ERROR_FILE_NO_SPACE_ON_DEVICE    = TIZEN_ERROR_FILE_NO_SPACE_ON_DEVICE,  /**< No space left on the device */
+	PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE    = TIZEN_ERROR_NOT_SUPPORTED,    /**< Not supported */
+	PLAYER_ERROR_SEEK_FAILED    = PLAYER_ERROR_CLASS | 0x01,                /**< Seek operation failure */
+	PLAYER_ERROR_INVALID_STATE  = PLAYER_ERROR_CLASS | 0x02,                /**< Invalid state */
+	PLAYER_ERROR_NOT_SUPPORTED_FILE = PLAYER_ERROR_CLASS | 0x03,            /**< File format not supported */
+	PLAYER_ERROR_INVALID_URI    = PLAYER_ERROR_CLASS | 0x04,                /**< Invalid URI */
+	PLAYER_ERROR_SOUND_POLICY   = PLAYER_ERROR_CLASS | 0x05,                /**< Sound policy error */
+	PLAYER_ERROR_CONNECTION_FAILED  = PLAYER_ERROR_CLASS | 0x06,            /**< Streaming connection failed */
+	PLAYER_ERROR_VIDEO_CAPTURE_FAILED   = PLAYER_ERROR_CLASS | 0x07,        /**< Video capture failed */
+	PLAYER_ERROR_DRM_EXPIRED        = PLAYER_ERROR_CLASS | 0x08,                /**< Expired license */
+	PLAYER_ERROR_DRM_NO_LICENSE     = PLAYER_ERROR_CLASS | 0x09,            /**< No license */
+	PLAYER_ERROR_DRM_FUTURE_USE     = PLAYER_ERROR_CLASS | 0x0a,            /**< License for future use */
+	PLAYER_ERROR_DRM_NOT_PERMITTED  = PLAYER_ERROR_CLASS | 0x0b,            /**< Format not permitted */
+	PLAYER_ERROR_RESOURCE_LIMIT     = PLAYER_ERROR_CLASS | 0x0c,            /**< Resource limit */
+	PLAYER_ERROR_PERMISSION_DENIED  = TIZEN_ERROR_PERMISSION_DENIED,        /**< Permission denied */
+	PLAYER_ERROR_SERVICE_DISCONNECTED = PLAYER_ERROR_CLASS | 0x0d,          /**< Socket connection lost (Since 3.0) */
+	PLAYER_ERROR_BUFFER_SPACE         = TIZEN_ERROR_BUFFER_SPACE,           /**< No buffer space available (Since 3.0)*/
 } player_error_e;
 
 /**
@@ -93,14 +92,14 @@ typedef enum {
  * @since_tizen 2.3.1
  */
 typedef enum {
-    PLAYER_INTERRUPTED_COMPLETED = 0,           /**< Interrupt completed (Deprecated since 3.0)*/
-    PLAYER_INTERRUPTED_BY_MEDIA,                /**< Interrupted by a non-resumable media application (Deprecated since 3.0) */
-    PLAYER_INTERRUPTED_BY_CALL,                 /**< Interrupted by an incoming call (Deprecated since 3.0)*/
-    PLAYER_INTERRUPTED_BY_EARJACK_UNPLUG,       /**< Interrupted by unplugging headphones (Deprecated since 3.0)*/
-    PLAYER_INTERRUPTED_BY_RESOURCE_CONFLICT,    /**< Interrupted by a resource conflict */
-    PLAYER_INTERRUPTED_BY_ALARM,                /**< Interrupted by an alarm (Deprecated since 3.0) */
-    PLAYER_INTERRUPTED_BY_EMERGENCY,            /**< Interrupted by an emergency (Deprecated since 3.0)*/
-    PLAYER_INTERRUPTED_BY_NOTIFICATION,         /**< Interrupted by a notification (Deprecated since 3.0)*/
+	PLAYER_INTERRUPTED_COMPLETED = 0,           /**< Interrupt completed (Deprecated since 3.0)*/
+	PLAYER_INTERRUPTED_BY_MEDIA,                /**< Interrupted by a non-resumable media application (Deprecated since 3.0) */
+	PLAYER_INTERRUPTED_BY_CALL,                 /**< Interrupted by an incoming call (Deprecated since 3.0)*/
+	PLAYER_INTERRUPTED_BY_EARJACK_UNPLUG,       /**< Interrupted by unplugging headphones (Deprecated since 3.0)*/
+	PLAYER_INTERRUPTED_BY_RESOURCE_CONFLICT,    /**< Interrupted by a resource conflict */
+	PLAYER_INTERRUPTED_BY_ALARM,                /**< Interrupted by an alarm (Deprecated since 3.0) */
+	PLAYER_INTERRUPTED_BY_EMERGENCY,            /**< Interrupted by an emergency (Deprecated since 3.0)*/
+	PLAYER_INTERRUPTED_BY_NOTIFICATION,         /**< Interrupted by a notification (Deprecated since 3.0)*/
 } player_interrupted_code_e;
 
 /**
@@ -108,8 +107,8 @@ typedef enum {
  * @since_tizen 2.3.1
  */
 typedef enum {
-    PLAYER_PD_STARTED = 0,              /**< Progressive download is started */
-    PLAYER_PD_COMPLETED,                /**< Progressive download is completed */
+	PLAYER_PD_STARTED = 0,              /**< Progressive download is started */
+	PLAYER_PD_COMPLETED,                /**< Progressive download is completed */
 } player_pd_message_type_e;
 
 /**
@@ -117,8 +116,8 @@ typedef enum {
  * @since_tizen 2.3.1
  */
 typedef enum {
-    PLAYER_DISPLAY_TYPE_OVERLAY = 0,    /**< Overlay surface display */
-    PLAYER_DISPLAY_TYPE_NONE,           /**< This disposes off buffers */
+	PLAYER_DISPLAY_TYPE_OVERLAY = 0,    /**< Overlay surface display */
+	PLAYER_DISPLAY_TYPE_NONE,           /**< This disposes off buffers */
 } player_display_type_e;
 
 /**
@@ -126,9 +125,9 @@ typedef enum {
  * @since_tizen 2.3.1
  */
 typedef enum {
-    AUDIO_LATENCY_MODE_LOW = 0,     /**< Low audio latency mode */
-    AUDIO_LATENCY_MODE_MID,         /**< Middle audio latency mode */
-    AUDIO_LATENCY_MODE_HIGH,        /**< High audio latency mode */
+	AUDIO_LATENCY_MODE_LOW = 0,     /**< Low audio latency mode */
+	AUDIO_LATENCY_MODE_MID,         /**< Middle audio latency mode */
+	AUDIO_LATENCY_MODE_HIGH,        /**< High audio latency mode */
 } audio_latency_mode_e;
 
 /**
@@ -136,10 +135,10 @@ typedef enum {
  * @since_tizen 3.0
  */
 typedef enum {
-    PLAYER_STREAM_TYPE_DEFAULT,	/**< Container type */
-    PLAYER_STREAM_TYPE_AUDIO,	/**< Audio element stream type */
-    PLAYER_STREAM_TYPE_VIDEO,	/**< Video element stream type */
-    PLAYER_STREAM_TYPE_TEXT,	/**< Text type */
+	PLAYER_STREAM_TYPE_DEFAULT,	/**< Container type */
+	PLAYER_STREAM_TYPE_AUDIO,	/**< Audio element stream type */
+	PLAYER_STREAM_TYPE_VIDEO,	/**< Video element stream type */
+	PLAYER_STREAM_TYPE_TEXT,	/**< Text type */
 } player_stream_type_e;
 
 /**
@@ -147,8 +146,8 @@ typedef enum {
  * @since_tizen 3.0
  */
 typedef enum {
-    PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN,
-    PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW,
+	PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN,
+	PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW,
 } player_media_stream_buffer_status_e;
 
 /**
@@ -179,10 +178,10 @@ typedef void* player_display_h;
  * @since_tizen 2.3.1
  */
 typedef enum {
-    PLAYER_DISPLAY_ROTATION_NONE,   /**< Display is not rotated */
-    PLAYER_DISPLAY_ROTATION_90,     /**< Display is rotated 90 degrees */
-    PLAYER_DISPLAY_ROTATION_180,    /**< Display is rotated 180 degrees */
-    PLAYER_DISPLAY_ROTATION_270,    /**< Display is rotated 270 degrees */
+	PLAYER_DISPLAY_ROTATION_NONE,   /**< Display is not rotated */
+	PLAYER_DISPLAY_ROTATION_90,     /**< Display is rotated 90 degrees */
+	PLAYER_DISPLAY_ROTATION_180,    /**< Display is rotated 180 degrees */
+	PLAYER_DISPLAY_ROTATION_270,    /**< Display is rotated 270 degrees */
 } player_display_rotation_e;
 
 /**
@@ -190,11 +189,11 @@ typedef enum {
  * @since_tizen 2.3.1
  */
 typedef enum {
-    PLAYER_DISPLAY_MODE_LETTER_BOX = 0,     /**< Letter box */
-    PLAYER_DISPLAY_MODE_ORIGIN_SIZE,        /**< Origin size */
-    PLAYER_DISPLAY_MODE_FULL_SCREEN,        /**< Full-screen */
-    PLAYER_DISPLAY_MODE_CROPPED_FULL,       /**< Cropped full-screen */
-    PLAYER_DISPLAY_MODE_ORIGIN_OR_LETTER,   /**< Origin size (if surface size is larger than video size(width/height)) or Letter box (if video size(width/height) is larger than surface size) */
+	PLAYER_DISPLAY_MODE_LETTER_BOX = 0,     /**< Letter box */
+	PLAYER_DISPLAY_MODE_ORIGIN_SIZE,        /**< Origin size */
+	PLAYER_DISPLAY_MODE_FULL_SCREEN,        /**< Full-screen */
+	PLAYER_DISPLAY_MODE_CROPPED_FULL,       /**< Cropped full-screen */
+	PLAYER_DISPLAY_MODE_ORIGIN_OR_LETTER,   /**< Origin size (if surface size is larger than video size(width/height)) or Letter box (if video size(width/height) is larger than surface size) */
 	PLAYER_DISPLAY_MODE_DST_ROI,			/**< Dst ROI mode (Deprecated since [3.0]).*/
 } player_display_mode_e;
 
@@ -212,12 +211,12 @@ typedef enum {
  * @since_tizen 2.3.1
  */
 typedef enum {
-    PLAYER_CONTENT_INFO_ALBUM,      /**< Album */
-    PLAYER_CONTENT_INFO_ARTIST,     /**< Artist */
-    PLAYER_CONTENT_INFO_AUTHOR,     /**< Author */
-    PLAYER_CONTENT_INFO_GENRE,      /**< Genre */
-    PLAYER_CONTENT_INFO_TITLE,      /**< Title */
-    PLAYER_CONTENT_INFO_YEAR,       /**< Year */
+	PLAYER_CONTENT_INFO_ALBUM,      /**< Album */
+	PLAYER_CONTENT_INFO_ARTIST,     /**< Artist */
+	PLAYER_CONTENT_INFO_AUTHOR,     /**< Author */
+	PLAYER_CONTENT_INFO_GENRE,      /**< Genre */
+	PLAYER_CONTENT_INFO_TITLE,      /**< Title */
+	PLAYER_CONTENT_INFO_YEAR,       /**< Year */
 } player_content_info_e;
 
 /**
@@ -348,8 +347,8 @@ typedef void (*player_video_captured_cb)(unsigned char *data, int width, int hei
  * @since_tizen 2.3.1
  *
  * @remarks This function is issued in the context of gstreamer so the UI update code should not be directly invoked.\n
- * 		the packet should be released by media_packet_destroy() after use. \n
- *		Otherwises, decoder can't work more because it can't have enough buffer to fill decoded frame.
+ *          the packet should be released by media_packet_destroy() after use. \n
+ *          Otherwises, decoder can't work more because it can't have enough buffer to fill decoded frame.
  *
  * @param[in] pkt Reference pointer to the media packet
  * @param[in] user_data The user data passed from the callback registration function
@@ -384,7 +383,7 @@ typedef void (*player_media_stream_seek_cb) (unsigned long long offset, void *us
  * @param[in] width	The width of the captured image
  * @param[in] height The height of the captured image
  * @param[in] fps The frame per second of the video \n
-              It can be @c 0 if there is no video stream information.
+ *            It can be @c 0 if there is no video stream information.
  * @param[in] bit_rate The video bit rate [Hz] \n
  *            It can be an invalid value if there is no video stream information.
  * @param[in] user_data The user data passed from the callback registration function
@@ -940,7 +939,7 @@ int player_push_media_stream(player_h player, media_packet_h packet);
  * @remarks AAC can be supported.
  * @remarks H.264 can be supported.
  * @remarks This API should be called before calling the player_prepare() or player_prepare_async() \n
-            to reflect the media information when pipeline is created.
+ *          to reflect the media information when pipeline is created.
  * @param[in] player The handle to media player
  * @param[in] type   The type of target stream
  * @param[in] format The media format to set audio information
