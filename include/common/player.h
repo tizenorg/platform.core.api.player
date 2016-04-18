@@ -360,6 +360,7 @@ typedef void (*player_media_packet_video_decoded_cb)(media_packet_h pkt, void *u
  * @brief Called when the buffer level drops below the threshold of max size or no free space in buffer.
  * @since_tizen 2.4
  * @remarks This API is used for media stream playback only.
+ * @param[in] status The buffer status
  * @param[in] user_data The user data passed from the callback registration function
  * @see player_set_media_stream_buffer_status_cb()
  * @see player_set_media_stream_buffer_max_size()
