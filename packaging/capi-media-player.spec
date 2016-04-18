@@ -65,9 +65,13 @@ MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
 %cmake . -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
 %if "%{?profile}" == "wearable"
 	-DTIZEN_WEARABLE=YES \
-    %else
+%endif
+%if "%{?profile}" == "mobile"
     -DTIZEN_MOBILE=YES \
-    %endif
+%endif
+%if "%{?profile}" == "tv"
+    -DTIZEN_TV=YES \
+%endif
 %if %{with wayland}
     -DWAYLAND_SUPPORT=On \
 %else

@@ -17,6 +17,9 @@
 #ifndef __TIZEN_MEDIA_PLAYER_INTERNAL_H__
 #define	__TIZEN_MEDIA_PLAYER_INTERNAL_H__
 #include <player.h>
+#ifdef TIZEN_TV
+#include <glib.h>
+#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -43,6 +46,67 @@ typedef struct {
 	bool little_endian;  /**< Endianness */
 	unsigned long long channel_mask;	/**< channel_mask */
 } player_audio_raw_data_s;
+
+#ifdef TIZEN_TV
+/**
+ * @brief Information about packet.
+ * @since_tizen 3.0
+ */
+typedef struct {
+	guint32 len;
+	guint64 pts;
+	player_stream_type_e streamtype;
+} player_submit_packet_t;
+
+
+/**
+ * @brief Video stream info in external demux case
+ * @since_tizen 3.0
+ */
+typedef struct _video_stream_info_s {
+	const char *mime;
+	unsigned int framerate_num;
+	unsigned int framerate_den;
+	int format3D;
+	unsigned int width;
+	unsigned int height;
+	unsigned int pixelAspectRatioX;
+	unsigned int pixelAspectRatioY;
+	unsigned char *codec_extradata;
+	unsigned int extradata_size;
+	unsigned int version;
+	unsigned int colordepth;
+	unsigned int max_width;
+	unsigned int max_height;
+	unsigned int drm_type;
+	unsigned int buffer_type;
+} player_video_stream_info_s;
+
+/**
+ * @brief Audio stream info in external demux case
+ * @since_tizen 3.0
+ */
+typedef struct _audio_stream_info_s {
+	const char *mime;
+	unsigned int channels;
+	unsigned int sample_rate;
+	unsigned int bit_rate;
+	unsigned int block_align;
+	unsigned char *codec_extradata;
+	unsigned int extradata_size;
+	unsigned int version;
+	unsigned int user_info;
+
+	/* for pcm, eg. CODEC_ID_PCM_S16LE, width=16,depth=16,endianness=1234,signedness=true */
+	unsigned int width;
+	unsigned int depth;
+	unsigned int endianness;	/* LE:1234, BE:4321 */
+	bool signedness;			/* S:true, U:false */
+	unsigned int drm_type;
+	unsigned int buffer_type;
+} player_audio_stream_info_s;
+
+#endif
 
 /**
  * @brief Called when the audio frame is decoded.
@@ -155,10 +219,169 @@ int player_set_media_stream_buffer_status_cb_ex(player_h player, player_stream_t
  */
 int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream_type_e type);
 
+#ifdef TIZEN_TV
+/**
+ * @brief Called when no free space in buffer.
+ * @since_tizen 3.0
+ * @param[in] user_data    The user data passed from the callback registration function
+ * @see player_set_buffer_enough_video_data_cb()
+ * @see player_set_buffer_enough_audio_data_cb()
+ */
+typedef void (*player_buffer_enough_data_cb) (void *user_data);
+
+/**
+ * @brief Called when the buffer level drops below the threshold.
+ * @since_tizen 3.0
+ * @param[in] size         Required data size
+ * @param[in] user_data    The user data passed from the callback registration function
+ * @see player_set_buffer_need_video_data_cb()
+ * @see player_set_buffer_need_audio_data_cb()
+ */
+typedef void (*player_buffer_need_data_cb) (unsigned int size, void *user_data);
+
+/**
+ * @brief Called to notify the resource conflict
+ * @since_tizen 3.0
+ * @param[in] user_data    The user data passed from the callback registration function
+ * @see player_set_resourceconflict_cb()
+ */
+typedef void (*player_resourceconflict_cb)(void *user_data);
+
+/**
+ * @brief Submits packet to appsrc, used in external demux mode
+ * @since_tizen 3.0
+ * @param[in]  player   The handle to media player
+ * @param[in]  buf      the buf want to submit to appsrc, usually one buffer one frame
+ * @param[in]  len      the size of buf
+ * @param[in]  pts      pts of the submit buf(frame)
+ * @param[in]  streamtype   true for video, false for audio
+ * @return 0 on success, otherwise a negative error value.
+ */
+int player_submit_packet(player_h player, guint8 *buf, guint32 len, guint64 pts, player_stream_type_e streamtype);
+
+/**
+ * @brief Sets video stream info, escepically used in external demux mode
+ * @since_tizen 3.0
+ * @param[in]  player   The handle to media player
+ * @param[in]  info     the info of video stream set by external demux
+ * @return 0 on success, otherwise a negative error value.
+ */
+int player_set_video_stream_info(player_h player, player_video_stream_info_s *info);
+
+/**
+ * @brief Sets audio stream info, escepically used in external demux mode
+ * @since_tizen 3.0
+ * @param[in]  player   The handle to media player
+ * @param[in]  info     the info of audio stream set by external demux
+ * @return 0 on success, otherwise a negative error value.
+ */
+int player_set_audio_stream_info(player_h player, player_audio_stream_info_s *info);
+
+/**
+ * @brief Registers the callback function.
+ * @since_tizen 3.0
+ * @param[in] player The handle to media player
+ * @param[in] callback  The callback function to register
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ */
+int player_set_buffer_enough_video_data_cb(player_h player, player_buffer_enough_data_cb callback, void *user_data);
+
+/**
+ * @brief Registers the callback function.
+ * @since_tizen 3.0
+ * @param[in] player The handle to media player
+ * @param[in] callback  The callback function to register
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ */
+int player_set_buffer_enough_audio_data_cb(player_h player, player_buffer_enough_data_cb callback, void *user_data);
+
+/**
+ * @brief Registers the callback function.
+ * @since_tizen 3.0
+ * @param[in] player The handle to media player
+ * @param[in] callback  The callback function to register
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ */
+int player_set_buffer_need_video_data_cb(player_h player, player_buffer_need_data_cb callback, void *user_data);
+
+/**
+ * @brief Registers the callback function.
+ * @since_tizen 3.0
+ * @param[in] player The handle to media player
+ * @param[in] callback  The callback function to register
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return 0 on success, otherwise a negative error value.
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ */
+int player_set_buffer_need_audio_data_cb(player_h player, player_buffer_need_data_cb callback, void *user_data);
+
+/**
+ * @brief Registers a callback function to be invoked when the resource conflict is detected.
+ * @since_tizen 3.0
+ * @param[in] player	The handle to the media player
+ * @param[in] callback	The callback function to register
+ * @param[in] user_data	The user data to be passed to the callback function
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @post player_resourceconflict_cb() will be invoked.
+ * @see player_unset_resourceconflict_cb()
+ */
+int player_set_resourceconflict_cb (player_h player, player_resourceconflict_cb callback, void *user_data);
+
+/**
+ * @brief Unregisters the callback function.
+ * @since_tizen 3.0
+ * @param[in] player	The handle to the media player
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @see player_set_resourceconflict_cb()
+ */
+int player_unset_resourceconflict_cb (player_h player);
+
+/**
+ * @brief Display the first video frame at the player_prepare() function to improve the playback performance.
+ * @since_tizen 3.0
+ * @details This is only availble when you want to start playback from 0 position.
+ *	        1. Normal play : player_create() -> player_display_video_at_paused_state() -> player_prepare()[unmute] -> player_start()
+ *			2. Resume play : player_create() -> player_prepare() -> player_set_position() -> player_start()[unmute]
+ * @param[in] player    The handle to media player
+ * @param[in] visible   The visibility of the display (@c true = visible, @c false = non-visible )
+ * @pre The player state must be : #PLAYER_STATE_IDLE
+*/
+int player_display_video_at_paused_state(player_h player, bool visible);
+
+/**
+ * @brief Sets the win_ind to player
+ * @since_tizen 3.0
+ * @param[in] player    The handle to media player
+ * @param[in] win_id    windows handle
+ * @pre The player state must be : #PLAYER_STATE_IDLE
+ */
+int player_set_display_parent_win_id(player_h player, int win_id);
+
+#endif
+
 /**
  * @}
  */
-
 
 #ifdef __cplusplus
 }
