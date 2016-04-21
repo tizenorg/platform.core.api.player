@@ -1431,6 +1431,7 @@ static void change_surface(int option)
 #endif
 	case 2:
 		g_print("change surface type to NONE\n");
+		surface_type = g_current_surface_type = PLAYER_DISPLAY_TYPE_NONE;
 		player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_NONE, NULL);
 		break;
 	default:

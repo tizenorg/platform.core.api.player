@@ -395,24 +395,27 @@ static void __capture_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 	int width = 0;
 	int height = 0;
 	unsigned int size = 0;
-	tbm_bo bo;
+	tbm_bo bo = NULL;
 	tbm_bo_handle thandle;
-	tbm_key key;
+	tbm_key key = 0;
 
-	if (player_msg_get(width, recvMsg) && player_msg_get(height, recvMsg)
-		&& player_msg_get(size, recvMsg)) {
-		if (!player_msg_get(key, recvMsg))
-			goto capture_event_exit1;
+	if ((player_msg_get(width, recvMsg)) && (player_msg_get(height, recvMsg))
+		&& (player_msg_get(size, recvMsg))) {
+
+		if (!player_msg_get(key, recvMsg)) {
+			LOGE("There is no tbm_key value. %d", key);
+			goto EXIT;
+		}
 
 		bo = tbm_bo_import(cb_info->bufmgr, key);
 		if (bo == NULL) {
 			LOGE("TBM get error : bo is NULL");
-			goto capture_event_exit1;
+			goto EXIT;
 		}
 		thandle = tbm_bo_map(bo, TBM_DEVICE_CPU, TBM_OPTION_WRITE | TBM_OPTION_READ);
 		if (thandle.ptr == NULL) {
 			LOGE("TBM get error : handle pointer is NULL");
-			goto capture_event_exit2;
+			goto EXIT;
 		}
 		data = g_new(unsigned char, size);
 		if (data) {
@@ -422,14 +425,19 @@ static void __capture_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 		} else
 			LOGE("g_new failure");
 
-		/* mark to read */
-		*((char *)thandle.ptr + size) = 0;
-
 		tbm_bo_unmap(bo);
- capture_event_exit2:
-		tbm_bo_unref(bo);
 	}
- capture_event_exit1:
+
+EXIT:
+	if (bo)
+		tbm_bo_unref(bo);
+
+	/* return buffer */
+	if (key != 0) {
+		LOGD("send msg to release buffer. key:%d", key);
+		player_msg_send1_no_return(MUSE_PLAYER_API_RETURN_BUFFER, cb_info->fd, INT, key);
+	}
+
 	set_null_user_cb(cb_info, MUSE_PLAYER_EVENT_TYPE_CAPTURE);
 }
 
@@ -538,9 +546,9 @@ static void __audio_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg
 {
 	unsigned char *data = NULL;
 	unsigned int size = 0;
-	tbm_bo bo;
+	tbm_bo bo = NULL;
 	tbm_bo_handle thandle;
-	tbm_key key;
+	tbm_key key = 0;
 	player_audio_raw_data_s audio;
 	void *audio_frame = &audio;
 
@@ -551,14 +559,15 @@ static void __audio_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg
 		bo = tbm_bo_import(cb_info->bufmgr, key);
 		if (bo == NULL) {
 			LOGE("TBM get error : bo is NULL");
-			return;
+			goto EXIT;
 		}
+
 		thandle = tbm_bo_map(bo, TBM_DEVICE_CPU, TBM_OPTION_WRITE | TBM_OPTION_READ);
 		if (thandle.ptr == NULL) {
 			LOGE("TBM get error : handle pointer is NULL");
-			tbm_bo_unref(bo);
-			return;
+			goto EXIT;
 		}
+
 		data = g_new(unsigned char, size);
 		if (data) {
 			memcpy(data, thandle.ptr, size);
@@ -570,12 +579,17 @@ static void __audio_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg
 		} else
 			LOGE("g_new failure");
 
-		/* mark to read */
-		*((char *)thandle.ptr + size) = 0;
-		LOGD("Fin");
-
 		tbm_bo_unmap(bo);
+	}
+
+EXIT:
+	if (bo)
 		tbm_bo_unref(bo);
+
+	/* return buffer */
+	if (key != 0) {
+		LOGD("send msg to release buffer. key:%d", key);
+		player_msg_send1_no_return(MUSE_PLAYER_API_RETURN_BUFFER, cb_info->fd, INT, key);
 	}
 }
 
@@ -1085,26 +1099,26 @@ int player_create(player_h * player)
 	if (sock_fd < 0) {
 		LOGE("connection failure %d", errno);
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-		goto ErrorExit;
+		goto ERROR;
 	}
 	player_msg_create_handle(api, sock_fd, INT, module, INT, pid);
 
 	pc = g_new0(player_cli_s, 1);
 	if (pc == NULL) {
 		ret = PLAYER_ERROR_OUT_OF_MEMORY;
-		goto ErrorExit;
+		goto ERROR;
 	}
 
 	pc->cb_info = callback_new(sock_fd);
 	if (!pc->cb_info) {
 		LOGE("fail to create callback");
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-		goto ErrorExit;
+		goto ERROR;
 	}
 	if (!_player_event_queue_new(pc->cb_info)) {
 		LOGE("fail to create event queue");
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-		goto ErrorExit;
+		goto ERROR;
 	}
 
 	ret = client_wait_for_cb_return(api, pc->cb_info, &ret_buf, CALLBACK_TIME_OUT);
@@ -1118,14 +1132,14 @@ int player_create(player_h * player)
 		}
 		SERVER_TIMEOUT(pc) = MAX_SERVER_TIME_OUT;	/* will be update after prepare phase. */
 	} else
-		goto ErrorExit;
+		goto ERROR;
 
 	pc->cb_info->bufmgr = tbm_bufmgr_init(-1);
 
 	g_free(ret_buf);
 	return ret;
 
- ErrorExit:
+ ERROR:
 	if (pc && pc->cb_info) {
 		if (pc->cb_info->event_queue.running)
 			_player_event_queue_destroy(pc->cb_info);
@@ -1234,6 +1248,9 @@ int player_unprepare(player_h player)
 	if (!CALLBACK_INFO(pc))
 		return PLAYER_ERROR_INVALID_STATE;
 
+	if (mm_evas_renderer_destroy(&INT_HANDLE(pc)) != MM_ERROR_NONE)
+		LOGW("fail to unset evas client");
+
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
 		set_null_user_cb_lock(pc->cb_info, MUSE_PLAYER_EVENT_TYPE_SEEK);
@@ -1241,9 +1258,6 @@ int player_unprepare(player_h player)
 		_del_mem(pc);
 		_player_deinit_memory_buffer(pc);
 	}
-
-	if (mm_evas_renderer_destroy(&INT_HANDLE(pc)) != MM_ERROR_NONE)
-		LOGW("fail to unset evas client");
 
 	g_free(ret_buf);
 	return ret;
@@ -1292,7 +1306,7 @@ int player_set_memory_buffer(player_h player, const void *data, int size)
 	if (thandle.ptr == NULL) {
 		LOGE("TBM get error : handle pointer is NULL");
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-		goto set_memory_exit;
+		goto EXIT;
 	}
 	memcpy(thandle.ptr, data, size);
 	tbm_bo_unmap(bo);
@@ -1301,12 +1315,12 @@ int player_set_memory_buffer(player_h player, const void *data, int size)
 	if (key == 0) {
 		LOGE("TBM get error : key is 0");
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-		goto set_memory_exit;
+		goto EXIT;
 	}
 
 	player_msg_send2(api, pc, ret_buf, ret, INT, key, INT, size);
 
- set_memory_exit:
+ EXIT:
 	tbm_bo_unref(bo);
 
 	if (ret == PLAYER_ERROR_NONE) {
@@ -1330,6 +1344,7 @@ static int _player_deinit_memory_buffer(player_cli_s * pc)
 		return ret;
 
 	player_msg_send1_async(api, pc, POINTER, bo_addr);
+
 	SERVER_TBM_BO(pc) = 0;
 
 	return ret;
@@ -2121,9 +2136,9 @@ int player_get_album_art(player_h player, void **palbum_art, int *psize)
 	char *ret_buf = NULL;
 	char *album_art;
 	int size = 0;
-	tbm_bo bo;
+	tbm_bo bo = NULL;
 	tbm_bo_handle thandle;
-	tbm_key key;
+	tbm_key key = 0;
 
 	LOGD("ENTER");
 
@@ -2134,21 +2149,20 @@ int player_get_album_art(player_h player, void **palbum_art, int *psize)
 		if (size > 0) {
 			if (!player_msg_get(key, ret_buf)) {
 				ret = PLAYER_ERROR_INVALID_OPERATION;
-				goto exit;
+				goto EXIT;
 			}
 
 			bo = tbm_bo_import(pc->cb_info->bufmgr, key);
 			if (bo == NULL) {
 				LOGE("TBM get error : bo is NULL");
 				ret = PLAYER_ERROR_INVALID_OPERATION;
-				goto exit;
+				goto EXIT;
 			}
 			thandle = tbm_bo_map(bo, TBM_DEVICE_CPU, TBM_OPTION_WRITE | TBM_OPTION_READ);
 			if (thandle.ptr == NULL) {
 				LOGE("TBM get error : handle pointer is NULL");
-				tbm_bo_unref(bo);
 				ret = PLAYER_ERROR_INVALID_OPERATION;
-				goto exit;
+				goto EXIT;
 			}
 			album_art = _get_mem(pc, size);
 			if (album_art) {
@@ -2158,20 +2172,27 @@ int player_get_album_art(player_h player, void **palbum_art, int *psize)
 				LOGE("g_new failure");
 				ret = PLAYER_ERROR_INVALID_OPERATION;
 			}
-
-			/* mark to read */
-			*((char *)thandle.ptr + size) = 0;
-
 			tbm_bo_unmap(bo);
-			tbm_bo_unref(bo);
-		} else
+		} else {
 			*palbum_art = NULL;
+		}
 
 		*psize = size;
 	}
- exit:
 
-	g_free(ret_buf);
+EXIT:
+	if (ret_buf)
+		g_free(ret_buf);
+
+	if (bo)
+		tbm_bo_unref(bo);
+
+	/* return buffer */
+	if (key != 0) {
+		LOGD("send msg to release buffer. key:%d", key);
+		player_msg_send1_async(MUSE_PLAYER_API_RETURN_BUFFER, pc, INT, key);
+	}
+
 	return ret;
 }
 
@@ -2874,7 +2895,7 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 		if (thandle.ptr == NULL) {
 			LOGE("TBM get error : handle pointer is NULL");
 			ret = PLAYER_ERROR_INVALID_OPERATION;
-			goto push_media_error;
+			goto ERROR;
 		}
 		memcpy(thandle.ptr, buf, push_media.size);
 		tbm_bo_unmap(bo);
@@ -2883,7 +2904,7 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 		if (push_media.key == 0) {
 			LOGE("TBM get error : key is 0");
 			ret = PLAYER_ERROR_INVALID_OPERATION;
-			goto push_media_error;
+			goto ERROR;
 		}
 
 		player_msg_send_array(api, pc, ret_buf, ret, push_media_msg, msg_size, sizeof(char));
@@ -2901,7 +2922,7 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 	LOGD("ret_buf %s", ret_buf);
 
 #ifdef __UN_USED
- push_media_error:
+ ERROR:
 	if (push_media.buf_type == PUSH_MEDIA_BUF_TYPE_TBM)
 		tbm_bo_unref(bo);
 #endif
