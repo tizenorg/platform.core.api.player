@@ -64,22 +64,27 @@ static int _player_deinit_memory_buffer(player_cli_s * pc);
 
 int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user_data)
 {
-	int ret = 0;
+	int ret = MEDIA_PACKET_FINALIZE;
 	tbm_surface_h tsurf = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_MEDIA_PACKET_FINALIZE_CB;
 	_media_pkt_fin_data *fin_data = (_media_pkt_fin_data *) user_data;
 	intptr_t packet;
-	char *sndMsg;
 
-	if (pkt == NULL || user_data == NULL) {
+	if (!pkt || !fin_data || !fin_data->cb_info) {
 		LOGE("invalid parameter buffer %p, user_data %p", pkt, user_data);
-		return MEDIA_PACKET_FINALIZE;
+		return ret;
+	}
+
+	if (fin_data->cb_info->packet_list) {
+		g_mutex_lock(&fin_data->cb_info->packet_list_mutex);
+		fin_data->cb_info->packet_list = g_list_remove(fin_data->cb_info->packet_list, pkt);
+		g_mutex_unlock(&fin_data->cb_info->packet_list_mutex);
 	}
 
 	ret = media_packet_get_tbm_surface(pkt, &tsurf);
 	if (ret != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_get_tbm_surface failed 0x%x", ret);
-		return MEDIA_PACKET_FINALIZE;
+		return ret;
 	}
 
 	if (tsurf) {
@@ -88,13 +93,36 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user
 	}
 
 	packet = fin_data->remote_pkt;
-	sndMsg = muse_core_msg_json_factory_new(api, MUSE_TYPE_POINTER, "packet", packet, 0);
-	muse_core_ipc_send_msg(fin_data->cb_info->fd, sndMsg);
-	muse_core_msg_json_factory_free(sndMsg);
+	player_msg_send1_no_return(api, fin_data->cb_info->fd, POINTER, packet);
 
 	g_free(fin_data);
+	fin_data = NULL;
 
-	return MEDIA_PACKET_FINALIZE;
+	return ret;
+}
+
+static int _player_remove_packet_list(player_cli_s * pc)
+{
+	int ret = PLAYER_ERROR_NONE;
+
+	if (!pc || !pc->cb_info) {
+		LOGE("invalid parameter");
+		return PLAYER_ERROR_INVALID_PARAMETER;
+	}
+
+	if (pc->cb_info->packet_list) {
+		GList *packet = NULL, *next_packet = NULL;
+		LOGW("number of remained packet %d", g_list_length(pc->cb_info->packet_list));
+		packet = g_list_first(pc->cb_info->packet_list);
+		while (packet) {
+			next_packet = g_list_next(packet);
+			LOGW("packet(%p) will be destroyed", packet->data);
+			media_packet_destroy((media_packet_h)packet->data); /* packet is removed from list */
+			packet = next_packet;
+		}
+	}
+
+	return ret;
 }
 
 static int __player_convert_error_code(int code, char *func_name)
@@ -478,6 +506,18 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 
 	LOGD("width %d, height %d", sinfo.width, sinfo.height);
 
+	if (!cb_info) {
+		LOGE("cb_info is null");
+		return;
+	}
+
+	if (!cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) {
+		/* send msg to release packet. */
+		LOGE("_video_decoded_cb is not set");
+		player_msg_send1_no_return(MUSE_PLAYER_API_MEDIA_PACKET_FINALIZE_CB, cb_info->fd, POINTER, packet);
+		return;
+	}
+
 	for (i = 0; i < 4; i++) {
 		if (key[i]) {
 			bo_num++;
@@ -526,16 +566,28 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 			tbm_surface_destroy(tsurf);
 			tsurf = NULL;
 		}
+
+		/* keep the media packet to avoid mem leak. */
+		g_mutex_lock(&cb_info->packet_list_mutex);
+		cb_info->packet_list = g_list_append(cb_info->packet_list, pkt);
+		g_mutex_unlock(&cb_info->packet_list_mutex);
 	}
+
 	if (pkt) {
 		if (pts != 0) {
 			ret = media_packet_set_pts(pkt, (uint64_t) pts);
 			if (ret != MEDIA_PACKET_ERROR_NONE)
 				LOGE("media_packet_set_pts failed");
 		}
-		/* call media packet callback */
-		((player_media_packet_video_decoded_cb) cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) (pkt, cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]);
+		if (cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) {
+			/* call media packet callback */
+			((player_media_packet_video_decoded_cb) cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) (pkt, cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]);
+		} else {
+			LOGE("_video_decoded_cb is not set");
+			media_packet_destroy(pkt);
+		}
 	}
+
 	for (i = 0; i < bo_num; i++) {
 		if (bo[i])
 			tbm_bo_unref(bo[i]);
@@ -984,6 +1036,8 @@ static callback_cb_info_s *callback_new(gint sockfd)
 	for (i = 0; i < MUSE_PLAYER_API_MAX; i++)
 		g_cond_init(&cb_info->player_cond[i]);
 
+	g_mutex_init(&cb_info->packet_list_mutex);
+
 	buff = &cb_info->buff;
 	buff->recvMsg = g_new(char, MUSE_MSG_MAX_LENGTH + 1);
 	buff->bufLen = MUSE_MSG_MAX_LENGTH + 1;
@@ -1013,6 +1067,8 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	g_mutex_clear(&cb_info->player_mutex);
 	for (i = 0; i < MUSE_PLAYER_API_MAX; i++)
 		g_cond_clear(&cb_info->player_cond[i]);
+
+	g_mutex_clear(&cb_info->packet_list_mutex);
 
 	g_free(cb_info->buff.recvMsg);
 	g_free(cb_info);
@@ -1163,6 +1219,8 @@ int player_destroy(player_h player)
 
 	LOGD("ENTER");
 
+	_player_remove_packet_list(pc);
+
 	player_msg_send(api, pc, ret_buf, ret);
 
 	if (player_unset_evas_object_cb(player) != MM_ERROR_NONE)
@@ -1248,8 +1306,11 @@ int player_unprepare(player_h player)
 	if (!CALLBACK_INFO(pc))
 		return PLAYER_ERROR_INVALID_STATE;
 
-	if (mm_evas_renderer_destroy(&INT_HANDLE(pc)) != MM_ERROR_NONE)
+	if (mm_evas_renderer_destroy(&EVAS_HANDLE(pc)) != MM_ERROR_NONE) {
 		LOGW("fail to unset evas client");
+	}
+
+	_player_remove_packet_list(pc);
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
@@ -1518,8 +1579,8 @@ int player_start(player_h player)
 
 	LOGD("ENTER");
 
-	if (INT_HANDLE(pc)) {
-		ret = mm_evas_renderer_update_param(INT_HANDLE(pc));
+	if (EVAS_HANDLE(pc)) {
+		ret = mm_evas_renderer_update_param(EVAS_HANDLE(pc));
 		if (ret != PLAYER_ERROR_NONE)
 			return ret;
 	}
@@ -1795,15 +1856,15 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y,
 					&wl_win.wl_window_width, &wl_win.wl_window_height);
 
-				if (INT_HANDLE(pc)) {
+				if (EVAS_HANDLE(pc)) {
 					LOGW("evas client already exists");
-					if (mm_evas_renderer_destroy(&INT_HANDLE(pc)) != MM_ERROR_NONE)
+					if (mm_evas_renderer_destroy(&EVAS_HANDLE(pc)) != MM_ERROR_NONE)
 						LOGW("fail to unset evas client");
 				}
-				if (mm_evas_renderer_create(&INT_HANDLE(pc), obj) != MM_ERROR_NONE) {
+				if (mm_evas_renderer_create(&EVAS_HANDLE(pc), obj) != MM_ERROR_NONE) {
 					LOGW("fail to set evas client");
 				}
-				if (player_set_media_packet_video_frame_decoded_cb(player, mm_evas_renderer_write, (void *)INT_HANDLE(pc)) != PLAYER_ERROR_NONE) {
+				if (player_set_media_packet_video_frame_decoded_cb(player, mm_evas_renderer_write, (void *)EVAS_HANDLE(pc)) != PLAYER_ERROR_NONE) {
 					LOGW("fail to set decoded callback");
 				}
 			}
@@ -1841,7 +1902,7 @@ int player_set_display_mode(player_h player, player_display_mode_e mode)
 
 	LOGD("ENTER");
 
-	ret = mm_evas_renderer_set_geometry(INT_HANDLE(pc), mode);
+	ret = mm_evas_renderer_set_geometry(EVAS_HANDLE(pc), mode);
 	/* FIXME : devide server and client and consider which error code will be returned */
 	if (ret == PLAYER_ERROR_NONE) {
 		return ret;
@@ -1864,7 +1925,7 @@ int player_get_display_mode(player_h player, player_display_mode_e * pmode)
 
 	LOGD("ENTER");
 
-	ret = mm_evas_renderer_get_geometry(INT_HANDLE(pc), &mode);
+	ret = mm_evas_renderer_get_geometry(EVAS_HANDLE(pc), &mode);
 	if (ret == PLAYER_ERROR_NONE && mode != -1) {
 		*pmode = (player_display_mode_e) mode;
 		return ret;
@@ -1906,7 +1967,7 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
 
 	LOGD("ENTER");
 
-	ret = mm_evas_renderer_set_rotation(INT_HANDLE(pc), rotation);
+	ret = mm_evas_renderer_set_rotation(EVAS_HANDLE(pc), rotation);
 	if (ret == PLAYER_ERROR_NONE) {
 		return ret;
 	}
@@ -1928,7 +1989,7 @@ int player_get_display_rotation(player_h player, player_display_rotation_e * pro
 
 	LOGD("ENTER");
 
-	ret = mm_evas_renderer_get_rotation(INT_HANDLE(pc), &rotation);
+	ret = mm_evas_renderer_get_rotation(EVAS_HANDLE(pc), &rotation);
 	if (ret == PLAYER_ERROR_NONE && rotation != -1) {
 		*protation = (player_display_rotation_e) rotation;
 		return ret;
@@ -1954,7 +2015,7 @@ int player_set_display_visible(player_h player, bool visible)
 
 	LOGD("ENTER");
 
-	ret = mm_evas_renderer_set_visible(INT_HANDLE(pc), visible);
+	ret = mm_evas_renderer_set_visible(EVAS_HANDLE(pc), visible);
 	if (ret == PLAYER_ERROR_NONE) {
 		return ret;
 	}
@@ -1977,7 +2038,7 @@ int player_is_display_visible(player_h player, bool * pvisible)
 
 	LOGD("ENTER");
 
-	ret = mm_evas_renderer_get_visible(INT_HANDLE(pc), &visible);
+	ret = mm_evas_renderer_get_visible(EVAS_HANDLE(pc), &visible);
 	if (ret == PLAYER_ERROR_NONE) {
 		if (visible)
 			*pvisible = TRUE;
