@@ -882,11 +882,13 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
  * @brief Registers a media packet video callback function to be called once per frame.
  * @since_tizen 2.3
  * @remarks This function should be called before preparing. \n
- *	      A registered callback is called on the internal thread of the player. \n
+ *          A registered callback is called on the internal thread of the player. \n
  *          A video frame can be retrieved using a registered callback as a media packet.\n
  *          The callback function holds the same buffer that will be drawn on the display device.\n
  *          So if you change the media packet in a registerd callback, it will be displayed on the device\n
  *          and the media packet is available until it's destroyed by media_packet_destroy().
+ *          The packet have to be destroyed as quickly as possible after rendering the packet \n
+ *          and all the packets have to be destoryed before player_unprepare() is called. \n
  * @param[in] player The handle to the media player
  * @param[in] callback The callback function to be registered
  * @param[in] user_data The user data to be passed to the callback function
