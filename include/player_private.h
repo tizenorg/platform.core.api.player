@@ -84,10 +84,12 @@ typedef struct _callback_cb_info {
 	gpointer user_data[MUSE_PLAYER_EVENT_TYPE_NUM];
 	GMutex player_mutex;
 	GCond player_cond[MUSE_PLAYER_API_MAX];
+	GList *packet_list;
+	GMutex packet_list_mutex;
 	msg_buff_s buff;
 	player_event_queue event_queue;
 	media_format_h pkt_fmt;
-	MMHandleType local_handle;
+	void *evas_info;
 	tbm_bufmgr bufmgr;
 } callback_cb_info_s;
 
@@ -105,10 +107,7 @@ typedef struct _player_cli_s {
 	gboolean have_evas_callback;
 } player_cli_s;
 
-/* Internal handle */
-#define INT_HANDLE(h)		((h)->cb_info->local_handle)
-
-/* player callback infomatnio */
+/* player callback infomation */
 #define CALLBACK_INFO(h)	((h)->cb_info)
 /* MSG Channel socket fd */
 #define MSG_FD(h)			(CALLBACK_INFO(h)->fd)
@@ -116,6 +115,8 @@ typedef struct _player_cli_s {
 #define DATA_FD(h)			(CALLBACK_INFO(h)->data_fd)
 /* TBM buffer manager */
 #define TBM_BUFMGR(h)		(CALLBACK_INFO(h)->bufmgr)
+/* evas display handle */
+#define EVAS_HANDLE(h)		((h)->cb_info->evas_info)
 
 /* server tbm bo */
 #define SERVER_TBM_BO(h)	((h)->server.bo)
