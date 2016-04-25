@@ -254,3 +254,75 @@ int player_unset_evas_object_cb(player_h player)
 
 	return MM_ERROR_NONE;
 }
+
+#ifdef HAVE_WAYLAND
+int player_set_ecore_wl_display(player_h player, player_display_type_e type, Ecore_Wl_Window *ecore_wl_window, int x, int y, int  width, int height)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_DISPLAY;
+	player_cli_s *pc = (player_cli_s *) player;
+	char *ret_buf = NULL;
+	wl_win_msg_type wl_win;
+	char *wl_win_msg = (char *)&wl_win;
+	unsigned int wl_surface_id;
+	struct wl_surface *wl_surface;
+	struct wl_display *wl_display;
+	Ecore_Wl_Window *wl_window = NULL;
+
+	LOGD("ENTER");
+	if (type !=PLAYER_DISPLAY_TYPE_OVERLAY) {
+		LOGE("Display type(%d) is not overlay", type);
+		return PLAYER_ERROR_INVALID_PARAMETER;
+	}
+	if (!ecore_wl_window)
+		return PLAYER_ERROR_INVALID_PARAMETER;
+
+	LOGI("Wayland overlay surface type");
+	LOGD("Ecore Wayland Window handle(%p), size (%d, %d, %d, %d)", ecore_wl_window, x, y, width, height);
+	wl_window = ecore_wl_window;
+
+	/* set wl_win */
+	wl_win.type = type;
+	wl_win.wl_window_x = x;
+	wl_win.wl_window_y = y;
+	wl_win.wl_window_width = width;
+	wl_win.wl_window_height = height;
+
+	wl_surface = (struct wl_surface *)ecore_wl_window_surface_get(wl_window);
+	/* get wl_display */
+	wl_display = (struct wl_display *)ecore_wl_display_get();
+
+	if (!pc->wlclient) {
+		ret = _wlclient_create(&pc->wlclient);
+		if (ret != MM_ERROR_NONE) {
+			LOGE("Wayland client create failure");
+			return ret;
+		}
+	}
+
+	if (wl_surface && wl_display) {
+		LOGD("surface = %p, wl_display = %p", wl_surface, wl_display);
+		wl_surface_id = _wlclient_get_wl_window_wl_surface_id(pc->wlclient, wl_surface, wl_display);
+		LOGD("wl_surface_id = %d", wl_surface_id);
+		wl_win.wl_surface_id = wl_surface_id;
+		LOGD("wl_win.wl_surface_id = %d", wl_win.wl_surface_id);
+	} else {
+		LOGE("Fail to get wl_surface or wl_display");
+		return PLAYER_ERROR_INVALID_OPERATION;
+	}
+
+	if (pc->wlclient) {
+		g_free(pc->wlclient);
+		pc->wlclient = NULL;
+	}
+
+	player_msg_send_array(api, pc, ret_buf, ret, wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
+
+	g_free(ret_buf);
+
+	return ret;
+}
+
+#endif
+
