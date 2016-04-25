@@ -1029,12 +1029,12 @@ int client_get_api_timeout(player_cli_s * pc, muse_player_api_e api)
 	case MUSE_PLAYER_API_START:
 	case MUSE_PLAYER_API_STOP:
 	case MUSE_PLAYER_API_PAUSE:
-		timeout += SERVER_TIMEOUT(pc);
+		timeout += SERVER_TIMEOUT(pc) * G_TIME_SPAN_MILLISECOND;
 		break;
 	default:
 		/* check prepare async is done */
 		if (pc && CALLBACK_INFO(pc) && CALLBACK_INFO(pc)->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE])
-			timeout += SERVER_TIMEOUT(pc);
+			timeout += SERVER_TIMEOUT(pc) * G_TIME_SPAN_MILLISECOND;
 		break;
 	}
 	timeout += CALLBACK_TIME_OUT;
@@ -1044,7 +1044,7 @@ int client_get_api_timeout(player_cli_s * pc, muse_player_api_e api)
 int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s * cb_info, char **ret_buf, int time_out)
 {
 	int ret = PLAYER_ERROR_NONE;
-	gint64 end_time = g_get_monotonic_time() + time_out * G_TIME_SPAN_SECOND;
+	gint64 end_time = g_get_monotonic_time() + time_out * G_TIME_SPAN_MILLISECOND;
 	msg_buff_s *buff = &cb_info->buff;
 	ret_msg_s *msg = NULL;
 
@@ -1053,7 +1053,7 @@ int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s * cb_inf
 	msg = _get_ret_msg(api, cb_info);
 	if (!buff->recved || !msg) {
 		if (!g_cond_wait_until(&cb_info->player_cond[api], &cb_info->player_mutex, end_time)) {
-			LOGW("api %d return msg does not received %ds", api, time_out);
+			LOGW("api %d return msg does not received %dms", api, time_out);
 			g_mutex_unlock(&cb_info->player_mutex);
 			return PLAYER_ERROR_INVALID_OPERATION;
 		}
