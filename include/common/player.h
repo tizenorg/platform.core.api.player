@@ -861,7 +861,6 @@ int player_is_looping(player_h player, bool *looping);
  * @brief Sets the video display.
  * @since_tizen 2.3
  * @remarks To get @a display to set, use #GET_DISPLAY().
- * @remarks To use the multiple surface display mode, use player_set_display() again with a different display type.
  * @remarks We are not supporting changing display between different types. \n
  *          If you want to change display handle after calling player_prepare(), you must use the same display type as what you set before.
  * @param[in]   player The handle to the media player
