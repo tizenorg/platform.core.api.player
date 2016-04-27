@@ -1248,9 +1248,11 @@ int player_unprepare(player_h player)
 	if (!CALLBACK_INFO(pc))
 		return PLAYER_ERROR_INVALID_STATE;
 
-	if (mm_evas_renderer_destroy(&INT_HANDLE(pc)) != MM_ERROR_NONE)
-		LOGW("fail to unset evas client");
-
+	if (INT_HANDLE(pc)) {
+		player_unset_media_packet_video_frame_decoded_cb(player);
+		if (mm_evas_renderer_destroy(&INT_HANDLE(pc)) != MM_ERROR_NONE)
+			LOGW("fail to unset evas client");
+	}
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
 		set_null_user_cb_lock(pc->cb_info, MUSE_PLAYER_EVENT_TYPE_SEEK);
