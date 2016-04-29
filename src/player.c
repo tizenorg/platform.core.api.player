@@ -1852,6 +1852,9 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 					LOGD("wl_surface_id = %d", wl_surface_id);
 					wl_win.wl_surface_id = wl_surface_id;
 					LOGD("wl_win.wl_surface_id = %d", wl_win.wl_surface_id);
+				} else {
+					LOGE("Fail to get wl_surface or wl_display");
+					return PLAYER_ERROR_INVALID_OPERATION;
 				}
 				if (pc->wlclient) {
 					g_free(pc->wlclient);
