@@ -24,6 +24,7 @@
 #include <dlog.h>
 #include <Evas.h>
 #include <Ecore_Evas.h>
+#include <Ecore_Wayland.h>
 #include <muse_player.h>
 #include <muse_player_msg.h>
 #include "player_private.h"
