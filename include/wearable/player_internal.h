@@ -17,6 +17,9 @@
 #ifndef __TIZEN_MEDIA_PLAYER_INTERNAL_H__
 #define	__TIZEN_MEDIA_PLAYER_INTERNAL_H__
 #include <player.h>
+#ifdef HAVE_WAYLAND
+#include <Ecore_Wayland.h>
+#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -154,6 +157,32 @@ int player_set_media_stream_buffer_status_cb_ex(player_h player, player_stream_t
  * @see player_set_media_stream_buffer_status_cb()
  */
 int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream_type_e type);
+
+#ifdef HAVE_WAYLAND
+/**
+ * @brief Sets the ecore wayland video display.
+ * @since_tizen 3.0
+ * @remarks This API support PLAYER_DISPLAY_TYPE_OVERLAY type only.
+ * @param[in]   player The handle to the media player
+ * @param[in]   type The display type
+ * @param[in]   ecore_wl_window The ecore wayland window handle
+ * @param[in]   x the x coordinate of window
+ * @param[in]   y the y coordinate of window
+ * @param[in]   width the width of window
+ * @param[in]   height the height of window
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_set_display_rotation
+ */
+int player_set_ecore_wl_display(player_h player, player_display_type_e type, Ecore_Wl_Window *ecore_wl_window, int x, int y, int  width, int height);
+
+#endif
+
 
 /**
  * @}
