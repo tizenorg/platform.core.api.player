@@ -40,8 +40,9 @@
 #include <sound_manager_internal.h>
 #include "player_internal.h"
 #include "player_private.h"
+#ifdef TIZEN_MOBILE
 #include <mm_evas_renderer.h>
-
+#endif
 #define INVALID_SOCKET -1
 
 typedef struct {
@@ -1240,13 +1241,13 @@ int player_destroy(player_h player)
 		pc->cb_info->packet_list = NULL;
 		g_mutex_unlock(&pc->cb_info->packet_list_mutex);
 	}
-
+#ifdef TIZEN_MOBILE
 	if (EVAS_HANDLE(pc)) {
 		player_unset_media_packet_video_frame_decoded_cb(player);
 		if (mm_evas_renderer_destroy(&EVAS_HANDLE(pc)) != MM_ERROR_NONE)
 			LOGW("fail to unset evas client");
 	}
-
+#endif
 	if (player_unset_evas_object_cb(player) != MM_ERROR_NONE)
 		LOGW("fail to unset evas object callback");
 
@@ -1329,12 +1330,13 @@ int player_unprepare(player_h player)
 
 	if (!CALLBACK_INFO(pc))
 		return PLAYER_ERROR_INVALID_STATE;
-
+#ifdef TIZEN_MOBILE
 	if (EVAS_HANDLE(pc)) {
 		player_unset_media_packet_video_frame_decoded_cb(player);
 		if (mm_evas_renderer_destroy(&EVAS_HANDLE(pc)) != MM_ERROR_NONE)
 			LOGW("fail to unset evas client");
 	}
+#endif
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
 		set_null_user_cb_lock(pc->cb_info, MUSE_PLAYER_EVENT_TYPE_SEEK);
@@ -1601,13 +1603,13 @@ int player_start(player_h player)
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-
+#ifdef TIZEN_MOBILE
 	if (EVAS_HANDLE(pc)) {
 		ret = mm_evas_renderer_update_param(EVAS_HANDLE(pc));
 		if (ret != PLAYER_ERROR_NONE)
 			return ret;
 	}
-
+#endif
 	player_msg_send(api, pc, ret_buf, ret);
 
 	g_free(ret_buf);
@@ -1927,13 +1929,12 @@ int player_set_display_mode(player_h player, player_display_mode_e mode)
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-
-	ret = mm_evas_renderer_set_geometry(EVAS_HANDLE(pc), mode);
-	/* FIXME : devide server and client and consider which error code will be returned */
-	if (ret == PLAYER_ERROR_NONE) {
+#ifdef TIZEN_MOBILE
+	if (EVAS_HANDLE(pc)) {
+		ret = mm_evas_renderer_set_geometry(EVAS_HANDLE(pc), mode);
 		return ret;
 	}
-
+#endif
 	player_msg_send1(api, pc, ret_buf, ret, INT, mode);
 	g_free(ret_buf);
 	return ret;
@@ -1950,13 +1951,13 @@ int player_get_display_mode(player_h player, player_display_mode_e * pmode)
 	int mode = -1;
 
 	LOGD("ENTER");
-
-	ret = mm_evas_renderer_get_geometry(EVAS_HANDLE(pc), &mode);
-	if (ret == PLAYER_ERROR_NONE && mode != -1) {
+#ifdef TIZEN_MOBILE
+	if (EVAS_HANDLE(pc)) {
+		ret = mm_evas_renderer_get_geometry(EVAS_HANDLE(pc), &mode);
 		*pmode = (player_display_mode_e) mode;
 		return ret;
 	}
-
+#endif
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
 		player_msg_get_type(mode, ret_buf, INT);
@@ -1992,12 +1993,12 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-
-	ret = mm_evas_renderer_set_rotation(EVAS_HANDLE(pc), rotation);
-	if (ret == PLAYER_ERROR_NONE) {
+#ifdef TIZEN_MOBILE
+	if (EVAS_HANDLE(pc)) {
+		ret = mm_evas_renderer_set_rotation(EVAS_HANDLE(pc), rotation);
 		return ret;
 	}
-
+#endif
 	player_msg_send1(api, pc, ret_buf, ret, INT, rotation);
 	g_free(ret_buf);
 	return ret;
@@ -2014,13 +2015,13 @@ int player_get_display_rotation(player_h player, player_display_rotation_e * pro
 	int rotation = -1;
 
 	LOGD("ENTER");
-
-	ret = mm_evas_renderer_get_rotation(EVAS_HANDLE(pc), &rotation);
-	if (ret == PLAYER_ERROR_NONE && rotation != -1) {
+#ifdef TIZEN_MOBILE
+	if (EVAS_HANDLE(pc)) {
+		ret = mm_evas_renderer_get_rotation(EVAS_HANDLE(pc), &rotation);
 		*protation = (player_display_rotation_e) rotation;
 		return ret;
 	}
-
+#endif
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
 		player_msg_get_type(rotation, ret_buf, INT);
@@ -2040,12 +2041,12 @@ int player_set_display_visible(player_h player, bool visible)
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-
-	ret = mm_evas_renderer_set_visible(EVAS_HANDLE(pc), visible);
-	if (ret == PLAYER_ERROR_NONE) {
+#ifdef TIZEN_MOBILE
+	if (EVAS_HANDLE(pc)) {
+		ret = mm_evas_renderer_set_visible(EVAS_HANDLE(pc), visible);
 		return ret;
 	}
-
+#endif
 	player_msg_send1(api, pc, ret_buf, ret, INT, visible);
 	g_free(ret_buf);
 	return ret;
@@ -2060,19 +2061,20 @@ int player_is_display_visible(player_h player, bool * pvisible)
 	muse_player_api_e api = MUSE_PLAYER_API_IS_DISPLAY_VISIBLE;
 	char *ret_buf = NULL;
 	int value = -1;
+#ifdef TIZEN_MOBILE
 	bool visible = 0;
-
+#endif
 	LOGD("ENTER");
-
-	ret = mm_evas_renderer_get_visible(EVAS_HANDLE(pc), &visible);
-	if (ret == PLAYER_ERROR_NONE) {
+#ifdef TIZEN_MOBILE
+	if (EVAS_HANDLE(pc)) {
+		ret = mm_evas_renderer_get_visible(EVAS_HANDLE(pc), &visible);
 		if (visible)
 			*pvisible = TRUE;
 		else
 			*pvisible = FALSE;
 		return ret;
 	}
-
+#endif
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
 		player_msg_get_type(value, ret_buf, INT);
