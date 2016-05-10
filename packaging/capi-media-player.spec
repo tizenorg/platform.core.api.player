@@ -32,7 +32,9 @@ BuildRequires:  pkgconfig(mmsvc-player)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(libtbm)
 BuildRequires:  pkgconfig(eom)
+%if "%{?profile}" == "mobile"
 BuildRequires:  pkgconfig(mm-evas-renderer)
+%endif
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig

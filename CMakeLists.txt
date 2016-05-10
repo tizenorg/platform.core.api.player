@@ -16,8 +16,11 @@ ENDIF (TIZEN_WEARABLE)
 SET(INC_COM_DIR include)
 
 INCLUDE_DIRECTORIES(${INC_DIR}, ${INC_COM_DIR})
-
+IF (TIZEN_MOBILE)
 SET(dependents "dlog glib-2.0 libtbm capi-media-tool capi-media-sound-manager capi-base-common mused mm-common tizen-extension-client evas ecore elementary mm-evas-renderer")
+ELSE (TIZEN_MOBILE)
+SET(dependents "dlog glib-2.0 libtbm capi-media-tool capi-media-sound-manager capi-base-common mused mm-common tizen-extension-client evas ecore elementary")
+ENDIF (TIZEN_MOBILE)
 SET(pc_dependents "libtbm capi-media-tool capi-base-common capi-media-sound-manager")
 
 INCLUDE(FindPkgConfig)
