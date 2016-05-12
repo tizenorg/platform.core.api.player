@@ -45,8 +45,8 @@ extern "C" {
 #define PLAYER_NULL_ARG_CHECK(arg)      \
 		PLAYER_CHECK_CONDITION(arg != NULL, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER")
 
-#define CALLBACK_TIME_OUT 5000
-#define MAX_SERVER_TIME_OUT 35000
+#define CALLBACK_TIME_OUT (5*1000) /* ms */
+#define MAX_SERVER_TIME_OUT 35     /* sec */
 
 typedef struct _ret_msg_s {
 	gint api;
@@ -95,7 +95,7 @@ typedef struct _callback_cb_info {
 
 typedef struct {
 	intptr_t bo;
-	gint timeout;
+	gint timeout; /* sec */
 } server_info_s;
 
 typedef struct _player_cli_s {
@@ -120,7 +120,7 @@ typedef struct _player_cli_s {
 
 /* server tbm bo */
 #define SERVER_TBM_BO(h)	((h)->server.bo)
-/* server state change timeout */
+/* server state change timeout (sec) */
 #define SERVER_TIMEOUT(h)		((h)->server.timeout)
 
 int player_set_evas_object_cb(player_h player, Evas_Object * eo);

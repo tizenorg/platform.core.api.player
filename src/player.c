@@ -1106,7 +1106,7 @@ int client_get_api_timeout(player_cli_s * pc, muse_player_api_e api)
 		break;
 	}
 	timeout += CALLBACK_TIME_OUT;
-	return timeout;
+	return timeout;	/* ms */
 }
 
 int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s * cb_info, char **ret_buf, int time_out)
