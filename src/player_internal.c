@@ -30,6 +30,7 @@
 #include <muse_player.h>
 #include <muse_player_msg.h>
 #include "player_private.h"
+#include "player_msg_private.h"
 #include "player_internal.h"
 
 int player_set_pcm_extraction_mode(player_h player, bool sync, player_audio_pcm_extraction_cb callback, void *user_data)
