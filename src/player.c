@@ -40,6 +40,7 @@
 #include <sound_manager_internal.h>
 #include "player_internal.h"
 #include "player_private.h"
+#include "player_msg_private.h"
 #ifdef TIZEN_MOBILE
 #include <mm_evas_renderer.h>
 #endif
