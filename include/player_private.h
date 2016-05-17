@@ -86,6 +86,8 @@ typedef struct _callback_cb_info {
 	GCond player_cond[MUSE_PLAYER_API_MAX];
 	GList *packet_list;
 	GMutex packet_list_mutex;
+	gboolean block_seek_cb;
+	GMutex seek_cb_mutex;
 	msg_buff_s buff;
 	player_event_queue event_queue;
 	media_format_h pkt_fmt;
@@ -105,6 +107,7 @@ typedef struct _player_cli_s {
 	wl_client *wlclient;
 	Evas_Object *eo;
 	gboolean have_evas_callback;
+	gboolean push_media_stream;
 } player_cli_s;
 
 /* player callback information */

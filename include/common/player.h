@@ -748,6 +748,9 @@ int player_pause(player_h player);
 /**
  * @brief Sets the seek position for playback, asynchronously.
  * @since_tizen 2.3
+ * @remarks If you want to play the external data, by calling player_set_media_stream_info() and it's family APIs,
+ *          you can call this API again before player_seek_completed_cb() is called. (since_tizen 3.0)
+ *          In other playback cases, this api will return PLAYER_ERROR_SEEK_FAILED.
  * @param[in] player The handle to the media player
  * @param[in] millisecond The position in milliseconds from the start to the seek point
  * @param[in] accurate If @c true the selected position is returned, but this might be considerably slow,
