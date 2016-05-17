@@ -485,8 +485,7 @@ static void __seek_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 		LOGD("call seek cb");
 		((player_seek_completed_cb) cb_info->user_cb[ev]) (cb_info->user_data[ev]);
 		set_null_user_cb(cb_info, ev);
-	}
-	else {
+	} else {
 		LOGW("ignored. seek cb %p, block %d", cb_info->user_cb[ev], cb_info->block_seek_cb);
 	}
 	g_mutex_unlock(&cb_info->seek_cb_mutex);
@@ -903,23 +902,23 @@ static void _player_event_queue_destroy(callback_cb_info_s * cb_info)
 
 }
 
-static void _player_event_queue_remove (player_event_queue * ev_queue, int ev)
+static void _player_event_queue_remove(player_event_queue * ev_queue, int ev)
 {
 	GList *item;
 
 	g_mutex_lock(&ev_queue->qlock);
 
-	item = g_queue_peek_head_link (ev_queue->queue);
+	item = g_queue_peek_head_link(ev_queue->queue);
 	while (item) {
 		GList *next = item->next;
 		_player_cb_data *cb_data = (_player_cb_data *)item->data;
 
 		if (cb_data && cb_data->int_data == ev) {
-			LOGD ("removing '%p (ev:%d)' from event queue", cb_data, cb_data->int_data);
+			LOGD("removing '%p (ev:%d)' from event queue", cb_data, cb_data->int_data);
 			g_free(cb_data->buf);
 			g_free(cb_data);
 
-			g_queue_delete_link (ev_queue->queue, item);
+			g_queue_delete_link(ev_queue->queue, item);
 		}
 		item = next;
 	}
