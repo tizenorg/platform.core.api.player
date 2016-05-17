@@ -258,6 +258,21 @@ int player_unset_evas_object_cb(player_h player)
 	return MM_ERROR_NONE;
 }
 
+int player_set_media_stream_dynamic_resolution(player_h player, bool drc)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_MEDIA_STREAM_DYNAMIC_RESOLUTION;
+	player_cli_s *pc = (player_cli_s *) player;
+	char *ret_buf = NULL;
+
+	LOGD("ENTER");
+
+	player_msg_send1(api, pc, ret_buf, ret, INT, drc);
+	g_free(ret_buf);
+	return ret;
+}
+
 #ifdef HAVE_WAYLAND
 int player_set_ecore_wl_display(player_h player, player_display_type_e type, Ecore_Wl_Window *ecore_wl_window, int x, int y, int  width, int height)
 {
@@ -274,7 +289,7 @@ int player_set_ecore_wl_display(player_h player, player_display_type_e type, Eco
 	Ecore_Wl_Window *wl_window = NULL;
 
 	LOGD("ENTER");
-	if (type !=PLAYER_DISPLAY_TYPE_OVERLAY) {
+	if (type != PLAYER_DISPLAY_TYPE_OVERLAY) {
 		LOGE("Display type(%d) is not overlay", type);
 		return PLAYER_ERROR_INVALID_PARAMETER;
 	}
