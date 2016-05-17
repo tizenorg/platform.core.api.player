@@ -746,6 +746,8 @@ int player_pause(player_h player);
 /**
  * @brief Sets the seek position for playback, asynchronously.
  * @since_tizen 2.3.1
+ * @remarks You must not call this API again before the player_seek_completed_cb() is called except media stream case.
+ *          In case of media stream, you can call this APi multipletimes regardless of the result. (since_tizen 3.0)
  * @param[in] player The handle to the media player
  * @param[in] millisecond The position in milliseconds from the start to the seek point
  * @param[in] accurate If @c true the selected position is returned, but this might be considerably slow,
