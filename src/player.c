@@ -480,9 +480,16 @@ static void __seek_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
 	muse_player_event_e ev = MUSE_PLAYER_EVENT_TYPE_SEEK;
 
-	((player_seek_completed_cb) cb_info->user_cb[ev]) (cb_info->user_data[ev]);
-
-	set_null_user_cb(cb_info, ev);
+	g_mutex_lock(&cb_info->seek_cb_mutex);
+	if (cb_info->user_cb[ev] && cb_info->block_seek_cb == FALSE) {
+		LOGD("call seek cb");
+		((player_seek_completed_cb) cb_info->user_cb[ev]) (cb_info->user_data[ev]);
+		set_null_user_cb(cb_info, ev);
+	}
+	else {
+		LOGW("ignored. seek cb %p, block %d", cb_info->user_cb[ev], cb_info->block_seek_cb);
+	}
+	g_mutex_unlock(&cb_info->seek_cb_mutex);
 }
 
 static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
@@ -613,12 +620,14 @@ static void __audio_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg
 	void *audio_frame = &audio;
 
 	if (player_msg_get_array(audio_frame, recvMsg) && player_msg_get(size, recvMsg)) {
-		if (!player_msg_get(key, recvMsg))
+		if (!player_msg_get(key, recvMsg)) {
+			LOGE("failed to get key from msg");
 			return;
+		}
 
 		bo = tbm_bo_import(cb_info->bufmgr, key);
 		if (bo == NULL) {
-			LOGE("TBM get error : bo is NULL");
+			LOGE("TBM get error : bo is NULL, key:%d", key);
 			goto EXIT;
 		}
 
@@ -894,6 +903,29 @@ static void _player_event_queue_destroy(callback_cb_info_s * cb_info)
 
 }
 
+static void _player_event_queue_remove (player_event_queue * ev_queue, int ev)
+{
+	GList *item;
+
+	g_mutex_lock(&ev_queue->qlock);
+
+	item = g_queue_peek_head_link (ev_queue->queue);
+	while (item) {
+		GList *next = item->next;
+		_player_cb_data *cb_data = (_player_cb_data *)item->data;
+
+		if (cb_data && cb_data->int_data == ev) {
+			LOGD ("removing '%p (ev:%d)' from event queue", cb_data, cb_data->int_data);
+			g_free(cb_data->buf);
+			g_free(cb_data);
+
+			g_queue_delete_link (ev_queue->queue, item);
+		}
+		item = next;
+	}
+	g_mutex_unlock(&ev_queue->qlock);
+}
+
 static void _player_event_queue_add(player_event_queue * ev, _player_cb_data * data)
 {
 	if (ev->running) {
@@ -1045,6 +1077,7 @@ static callback_cb_info_s *callback_new(gint sockfd)
 		g_cond_init(&cb_info->player_cond[i]);
 
 	g_mutex_init(&cb_info->packet_list_mutex);
+	g_mutex_init(&cb_info->seek_cb_mutex);
 
 	buff = &cb_info->buff;
 	buff->recvMsg = g_new(char, MUSE_MSG_MAX_LENGTH + 1);
@@ -1081,6 +1114,7 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 		g_cond_clear(&cb_info->player_cond[i]);
 
 	g_mutex_clear(&cb_info->packet_list_mutex);
+	g_mutex_clear(&cb_info->seek_cb_mutex);
 
 	g_free(cb_info->buff.recvMsg);
 	g_free(cb_info);
@@ -1203,6 +1237,7 @@ int player_create(player_h * player)
 		goto ERROR;
 
 	pc->cb_info->bufmgr = tbm_bufmgr_init(-1);
+	pc->push_media_stream = FALSE;
 
 	g_free(ret_buf);
 	return ret;
@@ -1361,6 +1396,7 @@ int player_set_uri(player_h player, const char *uri)
 	LOGD("ENTER");
 
 	player_msg_send1(api, pc, ret_buf, ret, STRING, uri);
+	pc->push_media_stream = FALSE;
 
 	g_free(ret_buf);
 	return ret;
@@ -1405,6 +1441,7 @@ int player_set_memory_buffer(player_h player, const void *data, int size)
 	}
 
 	player_msg_send2(api, pc, ret_buf, ret, INT, key, INT, size);
+	pc->push_media_stream = FALSE;
 
  EXIT:
 	tbm_bo_unref(bo);
@@ -1662,23 +1699,36 @@ int player_set_play_position(player_h player, int millisecond, bool accurate, pl
 
 	LOGD("ENTER");
 
-	if (pc->cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK]) {
+	if ((pc->push_media_stream == FALSE) &&
+		(pc->cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK])) {
 		LOGE("PLAYER_ERROR_SEEK_FAILED (0x%08x) : seeking...", PLAYER_ERROR_SEEK_FAILED);
 		return PLAYER_ERROR_SEEK_FAILED;
 	} else {
+		g_mutex_lock(&pc->cb_info->seek_cb_mutex);
+		if (pc->push_media_stream == TRUE) {
+			pc->cb_info->block_seek_cb = TRUE;
+		}
 		LOGI("Event type : %d, pos : %d ", MUSE_PLAYER_EVENT_TYPE_SEEK, millisecond);
 		pc->cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] = callback;
 		pc->cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK] = user_data;
+		g_mutex_unlock(&pc->cb_info->seek_cb_mutex);
 	}
 
 	player_msg_send2(api, pc, ret_buf, ret, INT, pos, INT, accurate);
 
-	if (ret != PLAYER_ERROR_NONE)
+	if (ret != PLAYER_ERROR_NONE) {
+		g_mutex_lock(&pc->cb_info->seek_cb_mutex);
 		set_null_user_cb(pc->cb_info, MUSE_PLAYER_EVENT_TYPE_SEEK);
+		g_mutex_unlock(&pc->cb_info->seek_cb_mutex);
+	}
 
+	if (pc->push_media_stream == TRUE) {
+		_player_event_queue_remove(&pc->cb_info->event_queue, MUSE_PLAYER_EVENT_TYPE_SEEK);
+	}
+
+	pc->cb_info->block_seek_cb = FALSE;
 	g_free(ret_buf);
 	return ret;
-
 }
 
 int player_get_play_position(player_h player, int *millisecond)
@@ -3050,6 +3100,7 @@ int player_set_media_stream_info(player_h player, player_stream_type_e type, med
 		player_msg_send6(api, pc, ret_buf, ret, INT, type, INT, mimetype, INT, channel, INT, samplerate, INT, avg_bps, INT, bit);
 	}
 	media_format_unref(format);
+	pc->push_media_stream = TRUE;
 
 	g_free(ret_buf);
 	return ret;

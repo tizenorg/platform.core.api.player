@@ -746,6 +746,12 @@ int player_pause(player_h player);
 /**
  * @brief Sets the seek position for playback, asynchronously.
  * @since_tizen 2.3.1
+ * @remarks This api will trigger the seeking operation on player instance.
+ *          Normally application need to wait for player_seek_completed_cb() before calling it again.
+ *          Otherwise it will return PLAYER_ERROR_SEEK_FAILED.
+ *          Please note that if application is playing external media data via player_set_media_stream_info(),
+ *          then consecutive calling of this api will always success and no need to wait for player_seek_completed_cb()
+ *          before next calling of this api.(since_tizen 3.0)
  * @param[in] player The handle to the media player
  * @param[in] millisecond The position in milliseconds from the start to the seek point
  * @param[in] accurate If @c true the selected position is returned, but this might be considerably slow,
