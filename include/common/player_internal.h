@@ -222,6 +222,47 @@ int player_set_media_stream_buffer_status_cb_ex(player_h player, player_stream_t
  */
 int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream_type_e type);
 
+/**
+ * @brief Sets DRC(dynamic resolution change) information of media stream data.
+ * @since_tizen 3.0
+ * @remarks This API is used for media stream playback only.
+ *          If the hw codec can not support drc, app have to set DRC information before calling player_prepare().
+ * @param[in] player The handle to the media player
+ * @param[in] drc The drc status: (@c true = drc, @c false = non drc)
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling player_create() or player_unprepare().
+ */
+int player_set_media_stream_dynamic_resolution(player_h player, bool drc);
+
+#ifdef HAVE_WAYLAND
+/**
+ * @brief Sets the ecore wayland video display.
+ * @since_tizen 3.0
+ * @remarks This API support PLAYER_DISPLAY_TYPE_OVERLAY type only.
+ * @param[in]   player The handle to the media player
+ * @param[in]   type The display type
+ * @param[in]   ecore_wl_window The ecore wayland window handle
+ * @param[in]   x the x coordinate of window
+ * @param[in]   y the y coordinate of window
+ * @param[in]   width the width of window
+ * @param[in]   height the height of window
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_set_display_rotation
+ */
+int player_set_ecore_wl_display(player_h player, player_display_type_e type, Ecore_Wl_Window *ecore_wl_window, int x, int y, int  width, int height);
+
+#endif
+
 #ifdef TIZEN_TV
 /**
  * @brief Called when no free space in buffer.
@@ -379,31 +420,6 @@ int player_display_video_at_paused_state(player_h player, bool visible);
  * @pre The player state must be : #PLAYER_STATE_IDLE
  */
 int player_set_display_parent_win_id(player_h player, int win_id);
-
-#endif
-
-#ifdef HAVE_WAYLAND
-/**
- * @brief Sets the ecore wayland video display.
- * @since_tizen 3.0
- * @remarks This API support PLAYER_DISPLAY_TYPE_OVERLAY type only.
- * @param[in]   player The handle to the media player
- * @param[in]   type The display type
- * @param[in]   ecore_wl_window The ecore wayland window handle
- * @param[in]   x the x coordinate of window
- * @param[in]   y the y coordinate of window
- * @param[in]   width the width of window
- * @param[in]   height the height of window
- * @return @c 0 on success,
- *         otherwise a negative error value
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
- * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
- * @see player_set_display_rotation
- */
-int player_set_ecore_wl_display(player_h player, player_display_type_e type, Ecore_Wl_Window *ecore_wl_window, int x, int y, int  width, int height);
 
 #endif
 
