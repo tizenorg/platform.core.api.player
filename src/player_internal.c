@@ -342,6 +342,80 @@ int player_set_ecore_wl_display(player_h player, player_display_type_e type, Eco
 
 	return ret;
 }
-
 #endif
 
+#ifndef TIZEN_TV
+int player_set_next_uri(player_h player, const char *uri)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(uri);
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_NEXT_URI;
+	player_cli_s *pc = (player_cli_s *) player;
+	char *ret_buf = NULL;
+
+	LOGD("ENTER");
+
+	player_msg_send1(api, pc, ret_buf, ret, STRING, uri);
+
+	g_free(ret_buf);
+	return ret;
+}
+
+int player_get_next_uri (player_h player, char **uri)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(uri);
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_NEXT_URI;
+	player_cli_s *pc = (player_cli_s *) player;
+	char *ret_buf = NULL;
+	char next_uri[MUSE_MSG_MAX_LENGTH] = { 0, };
+
+	LOGD("ENTER");
+
+	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_get_string(next_uri, ret_buf);
+		*uri = strndup(next_uri, MUSE_MSG_MAX_LENGTH);
+	}
+	g_free(ret_buf);
+	return ret;
+}
+
+int player_set_gapless(player_h player, bool gapless)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_GAPLESS;
+	player_cli_s *pc = (player_cli_s *) player;
+	char *ret_buf = NULL;
+
+	LOGD("ENTER");
+
+	player_msg_send1(api, pc, ret_buf, ret, INT, gapless);
+	g_free(ret_buf);
+	return ret;
+}
+
+int player_is_gapless(player_h player, bool *gapless)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(gapless);
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_IS_GAPLESS;
+	player_cli_s *pc = (player_cli_s *) player;
+	char *ret_buf = NULL;
+	int value = 0;
+
+	LOGD("ENTER");
+
+	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_get(value, ret_buf);
+		*gapless = value;
+	}
+	g_free(ret_buf);
+	return ret;
+}
+#endif
