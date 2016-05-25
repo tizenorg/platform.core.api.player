@@ -92,6 +92,7 @@ enum {
 	CURRENT_STATUS_PLAYBACK_RATE,
 	CURRENT_STATUS_STREAMING_PLAYBACK_RATE,
 	CURRENT_STATUS_SWITCH_SUBTITLE,
+	CURRENT_STATUS_NEXT_URI,
 };
 
 #define MAX_HANDLE 20
@@ -1182,6 +1183,26 @@ static void _player_get_progressive_download_status()
 	g_print("player_get_progressive_download_status return[%d]           ==> [Player_Test] progressive download status : %lu/%lu\n", bRet, curr, total);
 }
 
+static void set_next_uri(char * uri)
+{
+	if (player_set_next_uri(g_player[0], uri) != PLAYER_ERROR_NONE)
+		g_print("fail to set next uri");
+}
+
+static void get_next_uri()
+{
+	char *uri;
+	if (player_get_next_uri(g_player[0], &uri) != PLAYER_ERROR_NONE) {
+		g_print("fail to get next uri");
+		return;
+	}
+
+	if (uri != NULL) {
+		g_print("next_uri = %s", uri);
+		free(uri);
+	}
+}
+
 static void set_volume(float volume)
 {
 	if (player_set_volume(g_player[0], volume, volume) != PLAYER_ERROR_NONE)
@@ -1871,6 +1892,10 @@ void _interpret_main_menu(char *cmd)
 			audio_frame_decoded_cb_ex();
 		} else if (strncmp(cmd, "X4", 2) == 0) {
 			set_pcm_spec();
+		} else if (strncmp(cmd, "su", 2) == 0) {
+			g_menu_state = CURRENT_STATUS_NEXT_URI;
+		} else if (strncmp(cmd, "gu", 2) == 0) {
+			get_next_uri();
 		} else {
 			g_print("unknown menu \n");
 		}
@@ -1931,6 +1956,8 @@ void display_sub_basic()
 	g_print("[subtitle] A. Set(or change) subtitle path\n");
 	g_print("[subtitle] ss. Select(or change) subtitle track\n");
 	g_print("[Video Capture] C. Capture \n");
+	g_print("[next uri] su. set next uri. \t");
+	g_print("gu. get next uri. \t");
 	g_print("[etc] sp. Set Progressive Download\t");
 	g_print("gp. Get Progressive Download status\n");
 	g_print("mp. memory playback\n");
@@ -1993,6 +2020,8 @@ static void displaymenu()
 			g_print(" *** input correct index 0 to %d\n:", (count - 1));
 		} else
 			g_print("no track\n");
+	} else if (g_menu_state == CURRENT_STATUS_NEXT_URI) {
+		g_print("*** input next uri.\n");
 	} else {
 		g_print("*** unknown status.\n");
 		quit_program();
@@ -2219,7 +2248,14 @@ static void interpret(char *cmd)
 			reset_menu_state();
 		}
 		break;
+	case CURRENT_STATUS_NEXT_URI:
+		{
+			set_next_uri(cmd);
+			reset_menu_state();
+		}
+		break;
 	}
+
 	g_timeout_add(100, timeout_menu_display, 0);
 }
 
