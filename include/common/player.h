@@ -421,7 +421,7 @@ int player_create(player_h *player);
  * @retval #PLAYER_ERROR_NONE Successful
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
- * @pre  The player state must be set to #PLAYER_STATE_IDLE.
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  * @post The player state will be #PLAYER_STATE_NONE.
  * @see player_create()
  */
