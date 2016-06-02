@@ -64,7 +64,7 @@ static media_format_h g_video_fmt = NULL;
 
 static int _save(unsigned char *src, int length);
 
-#define DUMP_OUTBUF         1
+#define DUMP_OUTBUF         0
 #if DUMP_OUTBUF
 FILE *fp_out1 = NULL;
 FILE *fp_out2 = NULL;
@@ -92,6 +92,7 @@ enum {
 	CURRENT_STATUS_PLAYBACK_RATE,
 	CURRENT_STATUS_STREAMING_PLAYBACK_RATE,
 	CURRENT_STATUS_SWITCH_SUBTITLE,
+	CURRENT_STATUS_NEXT_URI,
 };
 
 #define MAX_HANDLE 20
@@ -507,7 +508,7 @@ static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s * audio_raw_frame
 
 	g_print("[Player_Test] decoded_cb_ex! channel: %d channel_mask: %llu\n", audio_raw->channel, audio_raw->channel_mask);
 
-#ifdef DUMP_OUTBUF
+#if DUMP_OUTBUF
 	if (audio_raw->channel_mask == 1 && fp_out1)
 		fwrite((guint8 *) audio_raw->data, 1, audio_raw->size, fp_out1);
 	else if (audio_raw->channel_mask == 2 && fp_out2)
@@ -1180,6 +1181,35 @@ static void _player_get_progressive_download_status()
 	unsigned long curr, total;
 	bRet = player_get_progressive_download_status(g_player[0], &curr, &total);
 	g_print("player_get_progressive_download_status return[%d]           ==> [Player_Test] progressive download status : %lu/%lu\n", bRet, curr, total);
+}
+
+static void set_next_uri(char * uri)
+{
+#ifndef TIZEN_TV
+	player_set_gapless(g_player[0], TRUE);
+	if (player_set_next_uri(g_player[0], uri) != PLAYER_ERROR_NONE)
+		g_print("fail to set next uri");
+#else
+	g_print("not support at TV profile");
+#endif
+}
+
+static void get_next_uri()
+{
+#ifndef TIZEN_TV
+	char *uri;
+	if (player_get_next_uri(g_player[0], &uri) != PLAYER_ERROR_NONE) {
+		g_print("fail to get next uri");
+		return;
+	}
+
+	if (uri != NULL) {
+		g_print("next_uri = %s", uri);
+		free(uri);
+	}
+#else
+	g_print("not support at TV profile");
+#endif
 }
 
 static void set_volume(float volume)
@@ -1871,6 +1901,10 @@ void _interpret_main_menu(char *cmd)
 			audio_frame_decoded_cb_ex();
 		} else if (strncmp(cmd, "X4", 2) == 0) {
 			set_pcm_spec();
+		} else if (strncmp(cmd, "su", 2) == 0) {
+			g_menu_state = CURRENT_STATUS_NEXT_URI;
+		} else if (strncmp(cmd, "gu", 2) == 0) {
+			get_next_uri();
 		} else {
 			g_print("unknown menu \n");
 		}
@@ -1931,6 +1965,8 @@ void display_sub_basic()
 	g_print("[subtitle] A. Set(or change) subtitle path\n");
 	g_print("[subtitle] ss. Select(or change) subtitle track\n");
 	g_print("[Video Capture] C. Capture \n");
+	g_print("[next uri] su. set next uri. \t");
+	g_print("gu. get next uri. \t");
 	g_print("[etc] sp. Set Progressive Download\t");
 	g_print("gp. Get Progressive Download status\n");
 	g_print("mp. memory playback\n");
@@ -1993,6 +2029,8 @@ static void displaymenu()
 			g_print(" *** input correct index 0 to %d\n:", (count - 1));
 		} else
 			g_print("no track\n");
+	} else if (g_menu_state == CURRENT_STATUS_NEXT_URI) {
+		g_print("*** input next uri.\n");
 	} else {
 		g_print("*** unknown status.\n");
 		quit_program();
@@ -2219,7 +2257,14 @@ static void interpret(char *cmd)
 			reset_menu_state();
 		}
 		break;
+	case CURRENT_STATUS_NEXT_URI:
+		{
+			set_next_uri(cmd);
+			reset_menu_state();
+		}
+		break;
 	}
+
 	g_timeout_add(100, timeout_menu_display, 0);
 }
 
