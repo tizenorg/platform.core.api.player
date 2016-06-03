@@ -607,6 +607,59 @@ extern "C" {
 		} \
 	}while(0)
 
+/**
+ * @brief Get value from Message.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] buf string of message buffer. has key and value
+ * @param[out] param# the name of param is key, must be local variable. never be pointer.
+ * @param[in] type#The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE)
+ * @param[out] arr_param the name of param is key, must be local variable. never be pointer.
+ * @param[out] ret result of get value
 
+ */
+#define player_msg_get2_array(buf, param1, type1, param2, type2, arr_param, ret) \
+	do { \
+		void *__jobj__ = muse_core_msg_json_object_new(buf, NULL, NULL); \
+		if (!muse_core_msg_json_object_get_value(#param1, __jobj__, &param1, MUSE_TYPE_##type1)) { \
+			LOGE("failed to get value(%s)", #param1); \
+			ret=FALSE; \
+		} \
+		if (ret && !muse_core_msg_json_object_get_value(#param2, __jobj__, &param2, MUSE_TYPE_##type2)) { \
+			LOGE("failed to get %s value", #param2); \
+			ret=FALSE; \
+		} \
+		if (ret && !muse_core_msg_json_object_get_value(#arr_param, __jobj__, arr_param, MUSE_TYPE_ANY)) { \
+			LOGE("failed to get %s value", #arr_param); \
+			ret=FALSE; \
+		} \
+		muse_core_msg_json_object_free(__jobj__); \
+	} while(0)
+
+/**
+ * @brief Get value from Message.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] buf string of message buffer. has key and value
+ * @param[out] str_param# the name of param is key, must be local pointer variable.
+ * @param[out] ret result of get value
+ */
+#define player_msg_get_string2(buf, str_param1, str_param2, ret) \
+	do { \
+		muse_core_msg_parse_err_e __err__ = MUSE_MSG_PARSE_ERROR_NONE; \
+		void *__jobj__ = muse_core_msg_json_object_new(buf, NULL, &__err__); \
+		if (!__jobj__) { \
+			LOGE("failed to get msg object. err:%d", __err__); \
+			ret = FALSE; \
+		} else { \
+			if (!muse_core_msg_json_object_get_value(#str_param1, __jobj__, str_param1, MUSE_TYPE_STRING)) { \
+				LOGE("failed to get %s value", #str_param1); \
+				ret = FALSE; \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#str_param2, __jobj__, str_param2, MUSE_TYPE_STRING)) { \
+				LOGE("failed to get %s value", #str_param2); \
+				ret = FALSE; \
+			} \
+			muse_core_msg_json_object_free(__jobj__); \
+		} \
+	} while(0)
 
 #endif /* __TIZEN_MEDIA_PLAYER_MSG_PRIVATE_H__ */

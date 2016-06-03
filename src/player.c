@@ -418,9 +418,10 @@ static void __subtitle_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 	int duration = 0;
 	char text[MUSE_URI_MAX_LENGTH] = { 0, };
 	muse_player_event_e ev = MUSE_PLAYER_EVENT_TYPE_SUBTITLE;
+	bool ret = TRUE;
 
-	if (player_msg_get(duration, recvMsg)
-		&& player_msg_get_string(text, recvMsg)) {
+	player_msg_get1_string(recvMsg, duration, INT, text, ret);
+	if (ret) {
 		((player_subtitle_updated_cb) cb_info->user_cb[ev]) (duration, text, cb_info->user_data[ev]);
 	}
 }
@@ -434,10 +435,10 @@ static void __capture_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 	tbm_bo bo = NULL;
 	tbm_bo_handle thandle;
 	tbm_key key = 0;
+	bool ret_val = TRUE;
 
-	if ((player_msg_get(width, recvMsg)) && (player_msg_get(height, recvMsg))
-		&& (player_msg_get(size, recvMsg))) {
-
+	player_msg_get3(recvMsg, width, INT, height, INT, size, INT, ret_val);
+	if (ret_val) {
 		if (!player_msg_get(key, recvMsg)) {
 			LOGE("There is no tbm_key value. %d", key);
 			goto EXIT;
@@ -507,16 +508,26 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 	_media_pkt_fin_data *fin_data;
 	intptr_t packet;
 	uint64_t pts = 0;
-	int i;
+	int i = 0;
+	muse_core_msg_parse_err_e err = MUSE_MSG_PARSE_ERROR_NONE;
 
-	player_msg_get(key[0], recvMsg);
-	player_msg_get(key[1], recvMsg);
-	player_msg_get(key[2], recvMsg);
-	player_msg_get(key[3], recvMsg);
-	player_msg_get_type(packet, recvMsg, POINTER);
-	player_msg_get(mimetype, recvMsg);
-	player_msg_get_type(pts, recvMsg, INT64);
-	player_msg_get_array(surface_info, recvMsg);
+	void *jobj = muse_core_msg_json_object_new(recvMsg, NULL, &err);
+	if (!jobj ||
+		!muse_core_msg_json_object_get_value("key[0]", jobj, &key[0], MUSE_TYPE_ANY) ||
+		!muse_core_msg_json_object_get_value("key[1]", jobj, &key[1], MUSE_TYPE_ANY) ||
+		!muse_core_msg_json_object_get_value("key[2]", jobj, &key[2], MUSE_TYPE_ANY) ||
+		!muse_core_msg_json_object_get_value("key[3]", jobj, &key[3], MUSE_TYPE_ANY) ||
+		!muse_core_msg_json_object_get_value("packet", jobj, &packet, MUSE_TYPE_POINTER) ||
+		!muse_core_msg_json_object_get_value("mimetype", jobj, &mimetype, MUSE_TYPE_ANY) ||
+		!muse_core_msg_json_object_get_value("pts", jobj, &pts, MUSE_TYPE_INT64) ||
+		!muse_core_msg_json_object_get_value("surface_info", jobj, surface_info, MUSE_TYPE_ARRAY)) {
+
+		LOGE("failed to get value from msg. jobj:%p, err:%d", jobj, err);
+		if (jobj)
+			muse_core_msg_json_object_free(jobj);
+		return;
+	}
+	muse_core_msg_json_object_free(jobj);
 
 	LOGD("width %d, height %d", sinfo.width, sinfo.height);
 
@@ -618,13 +629,10 @@ static void __audio_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg
 	tbm_key key = 0;
 	player_audio_raw_data_s audio;
 	void *audio_frame = &audio;
+	bool ret = TRUE;
 
-	if (player_msg_get_array(audio_frame, recvMsg) && player_msg_get(size, recvMsg)) {
-		if (!player_msg_get(key, recvMsg)) {
-			LOGE("failed to get key from msg");
-			return;
-		}
-
+	player_msg_get2_array(recvMsg, size, INT, key, INT, audio_frame, ret);
+	if (ret) {
 		bo = tbm_bo_import(cb_info->bufmgr, key);
 		if (bo == NULL) {
 			LOGE("TBM get error : bo is NULL, key:%d", key);
@@ -716,8 +724,10 @@ static void __media_stream_video_buffer_cb_handler_ex(callback_cb_info_s * cb_in
 	/* player_media_stream_buffer_status_e status; */
 	int status;
 	unsigned long long bytes;
+	bool ret = TRUE;
 
-	if (player_msg_get(status, recvMsg) && player_msg_get_type(bytes, recvMsg, INT64)) {
+	player_msg_get2(recvMsg, status, INT, bytes, INT64, ret);
+	if (ret == TRUE) {
 		((player_media_stream_buffer_status_cb_ex)
 			cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO])
 			((player_media_stream_buffer_status_e) status, bytes, cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO]);
@@ -729,8 +739,10 @@ static void __media_stream_audio_buffer_cb_handler_ex(callback_cb_info_s * cb_in
 	/* player_media_stream_buffer_status_e status; */
 	int status;
 	unsigned long long bytes;
+	bool ret = TRUE;
 
-	if (player_msg_get(status, recvMsg) && player_msg_get_type(bytes, recvMsg, INT64)) {
+	player_msg_get2(recvMsg, status, INT, bytes, INT64, ret);
+	if (ret == TRUE) {
 		((player_media_stream_buffer_status_cb_ex)
 			cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO])
 			((player_media_stream_buffer_status_e) status, bytes, cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO]);
@@ -766,10 +778,10 @@ static void __video_stream_changed_cb_handler(callback_cb_info_s * cb_info, char
 	int height;
 	int fps;
 	int bit_rate;
-	if (player_msg_get(width, recvMsg)
-		&& player_msg_get(height, recvMsg)
-		&& player_msg_get(fps, recvMsg)
-		&& player_msg_get(bit_rate, recvMsg)) {
+	bool ret_val = TRUE;
+
+	player_msg_get4(recvMsg, width, INT, height, INT, fps, INT, bit_rate, INT, ret_val);
+	if (ret_val) {
 		((player_video_stream_changed_cb) cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED])
 			(width, height, fps, bit_rate, cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED]);
 	}
@@ -1026,29 +1038,38 @@ static void *client_cb_handler(gpointer data)
 			offset = 0;
 			while (offset < len) {
 				api = MUSE_PLAYER_API_MAX;
-				if (player_msg_get_error_e(api, recvMsg + offset, parse_len, err)) {
-					if (api < MUSE_PLAYER_API_MAX) {
-						g_mutex_lock(&cb_info->player_mutex);
-						cb_info->buff.recved++;
-						_add_ret_msg(api, cb_info, offset, parse_len);
-						g_cond_signal(&cb_info->player_cond[api]);
-						g_mutex_unlock(&cb_info->player_mutex);
-						if (api == MUSE_PLAYER_API_DESTROY)
-							g_atomic_int_set(&cb_info->running, 0);
-					} else if (api == MUSE_PLAYER_CB_EVENT) {
-						int event;
-						char *buffer;
-						g_mutex_lock(&cb_info->player_mutex);
-						buffer = strndup(recvMsg + offset, parse_len);
-						g_mutex_unlock(&cb_info->player_mutex);
-						if (player_msg_get(event, buffer))
-							_user_callback_handler(cb_info, event, buffer);
+				void *jobj = muse_core_msg_json_object_new(recvMsg + offset, &parse_len, &err);
+				if (jobj) {
+					if (muse_core_msg_json_object_get_value("api", jobj, &api, MUSE_TYPE_INT)) {
+						if (api < MUSE_PLAYER_API_MAX) {
+							g_mutex_lock(&cb_info->player_mutex);
+							cb_info->buff.recved++;
+							_add_ret_msg(api, cb_info, offset, parse_len);
+							g_cond_signal(&cb_info->player_cond[api]);
+							g_mutex_unlock(&cb_info->player_mutex);
+							if (api == MUSE_PLAYER_API_DESTROY)
+								g_atomic_int_set(&cb_info->running, 0);
+						} else if (api == MUSE_PLAYER_CB_EVENT) {
+							int event;
+							char *buffer;
+							g_mutex_lock(&cb_info->player_mutex);
+							buffer = strndup(recvMsg + offset, parse_len);
+							g_mutex_unlock(&cb_info->player_mutex);
+							if (muse_core_msg_json_object_get_value("event", jobj, &event, MUSE_TYPE_INT))
+								_user_callback_handler(cb_info, event, buffer);
+						}
+					} else {
+						LOGE("Failed to get value. offset:%d/%d, [msg][ %s ]", offset, len, (recvMsg+offset));
 					}
+					muse_core_msg_json_object_free(jobj);
+				} else {
+					LOGE("Failed to get msg obj. err:%d", err);
 				}
+
 				if (parse_len == 0)
 					break;
 				offset += parse_len;
-				parse_len = len - parse_len;
+				parse_len = len - offset;
 			}
 		} while (err == MUSE_MSG_PARSE_ERROR_CONTINUE);
 		if (len <= 0)
@@ -1530,10 +1551,15 @@ int player_get_volume(player_h player, float *pleft, float *pright)
 	player_msg_send(api, pc, ret_buf, ret);
 
 	if (ret == PLAYER_ERROR_NONE) {
-		player_msg_get_type(left, ret_buf, DOUBLE);
-		player_msg_get_type(right, ret_buf, DOUBLE);
-		*pleft = (float)left;
-		*pright = (float)right;
+		bool ret_val = TRUE;
+		player_msg_get2(ret_buf, left, DOUBLE, right, DOUBLE, ret_val);
+		if (ret_val) {
+			*pleft = (float)left;
+			*pright = (float)right;
+		} else {
+			LOGE("failed to get value from msg");
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 	}
 
 	g_free(ret_buf);
@@ -2171,15 +2197,19 @@ int player_get_codec_info(player_h player, char **paudio_codec, char **pvideo_co
 	char *ret_buf = NULL;
 	char video_codec[MUSE_MSG_MAX_LENGTH] = { 0, };
 	char audio_codec[MUSE_MSG_MAX_LENGTH] = { 0, };
+	bool ret_val = TRUE;
 
 	LOGD("ENTER");
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
-		player_msg_get_string(video_codec, ret_buf);
-		player_msg_get_string(audio_codec, ret_buf);
-		*pvideo_codec = strndup(video_codec, MUSE_MSG_MAX_LENGTH);
-		*paudio_codec = strndup(audio_codec, MUSE_MSG_MAX_LENGTH);
+		player_msg_get_string2(ret_buf, video_codec, audio_codec, ret_val);
+		if (ret_val) {
+			*pvideo_codec = strndup(video_codec, MUSE_MSG_MAX_LENGTH);
+			*paudio_codec = strndup(audio_codec, MUSE_MSG_MAX_LENGTH);
+		} else {
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 	}
 	g_free(ret_buf);
 	return ret;
@@ -2203,12 +2233,15 @@ int player_get_audio_stream_info(player_h player, int *psample_rate, int *pchann
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
-		player_msg_get(sample_rate, ret_buf);
-		player_msg_get(channel, ret_buf);
-		player_msg_get(bit_rate, ret_buf);
-		*psample_rate = sample_rate;
-		*pchannel = channel;
-		*pbit_rate = bit_rate;
+		bool ret_val = TRUE;
+		player_msg_get3(ret_buf, sample_rate, INT, channel, INT, bit_rate, INT, ret_val);
+		if (ret_val) {
+			*psample_rate = sample_rate;
+			*pchannel = channel;
+			*pbit_rate = bit_rate;
+		} else {
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 	}
 	g_free(ret_buf);
 	return ret;
@@ -2230,10 +2263,14 @@ int player_get_video_stream_info(player_h player, int *pfps, int *pbit_rate)
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
-		player_msg_get(fps, ret_buf);
-		player_msg_get(bit_rate, ret_buf);
-		*pfps = fps;
-		*pbit_rate = bit_rate;
+		bool ret_val = TRUE;
+		player_msg_get2(ret_buf, fps, INT, bit_rate, INT, ret_val);
+		if (ret_val) {
+			*pfps = fps;
+			*pbit_rate = bit_rate;
+		} else {
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 	}
 	g_free(ret_buf);
 	return ret;
@@ -2255,10 +2292,14 @@ int player_get_video_size(player_h player, int *pwidth, int *pheight)
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
-		player_msg_get(width, ret_buf);
-		player_msg_get(height, ret_buf);
-		*pwidth = width;
-		*pheight = height;
+		bool ret_val = TRUE;
+		player_msg_get2(ret_buf, width, INT, height, INT, ret_val);
+		if (ret_val) {
+			*pwidth = width;
+			*pheight = height;
+		} else {
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 	}
 	g_free(ret_buf);
 	return ret;
@@ -2278,15 +2319,23 @@ int player_get_album_art(player_h player, void **palbum_art, int *psize)
 	tbm_bo bo = NULL;
 	tbm_bo_handle thandle;
 	tbm_key key = 0;
+	void *jobj = NULL;
 
 	LOGD("ENTER");
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
-		player_msg_get(size, ret_buf);
-		LOGD("size : %d", size);
-		if (size > 0) {
-			if (!player_msg_get(key, ret_buf)) {
+		muse_core_msg_parse_err_e err = MUSE_MSG_PARSE_ERROR_NONE;
+		jobj = muse_core_msg_json_object_new(ret_buf, NULL, &err);
+		if (!jobj) {
+			LOGE("failed to get msg obj, err:%d", err);
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+			goto EXIT;
+		}
+
+		if (muse_core_msg_json_object_get_value("size", jobj, &size, MUSE_TYPE_INT) && size>0) {
+			LOGD("size : %d", size);
+			if (!muse_core_msg_json_object_get_value("key", jobj, &key, MUSE_TYPE_INT)) {
 				ret = PLAYER_ERROR_INVALID_OPERATION;
 				goto EXIT;
 			}
@@ -2315,11 +2364,13 @@ int player_get_album_art(player_h player, void **palbum_art, int *psize)
 		} else {
 			*palbum_art = NULL;
 		}
-
 		*psize = size;
 	}
 
 EXIT:
+	if (jobj)
+		muse_core_msg_json_object_free(jobj);
+
 	if (ret_buf)
 		g_free(ret_buf);
 
@@ -2420,16 +2471,20 @@ int player_audio_effect_get_equalizer_level_range(player_h player, int *pmin, in
 	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_LEVEL_RANGE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
-	int min, max;
+	int min = 0, max = 0;
 
 	LOGD("ENTER");
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
-		player_msg_get(min, ret_buf);
-		player_msg_get(max, ret_buf);
-		*pmin = min;
-		*pmax = max;
+		bool ret_val = TRUE;
+		player_msg_get2(ret_buf, min, INT, max, INT, ret_val);
+		if (ret_val) {
+			*pmin = min;
+			*pmax = max;
+		} else {
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 	}
 	g_free(ret_buf);
 	return ret;
@@ -2575,10 +2630,14 @@ int player_get_progressive_download_status(player_h player, unsigned long *pcurr
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
-		player_msg_get_type(current, ret_buf, POINTER);
-		player_msg_get_type(total_size, ret_buf, POINTER);
-		*pcurrent = current;
-		*ptotal_size = total_size;
+		bool ret_val = TRUE;
+		player_msg_get2(ret_buf, current, POINTER, total_size, POINTER, ret_val);
+		if (ret_val) {
+			*pcurrent = current;
+			*ptotal_size = total_size;
+		} else {
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 	}
 	g_free(ret_buf);
 	return ret;
@@ -2656,16 +2715,20 @@ int player_get_streaming_download_progress(player_h player, int *pstart, int *pc
 	muse_player_api_e api = MUSE_PLAYER_API_GET_STREAMING_DOWNLOAD_PROGRESS;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
-	int start, current;
+	int start = 0, current = 0;
 
 	LOGD("ENTER");
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
-		player_msg_get(start, ret_buf);
-		player_msg_get(current, ret_buf);
-		*pstart = start;
-		*pcurrent = current;
+		bool ret_val = TRUE;
+		player_msg_get2(ret_buf, start, INT, current, INT, ret_val);
+		if (ret_val) {
+			*pstart = start;
+			*pcurrent = current;
+		} else {
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 	}
 	g_free(ret_buf);
 	return ret;

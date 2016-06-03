@@ -1345,8 +1345,8 @@ static void audio_frame_decoded_cb_ex()
 	int ret;
 
 #if DUMP_OUTBUF
-	fp_out1 = fopen("/home/owner/content/out1.pcm", "wb");
-	fp_out2 = fopen("/home/owner/content/out2.pcm", "wb");
+	fp_out1 = fopen("/tmp/out1.pcm", "wb");
+	fp_out2 = fopen("/tmp/out2.pcm", "wb");
 	if (!fp_out1 || !fp_out2) {
 		g_print("File open error\n");
 		return;
