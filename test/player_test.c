@@ -64,7 +64,7 @@ static media_format_h g_video_fmt = NULL;
 
 static int _save(unsigned char *src, int length);
 
-#define DUMP_OUTBUF         0
+#define DUMP_OUTBUF         1
 #if DUMP_OUTBUF
 FILE *fp_out1 = NULL;
 FILE *fp_out2 = NULL;
