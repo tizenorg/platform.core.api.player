@@ -292,24 +292,64 @@ static void _del_mem(player_cli_s * player)
 	}
 }
 
-static int player_recv_msg(callback_cb_info_s * cb_info, int len)
+static int player_recv_msg(callback_cb_info_s * cb_info)
 {
-	int recvLen;
+	int recvLen = 0;
 	msg_buff_s *buff = &cb_info->buff;
-	char *new;
 
-	if (len && buff->bufLen - MUSE_MSG_MAX_LENGTH <= len) {
-		LOGD("realloc Buffer %d -> %d, Msg Length %d", buff->bufLen, buff->bufLen + MUSE_MSG_MAX_LENGTH, len);
-		buff->bufLen += MUSE_MSG_MAX_LENGTH;
-		new = g_renew(char, buff->recvMsg, buff->bufLen);
-		if (new && new != buff->recvMsg)
-			buff->recvMsg = new;
+	memset(buff->recvMsg, 0x00, sizeof(char)*buff->bufLen);
+	recvLen = muse_core_ipc_recv_msg(cb_info->fd, buff->recvMsg);
+
+	/* check the first msg */
+	if (buff->part_of_msg && buff->recvMsg[0] != '{')
+	{
+		gchar *tmp = strndup(buff->recvMsg, recvLen);
+		if (!tmp) {
+			LOGE("failed to copy msg.");
+			return 0;
+		}
+
+		LOGD("get remained part of msg %d + %d, %d", recvLen, strlen(buff->part_of_msg), buff->bufLen);
+
+		/* realloc buffer */
+		if (recvLen+strlen(buff->part_of_msg) >= buff->bufLen) {
+			LOGD("realloc Buffer %d -> %d", buff->bufLen, recvLen+strlen(buff->part_of_msg)+1);
+			buff->bufLen = recvLen+strlen(buff->part_of_msg)+1;
+			buff->recvMsg = g_renew(char, buff->recvMsg, buff->bufLen);
+			if (!buff->recvMsg) {
+				LOGE("failed renew buffer.");
+				if (tmp)
+					free (tmp);
+				return 0;
+			}
+			memset(buff->recvMsg, 0x00, sizeof(char)*buff->bufLen);
+		}
+		sprintf(buff->recvMsg, "%s%s", buff->part_of_msg, tmp);
+		recvLen += strlen(buff->part_of_msg);
+
+		free (buff->part_of_msg);
+		buff->part_of_msg = NULL;
+		free (tmp);
+		tmp = NULL;
 	}
 
-	recvLen = muse_core_ipc_recv_msg(cb_info->fd, buff->recvMsg + len);
-	len += recvLen;
+	/* check the last msg */
+	if (buff->recvMsg[recvLen-1] != '}') {
+		char *part_pos = strrchr(buff->recvMsg, '}');
+		int part_len = (part_pos)?(strlen(part_pos+1)):(0);
 
-	return len;
+		if (part_len > 0) {
+			buff->part_of_msg = strndup(part_pos+1, part_len);
+			if (!buff->part_of_msg) {
+				LOGE("failed to alloc buffer for part of msg.");
+				return 0;
+			}
+			LOGD("get part of msg: %d, %s", strlen(buff->part_of_msg), buff->part_of_msg);
+			recvLen -= part_len;
+		}
+	}
+
+	return recvLen;
 }
 
 static void set_null_user_cb(callback_cb_info_s * cb_info, muse_player_event_e event)
@@ -624,14 +664,14 @@ static void __audio_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg
 {
 	unsigned char *data = NULL;
 	unsigned int size = 0;
+	unsigned int info_size = 0;
 	tbm_bo bo = NULL;
 	tbm_bo_handle thandle;
 	tbm_key key = 0;
 	player_audio_raw_data_s audio;
-	void *audio_frame = &audio;
 	bool ret = TRUE;
 
-	player_msg_get2_array(recvMsg, size, INT, key, INT, audio_frame, ret);
+	player_msg_get3(recvMsg, size, INT, key, INT, info_size, INT, ret);
 	if (ret) {
 		bo = tbm_bo_import(cb_info->bufmgr, key);
 		if (bo == NULL) {
@@ -645,13 +685,19 @@ static void __audio_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg
 			goto EXIT;
 		}
 
+		LOGE("info_size = %d", info_size);
 		data = g_new(unsigned char, size);
 		if (data) {
 			memcpy(data, thandle.ptr, size);
-			audio.data = data;
-			audio.size = size;
-			LOGD("user callback data %p, size %d", audio.data, audio.size);
-			((player_audio_pcm_extraction_cb) cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_AUDIO_FRAME]) (&audio, cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_AUDIO_FRAME]);
+			if (info_size > 0) {
+				memcpy(&audio, thandle.ptr+size, info_size);
+				audio.data = data;
+				audio.size = size;
+				LOGD("user callback data %p, size %d", audio.data, audio.size);
+				((player_audio_pcm_extraction_cb) cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_AUDIO_FRAME]) (&audio, cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_AUDIO_FRAME]);
+			} else {
+				LOGE("need info data !");
+			}
 			g_free(data);
 		} else
 			LOGE("g_new failure");
@@ -1023,57 +1069,61 @@ static void *client_cb_handler(gpointer data)
 	int parse_len = 0;
 	int offset = 0;
 	callback_cb_info_s *cb_info = data;
-	char *recvMsg = cb_info->buff.recvMsg;
+	char *recvMsg = NULL;
 	muse_core_msg_parse_err_e err;
 
 	while (g_atomic_int_get(&cb_info->running)) {
 		len = 0;
 		err = MUSE_MSG_PARSE_ERROR_NONE;
-		do {
-			len = player_recv_msg(cb_info, len);
-			if (len <= 0)
-				break;
-			recvMsg[len] = '\0';
-			parse_len = len;
-			offset = 0;
-			while (offset < len) {
-				api = MUSE_PLAYER_API_MAX;
-				void *jobj = muse_core_msg_json_object_new(recvMsg + offset, &parse_len, &err);
-				if (jobj) {
-					if (muse_core_msg_json_object_get_value("api", jobj, &api, MUSE_TYPE_INT)) {
-						if (api < MUSE_PLAYER_API_MAX) {
-							g_mutex_lock(&cb_info->player_mutex);
-							cb_info->buff.recved++;
-							_add_ret_msg(api, cb_info, offset, parse_len);
-							g_cond_signal(&cb_info->player_cond[api]);
-							g_mutex_unlock(&cb_info->player_mutex);
-							if (api == MUSE_PLAYER_API_DESTROY)
-								g_atomic_int_set(&cb_info->running, 0);
-						} else if (api == MUSE_PLAYER_CB_EVENT) {
-							int event;
-							char *buffer;
-							g_mutex_lock(&cb_info->player_mutex);
-							buffer = strndup(recvMsg + offset, parse_len);
-							g_mutex_unlock(&cb_info->player_mutex);
-							if (muse_core_msg_json_object_get_value("event", jobj, &event, MUSE_TYPE_INT))
-								_user_callback_handler(cb_info, event, buffer);
-						}
-					} else {
-						LOGE("Failed to get value. offset:%d/%d, [msg][ %s ]", offset, len, (recvMsg+offset));
-					}
-					muse_core_msg_json_object_free(jobj);
-				} else {
-					LOGE("Failed to get msg obj. err:%d", err);
-				}
 
-				if (parse_len == 0)
-					break;
-				offset += parse_len;
-				parse_len = len - offset;
-			}
-		} while (err == MUSE_MSG_PARSE_ERROR_CONTINUE);
+		len = player_recv_msg(cb_info);
 		if (len <= 0)
 			break;
+
+		recvMsg = cb_info->buff.recvMsg;
+		recvMsg[len] = '\0';
+
+		parse_len = len;
+		offset = 0;
+		while (offset < len) {
+			api = MUSE_PLAYER_API_MAX;
+//			LOGD(">>>>>> [%d/%d] %p, %s", offset, len, recvMsg + offset, recvMsg + offset);
+//			usleep(10*1000);
+
+			void *jobj = muse_core_msg_json_object_new(recvMsg + offset, &parse_len, &err);
+			if (jobj) {
+				if (muse_core_msg_json_object_get_value("api", jobj, &api, MUSE_TYPE_INT)) {
+					if (api < MUSE_PLAYER_API_MAX) {
+						g_mutex_lock(&cb_info->player_mutex);
+						cb_info->buff.recved++;
+						_add_ret_msg(api, cb_info, offset, parse_len);
+						g_cond_signal(&cb_info->player_cond[api]);
+						g_mutex_unlock(&cb_info->player_mutex);
+						if (api == MUSE_PLAYER_API_DESTROY)
+							g_atomic_int_set(&cb_info->running, 0);
+					} else if (api == MUSE_PLAYER_CB_EVENT) {
+						int event;
+						char *buffer;
+						g_mutex_lock(&cb_info->player_mutex);
+						buffer = strndup(recvMsg + offset, parse_len);
+						g_mutex_unlock(&cb_info->player_mutex);
+						if (muse_core_msg_json_object_get_value("event", jobj, &event, MUSE_TYPE_INT))
+							_user_callback_handler(cb_info, event, buffer);
+					}
+				} else {
+					LOGE("Failed to get value. offset:%d/%d, [msg][ %s ]", offset, len, (recvMsg+offset));
+				}
+				muse_core_msg_json_object_free(jobj);
+			} else {
+				LOGE("Failed to get msg obj. err:%d", err);
+			}
+
+			if (parse_len == 0 || err != MUSE_MSG_PARSE_ERROR_NONE)
+				break;
+
+			offset += parse_len;
+			parse_len = len - offset;
+		}
 	}
 	if (g_atomic_int_get(&cb_info->running))
 		_notify_disconnected(cb_info);
@@ -1105,6 +1155,7 @@ static callback_cb_info_s *callback_new(gint sockfd)
 	buff->bufLen = MUSE_MSG_MAX_LENGTH + 1;
 	buff->recved = 0;
 	buff->retMsgHead = NULL;
+	buff->part_of_msg = NULL;
 
 	g_atomic_int_set(&cb_info->running, 1);
 	cb_info->fd = sockfd;
@@ -1138,6 +1189,8 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	g_mutex_clear(&cb_info->seek_cb_mutex);
 
 	g_free(cb_info->buff.recvMsg);
+	if (cb_info->buff.part_of_msg)
+		g_free(cb_info->buff.part_of_msg);
 	g_free(cb_info);
 }
 
