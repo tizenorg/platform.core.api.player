@@ -59,6 +59,7 @@ typedef struct {
 	gchar *recvMsg;
 	gint recved;
 	ret_msg_s *retMsgHead;
+	gchar *part_of_msg; /* keep msg till we receive the hole msg */
 } msg_buff_s;
 
 typedef struct _player_data {
