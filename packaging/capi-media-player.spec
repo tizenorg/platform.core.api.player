@@ -3,7 +3,7 @@
 
 Name:       capi-media-player
 Summary:    A Media Player API
-Version:    0.3.9
+Version:    0.3.10
 Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
@@ -32,7 +32,7 @@ BuildRequires:  pkgconfig(mmsvc-player)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(libtbm)
 BuildRequires:  pkgconfig(eom)
-%if "%{?profile}" == "mobile"
+%if "%{?profile}" != "tv" && "%{?profile}" != "wearable"
 BuildRequires:  pkgconfig(mm-evas-renderer)
 %endif
 
@@ -64,12 +64,9 @@ export CXXFLAGS="$CXXFLAGS -DTIZEN_DEBUG_ENABLE"
 export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
 %endif
 MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
-%cmake . -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
+%cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
 %if "%{?profile}" == "wearable"
 	-DTIZEN_WEARABLE=YES \
-%endif
-%if "%{?profile}" == "mobile"
-    -DTIZEN_MOBILE=YES \
 %endif
 %if "%{?profile}" == "tv"
     -DTIZEN_TV=YES \
@@ -84,8 +81,11 @@ MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
 %else
     -DX11_SUPPORT=Off \
 %endif
-    -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
-    -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=%{version} -DMAJORVER=${MAJORVER}
+%if "%{?profile}" == "tv" || "%{?profile}" == "wearable"
+	-DEVAS_RENDERER_SUPPORT=Off
+%else
+	-DEVAS_RENDERER_SUPPORT=On
+%endif
 
 make %{?jobs:-j%jobs}
 

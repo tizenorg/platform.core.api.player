@@ -41,7 +41,7 @@
 #include "player_internal.h"
 #include "player_private.h"
 #include "player_msg.h"
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 #include <mm_evas_renderer.h>
 #endif
 #define INVALID_SOCKET -1
@@ -1327,7 +1327,7 @@ int player_destroy(player_h player)
 	LOGD("ENTER");
 
 	player_msg_send(api, pc, ret_buf, ret);
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	if (EVAS_HANDLE(pc)) {
 		player_unset_media_packet_video_frame_decoded_cb(player);
 		if (mm_evas_renderer_destroy(&EVAS_HANDLE(pc)) != MM_ERROR_NONE)
@@ -1425,7 +1425,7 @@ int player_unprepare(player_h player)
 
 	if (!CALLBACK_INFO(pc))
 		return PLAYER_ERROR_INVALID_STATE;
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	if (EVAS_HANDLE(pc)) {
 		player_unset_media_packet_video_frame_decoded_cb(player);
 		if (mm_evas_renderer_destroy(&EVAS_HANDLE(pc)) != MM_ERROR_NONE)
@@ -1705,7 +1705,7 @@ int player_start(player_h player)
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	if (EVAS_HANDLE(pc)) {
 		ret = mm_evas_renderer_update_param(EVAS_HANDLE(pc));
 		if (ret != PLAYER_ERROR_NONE)
@@ -1990,7 +1990,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				xhandle = elm_win_xwindow_get(obj);
 #endif
 			}
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 			else if (type == PLAYER_DISPLAY_TYPE_EVAS && !strcmp(object_type, "image")) {
 				/* evas object surface */
 				LOGI("evas surface type");
@@ -2044,7 +2044,7 @@ int player_set_display_mode(player_h player, player_display_mode_e mode)
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	if (EVAS_HANDLE(pc)) {
 		ret = mm_evas_renderer_set_geometry(EVAS_HANDLE(pc), mode);
 		return ret;
@@ -2066,7 +2066,7 @@ int player_get_display_mode(player_h player, player_display_mode_e * pmode)
 	int mode = -1;
 
 	LOGD("ENTER");
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	if (EVAS_HANDLE(pc)) {
 		ret = mm_evas_renderer_get_geometry(EVAS_HANDLE(pc), &mode);
 		*pmode = (player_display_mode_e) mode;
@@ -2108,7 +2108,7 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	if (EVAS_HANDLE(pc)) {
 		ret = mm_evas_renderer_set_rotation(EVAS_HANDLE(pc), rotation);
 		return ret;
@@ -2130,7 +2130,7 @@ int player_get_display_rotation(player_h player, player_display_rotation_e * pro
 	int rotation = -1;
 
 	LOGD("ENTER");
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	if (EVAS_HANDLE(pc)) {
 		ret = mm_evas_renderer_get_rotation(EVAS_HANDLE(pc), &rotation);
 		*protation = (player_display_rotation_e) rotation;
@@ -2156,7 +2156,7 @@ int player_set_display_visible(player_h player, bool visible)
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	if (EVAS_HANDLE(pc)) {
 		ret = mm_evas_renderer_set_visible(EVAS_HANDLE(pc), visible);
 		return ret;
@@ -2176,11 +2176,11 @@ int player_is_display_visible(player_h player, bool * pvisible)
 	muse_player_api_e api = MUSE_PLAYER_API_IS_DISPLAY_VISIBLE;
 	char *ret_buf = NULL;
 	int value = -1;
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	bool visible = 0;
 #endif
 	LOGD("ENTER");
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	if (EVAS_HANDLE(pc)) {
 		ret = mm_evas_renderer_get_visible(EVAS_HANDLE(pc), &visible);
 		if (visible)
