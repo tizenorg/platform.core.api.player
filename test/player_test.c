@@ -1340,10 +1340,9 @@ static void get_duration()
 	g_print("                                                            ==> [Player_Test] Duration: [%d ] msec\n", duration);
 }
 
-static void audio_frame_decoded_cb_ex()
+static void audio_frame_decoded_cb_ex(bool sync)
 {
 	int ret;
-
 #if DUMP_OUTBUF
 	fp_out1 = fopen("/tmp/out1.pcm", "wb");
 	fp_out2 = fopen("/tmp/out2.pcm", "wb");
@@ -1353,13 +1352,8 @@ static void audio_frame_decoded_cb_ex()
 	}
 #endif
 
-	ret = player_set_pcm_extraction_mode(g_player[0], false, _audio_frame_decoded_cb_ex, &ret);
-	g_print("                                                            ==> [Player_Test] player_set_audio_frame_decoded_cb_ex return: %d\n", ret);
-}
-
-static void set_pcm_spec()
-{
-	int ret = 0;
+	ret = player_set_pcm_extraction_mode(g_player[0], sync, _audio_frame_decoded_cb_ex, &ret);
+	g_print("                                                            ==> [Player_Test] player_set_audio_frame_decoded_cb_ex(sync:%d) ret:%d\n", sync, ret);
 
 	ret = player_set_pcm_spec(g_player[0], "F32LE", 44100, 2);
 	g_print("[Player_Test] set_pcm_spec return: %d\n", ret);
@@ -1898,9 +1892,9 @@ void _interpret_main_menu(char *cmd)
 		} else if (strncmp(cmd, "ss", 2) == 0) {
 			g_menu_state = CURRENT_STATUS_SWITCH_SUBTITLE;
 		} else if (strncmp(cmd, "X3", 2) == 0) {
-			audio_frame_decoded_cb_ex();
+			audio_frame_decoded_cb_ex(TRUE);
 		} else if (strncmp(cmd, "X4", 2) == 0) {
-			set_pcm_spec();
+			audio_frame_decoded_cb_ex(FALSE);
 		} else if (strncmp(cmd, "su", 2) == 0) {
 			g_menu_state = CURRENT_STATUS_NEXT_URI;
 		} else if (strncmp(cmd, "gu", 2) == 0) {
@@ -1970,7 +1964,8 @@ void display_sub_basic()
 	g_print("[etc] sp. Set Progressive Download\t");
 	g_print("gp. Get Progressive Download status\n");
 	g_print("mp. memory playback\n");
-	g_print("[audio_frame_decoded_cb_ex] X3. (input) set audio_frame_decoded_cb_ex callback \n");
+	g_print("[audio_frame_decoded_cb_ex] X3. set audio_cb with sync\t");
+	g_print("X4. set audio_cb with async \n");
 	g_print("\n");
 	g_print("=========================================================================================\n");
 }
