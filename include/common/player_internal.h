@@ -20,9 +20,7 @@
 #ifdef TIZEN_TV
 #include <glib.h>
 #endif
-#ifdef HAVE_WAYLAND
 #include <Ecore_Wayland.h>
-#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -238,7 +236,6 @@ int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream
  */
 int player_set_media_stream_dynamic_resolution(player_h player, bool drc);
 
-#ifdef HAVE_WAYLAND
 /**
  * @brief Sets the ecore wayland video display.
  * @since_tizen 3.0
@@ -260,7 +257,6 @@ int player_set_media_stream_dynamic_resolution(player_h player, bool drc);
  * @see player_set_display_rotation
  */
 int player_set_ecore_wl_display(player_h player, player_display_type_e type, Ecore_Wl_Window *ecore_wl_window, int x, int y, int  width, int height);
-#endif
 
 #ifdef TIZEN_TV
 /**

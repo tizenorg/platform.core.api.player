@@ -17,9 +17,7 @@
 #ifndef __TIZEN_MEDIA_PLAYER_INTERNAL_H__
 #define	__TIZEN_MEDIA_PLAYER_INTERNAL_H__
 #include <player.h>
-#ifdef HAVE_WAYLAND
 #include <Ecore_Wayland.h>
-#endif
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -254,7 +252,6 @@ int player_set_gapless(player_h player, bool gapless);
  */
 int player_is_gapless(player_h player, bool *gapless);
 
-#ifdef HAVE_WAYLAND
 /**
  * @brief Sets the ecore wayland video display.
  * @since_tizen 3.0
@@ -277,7 +274,6 @@ int player_is_gapless(player_h player, bool *gapless);
  */
 int player_set_ecore_wl_display(player_h player, player_display_type_e type, Ecore_Wl_Window *ecore_wl_window, int x, int y, int  width, int height);
 
-#endif
 
 
 /**

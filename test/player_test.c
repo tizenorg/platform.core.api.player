@@ -21,13 +21,8 @@
 #include <dlfcn.h>
 #include <appcore-efl.h>
 #include <Elementary.h>
-#ifdef HAVE_X11
-#include <Ecore_X.h>
-#endif
-#ifdef HAVE_WAYLAND
 #include <Ecore.h>
 #include <Ecore_Wayland.h>
-#endif
 #ifdef _ACTIVATE_EOM_
 #include <eom.h>
 #endif
@@ -98,11 +93,11 @@ enum {
 #define MAX_HANDLE 20
 
 /* for video display */
-static Evas_Object *g_xid;
+static Evas_Object *g_win_id;
 #ifdef _ACTIVATE_EOM_
-static Evas_Object *g_external_xid;
+static Evas_Object *g_external_win_id;
 #endif
-static Evas_Object *selected_xid;
+static Evas_Object *selected_win_id;
 static Evas_Object *g_eo[MAX_HANDLE] = { 0, };
 
 static int g_current_surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
@@ -110,11 +105,6 @@ static int g_current_surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
 typedef struct {
 	Evas_Object *win;
 	Evas_Object *layout_main;	/* layout widget based on EDJ */
-#ifdef HAVE_X11
-	Ecore_X_Window xid;
-#elif HAVE_WAYLAND
-	unsigned int xid;
-#endif
 	/* add more variables here */
 #ifdef _ACTIVATE_EOM_
 	int hdmi_output_id;
@@ -152,9 +142,7 @@ static Evas_Object *create_win(const char *name)
 		g_print("window size :%d,%d", w, h);
 		evas_object_resize(eo, w, h);
 		elm_win_autodel_set(eo, EINA_TRUE);
-#ifdef HAVE_WAYLAND
 		elm_win_alpha_set(eo, EINA_TRUE);
-#endif
 	}
 	return eo;
 }
@@ -247,14 +235,14 @@ static void eom_notify_cb_output_add(eom_output_id output_id, void *user_data)
 	}
 	g_print("[eom] output(%d) connected\n", output_id);
 	/* it is for external window */
-	if (!g_external_xid) {
-		g_external_xid = elm_win_add(NULL, "External", ELM_WIN_BASIC);
-		if (eom_set_output_window(info->hdmi_output_id, g_external_xid) == EOM_ERROR_NONE) {
-			create_render_rect_and_bg(g_external_xid);
+	if (!g_external_win_id) {
+		g_external_win_id = elm_win_add(NULL, "External", ELM_WIN_BASIC);
+		if (eom_set_output_window(info->hdmi_output_id, g_external_win_id) == EOM_ERROR_NONE) {
+			create_render_rect_and_bg(g_external_win_id);
 			g_print("[eom] create external window\n");
 		} else {
-			evas_object_del(g_external_xid);
-			g_external_xid = NULL;
+			evas_object_del(g_external_win_id);
+			g_external_win_id = NULL;
 			g_print("[eom] create external window fail\n");
 		}
 	}
@@ -271,28 +259,28 @@ static void eom_notify_cb_output_remove(eom_output_id output_id, void *user_data
 	}
 	g_print("[eom] output(%d) disconnected\n", output_id);
 
-	if (selected_xid == g_external_xid && g_player[0]) {
+	if (selected_win_id == g_external_win_id && g_player[0]) {
 		player_get_state(g_player[0], &state);
 		if (state >= PLAYER_STATE_READY) {
-			if (!g_xid) {
-				g_xid = create_win(PACKAGE);
-				if (g_xid == NULL)
+			if (!g_win_id) {
+				g_win_id = create_win(PACKAGE);
+				if (g_win_id == NULL)
 					return;
-				g_print("create xid %p\n", g_xid);
-				create_render_rect_and_bg(g_xid);
-				elm_win_activate(g_xid);
-				evas_object_show(g_xid);
+				g_print("create win_id %p\n", g_win_id);
+				create_render_rect_and_bg(g_win_id);
+				elm_win_activate(g_win_id);
+				evas_object_show(g_win_id);
 			}
-			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(g_xid));
+			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(g_win_id));
 		}
 	}
 
 	/* it is for external window */
-	if (g_external_xid) {
-		evas_object_del(g_external_xid);
-		g_external_xid = NULL;
+	if (g_external_win_id) {
+		evas_object_del(g_external_win_id);
+		g_external_win_id = NULL;
 	}
-	selected_xid = g_xid;
+	selected_win_id = g_win_id;
 }
 
 static void eom_notify_cb_mode_changed(eom_output_id output_id, void *user_data)
@@ -327,59 +315,59 @@ static void eom_notify_cb_attribute_changed(eom_output_id output_id, void *user_
 	g_print("[eom] output(%d) attribute changed(%d, %d)\n", output_id, attribute, state);
 	if (state == EOM_OUTPUT_ATTRIBUTE_STATE_ACTIVE) {
 		g_print("[eom] active\n");
-		if (!g_external_xid) {
-			g_external_xid = elm_win_add(NULL, "External", ELM_WIN_BASIC);
-			if (eom_set_output_window(info->hdmi_output_id, g_external_xid) == EOM_ERROR_NONE) {
-				create_render_rect_and_bg(g_external_xid);
+		if (!g_external_win_id) {
+			g_external_win_id = elm_win_add(NULL, "External", ELM_WIN_BASIC);
+			if (eom_set_output_window(info->hdmi_output_id, g_external_win_id) == EOM_ERROR_NONE) {
+				create_render_rect_and_bg(g_external_win_id);
 				g_print("[eom] create external window\n");
 			} else {
-				evas_object_del(g_external_xid);
-				g_external_xid = NULL;
+				evas_object_del(g_external_win_id);
+				g_external_win_id = NULL;
 				g_print("[eom] create external window fail\n");
 			}
 		}
-		selected_xid = g_external_xid;
+		selected_win_id = g_external_win_id;
 		/* play video on external window */
 		if (g_player[0])
-			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_xid));
+			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_win_id));
 	} else if (state == EOM_OUTPUT_ATTRIBUTE_STATE_INACTIVE) {
 		g_print("[eom] inactive\n");
-		if (!g_xid) {
-			g_xid = create_win(PACKAGE);
-			if (g_xid == NULL)
+		if (!g_win_id) {
+			g_win_id = create_win(PACKAGE);
+			if (g_win_id == NULL)
 				return;
-			g_print("create xid %p\n", g_xid);
-			create_render_rect_and_bg(g_xid);
-			elm_win_activate(g_xid);
-			evas_object_show(g_xid);
+			g_print("create win_id %p\n", g_win_id);
+			create_render_rect_and_bg(g_win_id);
+			elm_win_activate(g_win_id);
+			evas_object_show(g_win_id);
 		}
-		selected_xid = g_xid;
+		selected_win_id = g_win_id;
 		if (g_player[0])
-			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_xid));
+			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_win_id));
 
-		if (g_external_xid) {
-			evas_object_del(g_external_xid);
-			g_external_xid = NULL;
+		if (g_external_win_id) {
+			evas_object_del(g_external_win_id);
+			g_external_win_id = NULL;
 		}
 	} else if (state == EOM_OUTPUT_ATTRIBUTE_STATE_LOST) {
 		g_print("[eom] lost\n");
-		if (!g_xid) {
-			g_xid = create_win(PACKAGE);
-			if (g_xid == NULL)
+		if (!g_win_id) {
+			g_win_id = create_win(PACKAGE);
+			if (g_win_id == NULL)
 				return;
-			g_print("create xid %p\n", g_xid);
-			create_render_rect_and_bg(g_xid);
-			elm_win_activate(g_xid);
-			evas_object_show(g_xid);
+			g_print("create win_id %p\n", g_win_id);
+			create_render_rect_and_bg(g_win_id);
+			elm_win_activate(g_win_id);
+			evas_object_show(g_win_id);
 		}
-		selected_xid = g_xid;
+		selected_win_id = g_win_id;
 
 		if (g_player[0])
-			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_xid));
+			player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_win_id));
 
-		if (g_external_xid) {
-			evas_object_del(g_external_xid);
-			g_external_xid = NULL;
+		if (g_external_win_id) {
+			evas_object_del(g_external_win_id);
+			g_external_win_id = NULL;
 		}
 
 		eom_unset_output_added_cb(eom_notify_cb_output_add);
@@ -406,8 +394,8 @@ static int app_create(void *data)
 	if (win == NULL)
 		return -1;
 	ad->win = win;
-	g_xid = win;
-	selected_xid = g_xid;
+	g_win_id = win;
+	selected_win_id = g_win_id;
 	create_render_rect_and_bg(ad->win);
 	/* Create evas image object for EVAS surface */
 	g_eo[0] = create_image_object(ad->win);
@@ -434,16 +422,16 @@ static int app_create(void *data)
 
 	eom_get_output_mode(ad->hdmi_output_id, &output_mode);
 	if (output_mode != EOM_OUTPUT_MODE_NONE) {
-		g_external_xid = elm_win_add(NULL, "External", ELM_WIN_BASIC);
-		if (eom_set_output_window(ad->hdmi_output_id, g_external_xid) == EOM_ERROR_NONE) {
-			create_render_rect_and_bg(g_external_xid);
+		g_external_win_id = elm_win_add(NULL, "External", ELM_WIN_BASIC);
+		if (eom_set_output_window(ad->hdmi_output_id, g_external_win_id) == EOM_ERROR_NONE) {
+			create_render_rect_and_bg(g_external_win_id);
 			g_print("[eom] create external window\n");
 		} else {
-			evas_object_del(g_external_xid);
-			g_external_xid = NULL;
+			evas_object_del(g_external_win_id);
+			g_external_win_id = NULL;
 			g_print("[eom] create external window fail\n");
 		}
-		selected_xid = g_external_xid;
+		selected_win_id = g_external_win_id;
 	}
 
 	/* set callback for detecting external device */
@@ -466,18 +454,18 @@ static int app_terminate(void *data)
 			g_eo[i] = NULL;
 		}
 	}
-	if (g_xid) {
-		evas_object_del(g_xid);
-		g_xid = NULL;
+	if (g_win_id) {
+		evas_object_del(g_win_id);
+		g_win_id = NULL;
 	}
 #ifdef _ACTIVATE_EOM_
-	if (g_external_xid) {
-		evas_object_del(g_external_xid);
-		g_external_xid = NULL;
+	if (g_external_win_id) {
+		evas_object_del(g_external_win_id);
+		g_external_win_id = NULL;
 	}
 #endif
 	ad->win = NULL;
-	selected_xid = NULL;
+	selected_win_id = NULL;
 #ifdef _ACTIVATE_EOM_
 	eom_unset_output_added_cb(eom_notify_cb_output_add);
 	eom_unset_output_removed_cb(eom_notify_cb_output_remove);
@@ -910,7 +898,7 @@ static void _player_prepare(bool async)
 		player_set_subtitle_updated_cb(g_player[0], subtitle_updated_cb, (void *)g_player[0]);
 	}
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
-		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(selected_xid));
+		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(selected_win_id));
 		player_set_buffering_cb(g_player[0], buffering_cb, (void *)g_player[0]);
 		player_set_completed_cb(g_player[0], completed_cb, (void *)g_player[0]);
 		player_set_interrupted_cb(g_player[0], interrupted_cb, (void *)g_player[0]);
@@ -1094,7 +1082,7 @@ static void _player_play()
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
 #ifdef _ACTIVATE_EOM_
 		/* for checking external display.... */
-		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(selected_xid));
+		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(selected_win_id));
 #endif
 		bRet = player_start(g_player[0]);
 		g_print("player_start returned [%d]", bRet);
@@ -1135,7 +1123,7 @@ static void _player_resume()
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
 #ifdef _ACTIVATE_EOM_
 		/* for checking external display.... */
-		player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_xid));
+		player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_win_id));
 #endif
 		bRet = player_start(g_player[0]);
 		g_print("player_start returned [%d]", bRet);
@@ -1489,37 +1477,37 @@ static void change_surface(int option)
 			eom_get_output_mode(hdmi_output_id, &output_mode);
 			if (output_mode == EOM_OUTPUT_MODE_NONE) {
 #endif
-				if (!g_xid) {
-					g_xid = create_win(PACKAGE);
-					if (g_xid == NULL)
+				if (!g_win_id) {
+					g_win_id = create_win(PACKAGE);
+					if (g_win_id == NULL)
 						return;
-					g_print("create xid %p\n", g_xid);
-					create_render_rect_and_bg(g_xid);
-					elm_win_activate(g_xid);
-					evas_object_show(g_xid);
-					g_xid = selected_xid;
+					g_print("create win_id %p\n", g_win_id);
+					create_render_rect_and_bg(g_win_id);
+					elm_win_activate(g_win_id);
+					evas_object_show(g_win_id);
+					g_win_id = selected_win_id;
 				}
 #ifdef _ACTIVATE_EOM_
 			} else {
 				/* for external */
 			}
 #endif
-			ret = player_set_display(g_player[0], surface_type, GET_DISPLAY(selected_xid));
+			ret = player_set_display(g_player[0], surface_type, GET_DISPLAY(selected_win_id));
 		} else {
-			if (!g_xid) {
-				g_xid = create_win(PACKAGE);
-				if (g_xid == NULL)
+			if (!g_win_id) {
+				g_win_id = create_win(PACKAGE);
+				if (g_win_id == NULL)
 					return;
-				g_print("create xid %p\n", g_xid);
-				create_render_rect_and_bg(g_xid);
-				elm_win_activate(g_xid);
-				evas_object_show(g_xid);
+				g_print("create win_id %p\n", g_win_id);
+				create_render_rect_and_bg(g_win_id);
+				elm_win_activate(g_win_id);
+				evas_object_show(g_win_id);
 			}
 			int i = 0;
 			for (i = 0; i < g_handle_num; i++) {
 				/* Create evas image object for EVAS surface */
 				if (!g_eo[i]) {
-					g_eo[i] = create_image_object(g_xid);
+					g_eo[i] = create_image_object(g_win_id);
 					g_print("create eo[%d] %p\n", i, g_eo[i]);
 					evas_object_image_size_set(g_eo[i], 500, 500);
 					evas_object_image_fill_set(g_eo[i], 0, 0, 500, 500);
