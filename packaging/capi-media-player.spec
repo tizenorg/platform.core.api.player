@@ -1,6 +1,3 @@
-%bcond_with wayland
-%bcond_with x
-
 Name:       capi-media-player
 Summary:    A Media Player API
 Version:    0.3.10
@@ -21,12 +18,7 @@ BuildRequires:  pkgconfig(appcore-efl)
 BuildRequires:  pkgconfig(elementary)
 BuildRequires:  pkgconfig(ecore)
 BuildRequires:  pkgconfig(evas)
-%if %{with x}
-BuildRequires:  pkgconfig(ecore-x)
-%endif
-%if %{with wayland}
 BuildRequires:  pkgconfig(ecore-wayland)
-%endif
 BuildRequires:  pkgconfig(capi-media-tool)
 BuildRequires:  pkgconfig(mmsvc-player)
 BuildRequires:  pkgconfig(json-c)
@@ -70,16 +62,6 @@ MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
 %endif
 %if "%{?profile}" == "tv"
     -DTIZEN_TV=YES \
-%endif
-%if %{with wayland}
-    -DWAYLAND_SUPPORT=On \
-%else
-    -DWAYLAND_SUPPORT=Off \
-%endif
-%if %{with x}
-    -DX11_SUPPORT=On \
-%else
-    -DX11_SUPPORT=Off \
 %endif
 %if "%{?profile}" == "tv" || "%{?profile}" == "wearable"
 	-DEVAS_RENDERER_SUPPORT=Off

@@ -25,9 +25,7 @@
 #include <Evas.h>
 #include <Elementary.h>
 #include <Ecore.h>
-#ifdef HAVE_WAYLAND
 #include <Ecore_Wayland.h>
-#endif
 #include <dlog.h>
 #include <mm_error.h>
 #include <muse_core.h>
@@ -1925,16 +1923,12 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	char *ret_buf = NULL;
 	Evas_Object *obj = NULL;
 	const char *object_type = NULL;
-#ifdef HAVE_WAYLAND
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
 	unsigned int wl_surface_id;
 	struct wl_surface *wl_surface;
 	struct wl_display *wl_display;
 	Ecore_Wl_Window *wl_window = NULL;
-#else
-	unsigned int xhandle = 0;
-#endif
 
 	LOGD("ENTER");
 
@@ -1946,7 +1940,6 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 		object_type = evas_object_type_get(obj);
 		if (object_type) {
 			if (type == PLAYER_DISPLAY_TYPE_OVERLAY && !strcmp(object_type, "elm_win")) {
-#ifdef HAVE_WAYLAND
 				/* wayland overlay surface */
 				LOGI("Wayland overlay surface type");
 				wl_win.type = type;
@@ -1984,11 +1977,6 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 					g_free(pc->wlclient);
 					pc->wlclient = NULL;
 				}
-#else
-				/* x window overlay surface */
-				LOGI("overlay surface type");
-				xhandle = elm_win_xwindow_get(obj);
-#endif
 			}
 #ifdef EVAS_RENDERER_SUPPORT
 			else if (type == PLAYER_DISPLAY_TYPE_EVAS && !strcmp(object_type, "image")) {
@@ -2017,7 +2005,6 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 		} else
 			return PLAYER_ERROR_INVALID_PARAMETER;
 	}
-#ifdef HAVE_WAYLAND
 	else {	/* PLAYER_DISPLAY_TYPE_NONE */
 		LOGI("Wayland surface type is NONE");
 		wl_win.type = type;
@@ -2027,10 +2014,6 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 		wl_win.wl_window_height = 0;
 	}
 	player_msg_send_array(api, pc, ret_buf, ret, wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
-#else
-	player_msg_send2(api, pc, ret_buf, ret, INT, type, INT, xhandle);
-#endif
-
 	g_free(ret_buf);
 	return ret;
 }

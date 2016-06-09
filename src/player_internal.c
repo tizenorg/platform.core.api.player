@@ -24,9 +24,7 @@
 #include <dlog.h>
 #include <Evas.h>
 #include <Ecore_Evas.h>
-#ifdef HAVE_WAYLAND
 #include <Ecore_Wayland.h>
-#endif
 #include <muse_player.h>
 #include <muse_player_msg.h>
 #include "player_private.h"
@@ -274,7 +272,6 @@ int player_set_media_stream_dynamic_resolution(player_h player, bool drc)
 	return ret;
 }
 
-#ifdef HAVE_WAYLAND
 int player_set_ecore_wl_display(player_h player, player_display_type_e type, Ecore_Wl_Window *ecore_wl_window, int x, int y, int  width, int height)
 {
 	PLAYER_INSTANCE_CHECK(player);
@@ -342,7 +339,6 @@ int player_set_ecore_wl_display(player_h player, player_display_type_e type, Eco
 
 	return ret;
 }
-#endif
 
 #ifndef TIZEN_TV
 int player_set_next_uri(player_h player, const char *uri)
