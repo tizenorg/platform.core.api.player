@@ -358,7 +358,7 @@ int player_set_next_uri(player_h player, const char *uri)
 	return ret;
 }
 
-int player_get_next_uri (player_h player, char **uri)
+int player_get_next_uri(player_h player, char **uri)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(uri);
@@ -410,6 +410,30 @@ int player_is_gapless(player_h player, bool *gapless)
 	if (ret == PLAYER_ERROR_NONE) {
 		player_msg_get(value, ret_buf);
 		*gapless = value;
+	}
+	g_free(ret_buf);
+	return ret;
+}
+
+int player_get_media_packet_video_frame_pool_size(player_h player, int *size)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(size);
+
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_MEDIA_PACKET_VIDEO_FRAME_POOL_SIZE;
+	player_cli_s *pc = (player_cli_s *) player;
+	char *ret_buf = NULL;
+	int value = 0;
+
+	LOGD("ENTER");
+
+	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_get(value, ret_buf);
+		*size = value;
+		pc->cb_info->video_frame_pool_size = value;
+		LOGD("packet pool size : %d", *size);
 	}
 	g_free(ret_buf);
 	return ret;

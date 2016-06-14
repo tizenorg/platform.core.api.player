@@ -381,7 +381,7 @@ int player_set_buffer_need_audio_data_cb(player_h player, player_buffer_need_dat
  * @post player_resourceconflict_cb() will be invoked.
  * @see player_unset_resourceconflict_cb()
  */
-int player_set_resourceconflict_cb (player_h player, player_resourceconflict_cb callback, void *user_data);
+int player_set_resourceconflict_cb(player_h player, player_resourceconflict_cb callback, void *user_data);
 
 /**
  * @brief Unregisters the callback function.
@@ -393,7 +393,7 @@ int player_set_resourceconflict_cb (player_h player, player_resourceconflict_cb 
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @see player_set_resourceconflict_cb()
  */
-int player_unset_resourceconflict_cb (player_h player);
+int player_unset_resourceconflict_cb(player_h player);
 
 /**
  * @brief Display the first video frame at the player_prepare() function to improve the playback performance.
@@ -416,19 +416,19 @@ int player_display_video_at_paused_state(player_h player, bool visible);
  */
 int player_set_display_parent_win_id(player_h player, int win_id);
 
-#else
+#else /* TIZEN_TV */
 
 /**
  * @brief Sets the data source (http or local file) to transite.
  * @since_tizen 3.0
  *
  * @details Player will transite the media source as seamlessly as possible after finishing current playback.
- *             If the function call is successful, the uri will be added at the end of uri list.
- * 		  You can add several uris and the set of uris will be played repeatedly if you call the player_set_looping().
- * 		  The first uri in the list is the original uri which is set by player_set_uri().
+ *          If the function call is successful, the uri will be added at the end of uri list.
+ *          You can add several uris and the set of uris will be played repeatedly if you call the player_set_looping().
+ *          The first uri in the list is the original uri which is set by player_set_uri().
  *
- * @remarks  Uri list will be cleared except first one when the player_unprepare() is called.
- *			If you call the player_set_uri(), you can change the first uri too.
+ * @remarks Uri list will be cleared except first one when the player_unprepare() is called.
+ *          If you call the player_set_uri(), you can change the first uri too.
  *
  * @param[in]   player The handle to the media player
  * @param[in]   uri Specifies the data location.
@@ -443,7 +443,7 @@ int player_set_display_parent_win_id(player_h player, int win_id);
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  * @see player_set_uri(), player_set_looping()
  */
-int player_set_next_uri (player_h player, const char *uri);
+int player_set_next_uri(player_h player, const char *uri);
 
 /**
  * @brief Gets the data source path.
@@ -461,7 +461,7 @@ int player_set_next_uri (player_h player, const char *uri);
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  * @see player_set_uri()
  */
-int player_get_next_uri (player_h player, char **uri);
+int player_get_next_uri(player_h player, char **uri);
 
 /**
  * @brief Sets the gapless playback status
@@ -498,7 +498,24 @@ int player_set_gapless(player_h player, bool gapless);
  */
 int player_is_gapless(player_h player, bool *gapless);
 
-#endif
+/**
+ * @brief Gets the size of video frame pool.
+ * @since_tizen 3.0
+ * @details App gets the video frame pool size which will be reused during playback.
+ * @param[in] player The handle to the media player
+ * @param[out] size The size of surface pool
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED
+ * @see player_set_media_packet_video_frame_decoded_cb()
+ */
+int player_get_media_packet_video_frame_pool_size(player_h player, int *size);
+
+#endif /* TIZEN_TV */
 
 /**
  * @}

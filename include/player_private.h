@@ -76,6 +76,11 @@ typedef struct {
 	gboolean running;
 } player_event_queue;
 
+typedef struct {
+	tbm_key key;
+	tbm_surface_h tsurf;
+} player_tsurf_info_t;
+
 typedef struct _callback_cb_info {
 	GThread *thread;
 	gint running;
@@ -86,7 +91,7 @@ typedef struct _callback_cb_info {
 	GMutex player_mutex;
 	GCond player_cond[MUSE_PLAYER_API_MAX];
 	GList *packet_list;
-	GMutex packet_list_mutex;
+	GMutex data_mutex;
 	gboolean block_seek_cb;
 	GMutex seek_cb_mutex;
 	msg_buff_s buff;
@@ -94,6 +99,8 @@ typedef struct _callback_cb_info {
 	media_format_h pkt_fmt;
 	void *evas_info;
 	tbm_bufmgr bufmgr;
+	GList *tsurf_list; /* player_tsurf_info_t */
+	int video_frame_pool_size;
 } callback_cb_info_s;
 
 typedef struct {
