@@ -215,7 +215,7 @@ int player_set_next_uri (player_h player, const char *uri);
  * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
  * @see player_set_uri()
  */
-int player_get_next_uri (player_h player, char **uri);
+int player_get_next_uri(player_h player, char **uri);
 
 /**
  * @brief Sets the gapless playback status
@@ -274,7 +274,22 @@ int player_is_gapless(player_h player, bool *gapless);
  */
 int player_set_ecore_wl_display(player_h player, player_display_type_e type, Ecore_Wl_Window *ecore_wl_window, int x, int y, int  width, int height);
 
-
+/**
+ * @brief Gets the size of video frame pool.
+ * @since_tizen 3.0
+ * @details App gets the video frame pool size which will be reused during playback.
+ * @param[in] player The handle to the media player
+ * @param[out] size The size of surface pool
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED
+ * @see player_set_media_packet_video_frame_decoded_cb()
+ */
+int player_get_media_packet_video_frame_pool_size(player_h player, int *size);
 
 /**
  * @}

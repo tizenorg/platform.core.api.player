@@ -68,7 +68,6 @@ static int _player_deinit_memory_buffer(player_cli_s * pc);
 int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user_data)
 {
 	int ret = MEDIA_PACKET_FINALIZE;
-	tbm_surface_h tsurf = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_MEDIA_PACKET_FINALIZE_CB;
 	_media_pkt_fin_data *fin_data = (_media_pkt_fin_data *) user_data;
 	intptr_t packet;
@@ -80,23 +79,15 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user
 		return ret;
 	}
 
-	ret = media_packet_get_tbm_surface(pkt, &tsurf);
-	if (ret != MEDIA_PACKET_ERROR_NONE) {
-		LOGE("media_packet_get_tbm_surface failed 0x%x", ret);
-		goto EXIT;
-	}
-
-	if (tsurf) {
-		tbm_surface_destroy(tsurf);
-		tsurf = NULL;
-	}
-
 	if (!fin_data || fin_data->fd <= INVALID_SOCKET) {
 		LOGE("invalid parameter, fd: %d", (fin_data) ? (fin_data->fd) : (-1));
 		goto EXIT;
 	}
 
-#if 1 /* FIXME : after applying media_packet_pool, no need to check packet_list manully. */
+	/* Do not destroy tbm surface here to reuse during playback          *
+	 * they will be destroyed at player_unprepare() or player_destroy(). *
+	 * ref: __player_remove_tsurf_list()                                 */
+
 	packet = fin_data->remote_pkt;
 	snd_msg = muse_core_msg_json_factory_new(api, MUSE_TYPE_POINTER, "packet", packet, 0);
 	snd_len = muse_core_ipc_send_msg(fin_data->fd, snd_msg);
@@ -105,22 +96,19 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user
 	if (snd_len > 0) {
 		/* player handle is available. remove packet from the list */
 		if (fin_data->cb_info->packet_list) {
-			g_mutex_lock(&fin_data->cb_info->packet_list_mutex);
+			g_mutex_lock(&fin_data->cb_info->data_mutex);
 			if (g_list_find(fin_data->cb_info->packet_list, pkt)) {
 				fin_data->cb_info->packet_list = g_list_remove(fin_data->cb_info->packet_list, pkt);
 			} else {
 				LOGW("there is no packet(%p) in exported list.", pkt);
 			}
-			g_mutex_unlock(&fin_data->cb_info->packet_list_mutex);
+			g_mutex_unlock(&fin_data->cb_info->data_mutex);
 		} else {
 			LOGW("there is no packet list.", pkt);
 		}
 	} else {
 		LOGE("fail to send msg.");
 	}
-#else
-	player_msg_send1_no_return(api, fin_data->cb_info->fd, POINTER, packet);
-#endif
 
 EXIT:
 	if (fin_data) {
@@ -531,6 +519,51 @@ static void __seek_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 	g_mutex_unlock(&cb_info->seek_cb_mutex);
 }
 
+static void __player_remove_tsurf_list(player_cli_s * pc)
+{
+	GList *l = NULL;
+
+	g_mutex_lock(&pc->cb_info->data_mutex);
+	if (pc->cb_info->tsurf_list) {
+		LOGD("total num of tsurf list = %d", g_list_length(pc->cb_info->tsurf_list));
+
+		for (l = g_list_first(pc->cb_info->tsurf_list); l; l = g_list_next(l)) {
+			player_tsurf_info_t* tmp = (player_tsurf_info_t *)l->data;
+
+			LOGD("%p will be removed", tmp);
+			if (tmp) {
+				if (tmp->tsurf) {
+					tbm_surface_destroy(tmp->tsurf);
+					tmp->tsurf = NULL;
+				}
+				g_free(tmp);
+			}
+		}
+		g_list_free(pc->cb_info->tsurf_list);
+		pc->cb_info->tsurf_list = NULL;
+	}
+	g_mutex_unlock(&pc->cb_info->data_mutex);
+	return;
+}
+
+static player_tsurf_info_t* __player_get_tsurf_from_list(callback_cb_info_s * cb_info, tbm_key key)
+{
+	GList *l = NULL;
+
+	g_mutex_lock(&cb_info->data_mutex);
+	for (l = g_list_first(cb_info->tsurf_list); l; l = g_list_next(l)) {
+		player_tsurf_info_t *tmp = (player_tsurf_info_t *)l->data;
+		if (tmp && (tmp->key == key)) {
+			LOGD("found tsurf_data of tbm_key %d",key);
+			g_mutex_unlock(&cb_info->data_mutex);
+			return tmp;
+		}
+	}
+	g_mutex_unlock(&cb_info->data_mutex);
+	LOGD("there is no tsurf_data for tbm_key:%d", key);
+	return NULL;
+}
+
 static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
 	tbm_bo bo[4] = { NULL, };
@@ -539,11 +572,12 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 	char *surface_info = (char *)&sinfo;
 	media_packet_h pkt = NULL;
 	tbm_surface_h tsurf = NULL;
+	player_tsurf_info_t *tsurf_data = NULL;
 	int bo_num = 0;
 	media_format_mimetype_e mimetype = MEDIA_FORMAT_NV12;
 	bool make_pkt_fmt = false;
-	int ret;
-	_media_pkt_fin_data *fin_data;
+	int ret = MEDIA_FORMAT_ERROR_NONE;
+	_media_pkt_fin_data *fin_data = NULL;
 	intptr_t packet;
 	uint64_t pts = 0;
 	int i = 0;
@@ -588,74 +622,120 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 		}
 	}
 
-	tsurf = tbm_surface_internal_create_with_bos(&sinfo, bo, bo_num);
-	if (tsurf) {
-		/* check media packet format */
-		if (cb_info->pkt_fmt) {
-			int pkt_fmt_width = 0;
-			int pkt_fmt_height = 0;
-			media_format_mimetype_e pkt_fmt_mimetype = MEDIA_FORMAT_NV12;
+	tsurf_data =__player_get_tsurf_from_list(cb_info, key[0]);
+	if (!tsurf_data) {
+		tsurf_data = g_new(player_tsurf_info_t, 1);
+		if (!tsurf_data) {
+			LOGE("failed to alloc tsurf info");
+			goto ERROR;
+		}
 
-			media_format_get_video_info(cb_info->pkt_fmt, &pkt_fmt_mimetype, &pkt_fmt_width, &pkt_fmt_height, NULL, NULL);
-			if (pkt_fmt_mimetype != mimetype || pkt_fmt_width != sinfo.width || pkt_fmt_height != sinfo.height) {
-				LOGW("different format. current 0x%x, %dx%d, new 0x%x, %dx%d", pkt_fmt_mimetype, pkt_fmt_width, pkt_fmt_height, mimetype, sinfo.width, sinfo.height);
-				media_format_unref(cb_info->pkt_fmt);
-				cb_info->pkt_fmt = NULL;
-				make_pkt_fmt = true;
-			}
+		tsurf = tbm_surface_internal_create_with_bos(&sinfo, bo, bo_num);
+		if (!tsurf) {
+			LOGE("failed to create tbm surface");
+			g_free(tsurf_data);
+			goto ERROR;
+		}
+		tsurf_data->key = key[0];
+		tsurf_data->tsurf = tsurf;
+		g_mutex_lock(&cb_info->data_mutex);
+		cb_info->tsurf_list = g_list_append(cb_info->tsurf_list, tsurf_data);
+		LOGD("key %d is added to the pool", key[0]);
+		if (cb_info->video_frame_pool_size < g_list_length(cb_info->tsurf_list)) {
+			LOGE("need to check the pool size: %d < %d", cb_info->video_frame_pool_size, g_list_length(cb_info->tsurf_list));
+		}
+		g_mutex_unlock(&cb_info->data_mutex);
+	} else {
+		if (tsurf_data->tsurf) {
+			tsurf = tsurf_data->tsurf;
 		} else {
-			make_pkt_fmt = true;
+			LOGE("tsurf_data->tsurf is null (never enter here)");
+			goto ERROR;
 		}
-		/* create packet format */
-		if (make_pkt_fmt) {
-			LOGI("make new pkt_fmt - mimetype 0x%x, %dx%d", mimetype, sinfo.width, sinfo.height);
-			ret = media_format_create(&cb_info->pkt_fmt);
-			if (ret == MEDIA_FORMAT_ERROR_NONE) {
-				ret = media_format_set_video_mime(cb_info->pkt_fmt, mimetype);
-				ret |= media_format_set_video_width(cb_info->pkt_fmt, sinfo.width);
-				ret |= media_format_set_video_height(cb_info->pkt_fmt, sinfo.height);
-				LOGI("media_format_set_video_mime,width,height ret : 0x%x", ret);
-			} else {
-				LOGE("media_format_create failed");
-			}
-		}
-
-		fin_data = g_new(_media_pkt_fin_data, 1);
-		fin_data->remote_pkt = packet;
-		fin_data->cb_info = cb_info;
-		fin_data->fd = cb_info->fd;
-		ret = media_packet_create_from_tbm_surface(cb_info->pkt_fmt, tsurf, (media_packet_finalize_cb) _player_media_packet_finalize, (void *)fin_data, &pkt);
-		if (ret != MEDIA_PACKET_ERROR_NONE) {
-			LOGE("media_packet_create_from_tbm_surface failed");
-			tbm_surface_destroy(tsurf);
-			tsurf = NULL;
-		}
-
-		/* keep the media packet to avoid mem leak. */
-		g_mutex_lock(&cb_info->packet_list_mutex);
-		cb_info->packet_list = g_list_append(cb_info->packet_list, pkt);
-		g_mutex_unlock(&cb_info->packet_list_mutex);
 	}
 
-	if (pkt) {
-		if (pts != 0) {
-			ret = media_packet_set_pts(pkt, (uint64_t) pts);
-			if (ret != MEDIA_PACKET_ERROR_NONE)
-				LOGE("media_packet_set_pts failed");
+	/* check media packet format */
+	if (cb_info->pkt_fmt) {
+		int pkt_fmt_width = 0;
+		int pkt_fmt_height = 0;
+		media_format_mimetype_e pkt_fmt_mimetype = MEDIA_FORMAT_NV12;
+
+		media_format_get_video_info(cb_info->pkt_fmt, &pkt_fmt_mimetype, &pkt_fmt_width, &pkt_fmt_height, NULL, NULL);
+		if (pkt_fmt_mimetype != mimetype || pkt_fmt_width != sinfo.width || pkt_fmt_height != sinfo.height) {
+			LOGW("different format. current 0x%x, %dx%d, new 0x%x, %dx%d", pkt_fmt_mimetype, pkt_fmt_width, pkt_fmt_height, mimetype, sinfo.width, sinfo.height);
+			media_format_unref(cb_info->pkt_fmt);
+			cb_info->pkt_fmt = NULL;
+			make_pkt_fmt = true;
 		}
-		if (cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) {
-			/* call media packet callback */
-			((player_media_packet_video_decoded_cb) cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) (pkt, cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]);
+	} else {
+		make_pkt_fmt = true;
+	}
+	/* create packet format */
+	if (make_pkt_fmt) {
+		LOGI("make new pkt_fmt - mimetype 0x%x, %dx%d", mimetype, sinfo.width, sinfo.height);
+		ret = media_format_create(&cb_info->pkt_fmt);
+		if (ret == MEDIA_FORMAT_ERROR_NONE) {
+			ret = media_format_set_video_mime(cb_info->pkt_fmt, mimetype);
+			ret |= media_format_set_video_width(cb_info->pkt_fmt, sinfo.width);
+			ret |= media_format_set_video_height(cb_info->pkt_fmt, sinfo.height);
+			LOGI("media_format_set_video_mime,width,height ret : 0x%x", ret);
 		} else {
-			LOGE("_video_decoded_cb is not set");
-			media_packet_destroy(pkt);
+			LOGE("media_format_create failed");
 		}
+	}
+
+	fin_data = g_new(_media_pkt_fin_data, 1);
+	if (!fin_data) {
+		LOGE("failed to alloc fin_data");
+		goto ERROR;
+	}
+	fin_data->remote_pkt = packet;
+	fin_data->cb_info = cb_info;
+	fin_data->fd = cb_info->fd;
+	ret = media_packet_create_from_tbm_surface(cb_info->pkt_fmt, tsurf, (media_packet_finalize_cb) _player_media_packet_finalize, (void *)fin_data, &pkt);
+	if (ret != MEDIA_PACKET_ERROR_NONE || !pkt) {
+		LOGE("media_packet_create_from_tbm_surface failed %d %p", ret, pkt);
+		goto ERROR;
+	}
+
+	/* keep the media packet to avoid mem leak. */
+	g_mutex_lock(&cb_info->data_mutex);
+	cb_info->packet_list = g_list_append(cb_info->packet_list, pkt);
+	g_mutex_unlock(&cb_info->data_mutex);
+
+	if (pts != 0) {
+		ret = media_packet_set_pts(pkt, (uint64_t) pts);
+		if (ret != MEDIA_PACKET_ERROR_NONE)
+			LOGE("media_packet_set_pts failed");
+	}
+	if (cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) {
+		/* call media packet callback */
+		((player_media_packet_video_decoded_cb) cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) (pkt, cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]);
+	} else {
+		LOGE("_video_decoded_cb is not set");
+		media_packet_destroy(pkt);
 	}
 
 	for (i = 0; i < bo_num; i++) {
 		if (bo[i])
 			tbm_bo_unref(bo[i]);
 	}
+	return;
+
+ERROR:
+	if (pkt)
+		media_packet_destroy(pkt);
+
+	if (fin_data)
+		g_free(fin_data);
+
+	for (i = 0; i < bo_num; i++) {
+		if (bo[i])
+			tbm_bo_unref(bo[i]);
+	}
+
+	player_msg_send1_no_return(MUSE_PLAYER_API_MEDIA_PACKET_FINALIZE_CB, cb_info->fd, POINTER, packet);
+	return;
 }
 
 static void __audio_frame_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
@@ -1131,7 +1211,7 @@ static callback_cb_info_s *callback_new(gint sockfd)
 	for (i = 0; i < MUSE_PLAYER_API_MAX; i++)
 		g_cond_init(&cb_info->player_cond[i]);
 
-	g_mutex_init(&cb_info->packet_list_mutex);
+	g_mutex_init(&cb_info->data_mutex);
 	g_mutex_init(&cb_info->seek_cb_mutex);
 
 	buff = &cb_info->buff;
@@ -1169,7 +1249,7 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	for (i = 0; i < MUSE_PLAYER_API_MAX; i++)
 		g_cond_clear(&cb_info->player_cond[i]);
 
-	g_mutex_clear(&cb_info->packet_list_mutex);
+	g_mutex_clear(&cb_info->data_mutex);
 	g_mutex_clear(&cb_info->seek_cb_mutex);
 
 	g_free(cb_info->buff.recvMsg);
@@ -1333,18 +1413,19 @@ int player_destroy(player_h player)
 	}
 #endif
 	if (pc->cb_info && pc->cb_info->packet_list) {
-		g_mutex_lock(&pc->cb_info->packet_list_mutex);
+		g_mutex_lock(&pc->cb_info->data_mutex);
 		LOGW("num of remained packets : %d !!", g_list_length(pc->cb_info->packet_list));
 		/* each media packet have to destroyed in application. */
 		g_list_free(pc->cb_info->packet_list);
 		pc->cb_info->packet_list = NULL;
-		g_mutex_unlock(&pc->cb_info->packet_list_mutex);
+		g_mutex_unlock(&pc->cb_info->data_mutex);
 	}
 
 	if (player_unset_evas_object_cb(player) != MM_ERROR_NONE)
 		LOGW("fail to unset evas object callback");
 
 	if (CALLBACK_INFO(pc)) {
+		__player_remove_tsurf_list(pc);
 		_player_event_queue_destroy(CALLBACK_INFO(pc));
 		tbm_bufmgr_deinit(TBM_BUFMGR(pc));
 
@@ -1437,6 +1518,9 @@ int player_unprepare(player_h player)
 		_del_mem(pc);
 		_player_deinit_memory_buffer(pc);
 	}
+
+	pc->cb_info->video_frame_pool_size = 0;
+	__player_remove_tsurf_list(pc);
 
 	g_free(ret_buf);
 	return ret;
@@ -2004,8 +2088,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				return PLAYER_ERROR_INVALID_PARAMETER;
 		} else
 			return PLAYER_ERROR_INVALID_PARAMETER;
-	}
-	else {	/* PLAYER_DISPLAY_TYPE_NONE */
+	} else {	/* PLAYER_DISPLAY_TYPE_NONE */
 		LOGI("Wayland surface type is NONE");
 		wl_win.type = type;
 		wl_win.wl_window_x = 0;
