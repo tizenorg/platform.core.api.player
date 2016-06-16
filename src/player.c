@@ -310,7 +310,7 @@ static int player_recv_msg(callback_cb_info_s * cb_info)
 			}
 			memset(buff->recvMsg, 0x00, sizeof(char)*buff->bufLen);
 		}
-		sprintf(buff->recvMsg, "%s%s", buff->part_of_msg, tmp);
+		snprintf(buff->recvMsg, buff->bufLen, "%s%s", buff->part_of_msg, tmp);
 		recvLen += strlen(buff->part_of_msg);
 
 		free(buff->part_of_msg);
@@ -1406,7 +1406,7 @@ int player_destroy(player_h player)
 
 	player_msg_send(api, pc, ret_buf, ret);
 #ifdef EVAS_RENDERER_SUPPORT
-	if (EVAS_HANDLE(pc)) {
+	if (CALLBACK_INFO(pc) && EVAS_HANDLE(pc)) {
 		player_unset_media_packet_video_frame_decoded_cb(player);
 		if (mm_evas_renderer_destroy(&EVAS_HANDLE(pc)) != MM_ERROR_NONE)
 			LOGW("fail to unset evas client");
@@ -1845,6 +1845,10 @@ int player_set_play_position(player_h player, int millisecond, bool accurate, pl
 	int pos = millisecond;
 
 	LOGD("ENTER");
+	if (!pc->cb_info) {
+		LOGE("cb_info is null");
+		return PLAYER_ERROR_INVALID_OPERATION;
+	}
 
 	if ((pc->push_media_stream == FALSE) &&
 		(pc->cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK])) {
