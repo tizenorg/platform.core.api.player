@@ -404,6 +404,7 @@ typedef void (*player_video_stream_changed_cb) (int width, int height, int fps, 
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_OUT_OF_MEMORY Out of memory
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_RESOURCE_LIMIT Resource limit (since_tizen 3.0)
  * @post The player state will be #PLAYER_STATE_IDLE.
  * @see player_destroy()
  */
