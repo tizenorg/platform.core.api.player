@@ -2108,6 +2108,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 int player_set_display_mode(player_h player, player_display_mode_e mode)
 {
 	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_CHECK_CONDITION(PLAYER_DISPLAY_MODE_LETTER_BOX <= mode && mode < PLAYER_DISPLAY_MODE_NUM, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER");
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_DISPLAY_MODE;
 	player_cli_s *pc = (player_cli_s *) player;
