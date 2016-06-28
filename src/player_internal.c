@@ -176,27 +176,13 @@ static void __evas_resize_cb(void *data, Evas * e, Evas_Object * eo, void *event
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
 	char *ret_buf = NULL;
-	int rotation;
-	Ecore_Evas *ecore_evas;
 	muse_player_api_e api = MUSE_PLAYER_API_RESIZE_VIDEO_RENDER_RECT;
 	int ret = PLAYER_ERROR_NONE;
 	LOGD("ret =%d", ret);
 
-	evas_object_geometry_get(eo, &wl_win.wl_window_x, &wl_win.wl_window_y, &wl_win.wl_window_width, &wl_win.wl_window_height);
-	ecore_evas = ecore_evas_ecore_evas_get(e);
-	rotation = ecore_evas_rotation_get(ecore_evas);
-	LOGD("rotation(%d)", rotation);
-	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
-			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
-	if (rotation == 270 || rotation == 90) {
-		LOGD("swap w and h");
-		int temp;
-		temp = wl_win.wl_window_width;
-		wl_win.wl_window_width = wl_win.wl_window_height;
-		wl_win.wl_window_height = temp;
-	}
-	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
-			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
+	player_get_evas_object_geometry(eo, e, &wl_win.wl_window_x, &wl_win.wl_window_y,
+			&wl_win.wl_window_width, &wl_win.wl_window_height);
+
 	wl_win.type = 0;			/*init  but not use */
 	wl_win.wl_surface_id = 0;	/*init  but not use */
 
@@ -221,7 +207,30 @@ static void __evas_del_cb(void *data, Evas * e, Evas_Object * eo, void *event_in
 	return;
 }
 
-int player_set_evas_object_cb(player_h player, Evas_Object * eo)
+void player_get_evas_object_geometry(Evas_Object *eo, Evas *e, int *x, int *y, int *width, int *height)
+{
+	Ecore_Evas *ecore_evas;
+	int rotation;
+	return_if_fail (eo != NULL || e != NULL || x != NULL || y != NULL || width != NULL || height != NULL);
+
+	evas_object_geometry_get(eo, x, y, width, height);
+	LOGD("get window geometroy : x(%d) y(%d) width(%d) height(%d)", *x, *y, *width, *height);
+	/* get rotaion */
+	ecore_evas = ecore_evas_ecore_evas_get(e);
+	rotation = ecore_evas_rotation_get(ecore_evas);
+	LOGD("rotation(%d)", rotation);
+	/* swap */
+	if (rotation == 270 || rotation == 90) {
+		LOGD("swap width with height");
+		int temp;
+		temp = *width;
+		*width = *height;
+		*height = temp;
+		LOGD("get window geometroy : x(%d) y(%d) width(%d) height(%d)", *x, *y, *width, *height);
+	}
+}
+
+int player_set_evas_object_cb(player_h player, Evas_Object *eo)
 {
 
 	PLAYER_INSTANCE_CHECK(player);
