@@ -134,7 +134,8 @@ typedef struct _player_cli_s {
 /* server state change timeout (sec) */
 #define SERVER_TIMEOUT(h)		((h)->server.timeout)
 
-int player_set_evas_object_cb(player_h player, Evas_Object * eo);
+void player_get_evas_object_geometry(Evas_Object *eo, Evas *e, int *x, int *y, int *width, int *height);
+int player_set_evas_object_cb(player_h player, Evas_Object *eo);
 int player_unset_evas_object_cb(player_h player);
 int client_get_api_timeout(player_cli_s * pc, muse_player_api_e api);
 int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s * cb_info, char **ret_buf, int time_out);
