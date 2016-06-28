@@ -38,6 +38,7 @@
 #include <sound_manager_internal.h>
 #include "player_internal.h"
 #include "player_private.h"
+#include "player_display.h"
 #include "player_msg.h"
 #ifdef EVAS_RENDERER_SUPPORT
 #include <mm_evas_renderer.h>
@@ -1421,7 +1422,7 @@ int player_destroy(player_h player)
 		g_mutex_unlock(&pc->cb_info->data_mutex);
 	}
 
-	if (player_unset_evas_object_cb(player) != MM_ERROR_NONE)
+	if (_wl_window_evas_object_cb_del(player) != MM_ERROR_NONE)
 		LOGW("fail to unset evas object callback");
 
 	if (CALLBACK_INFO(pc)) {
@@ -2017,6 +2018,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	struct wl_surface *wl_surface;
 	struct wl_display *wl_display;
 	Ecore_Wl_Window *wl_window = NULL;
+	Evas *e;
 
 	LOGD("ENTER");
 
@@ -2032,20 +2034,29 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				LOGI("Wayland overlay surface type");
 				wl_win.type = type;
 
-				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y, &wl_win.wl_window_width, &wl_win.wl_window_height);
+				e = evas_object_evas_get(obj);
+				return_val_if_fail(e != NULL, PLAYER_ERROR_INVALID_OPERATION);
 
-				if (player_set_evas_object_cb(player, obj) != MM_ERROR_NONE) {
+				ret = _wl_window_geometry_get(obj, e, &wl_win.wl_window_x, &wl_win.wl_window_y,
+							&wl_win.wl_window_width, &wl_win.wl_window_height);
+				if (ret != MM_ERROR_NONE) {
+					LOGE ("Fail to get window geometry");
+					return ret;
+				}
+				if (_wl_window_evas_object_cb_add(player, obj) != MM_ERROR_NONE) {
 					LOGW("fail to set evas object callback");
 				}
 
 				wl_window = elm_win_wl_window_get(obj);
+				return_val_if_fail(wl_window != NULL, PLAYER_ERROR_INVALID_OPERATION);
+
 				wl_surface = (struct wl_surface *)ecore_wl_window_surface_get(wl_window);
 
 				/* get wl_display */
 				wl_display = (struct wl_display *)ecore_wl_display_get();
 
 				if (!pc->wlclient) {
-					ret = _wlclient_create(&pc->wlclient);
+					ret = _wl_client_create(&pc->wlclient);
 					if (ret != MM_ERROR_NONE) {
 						LOGE("Wayland client create failure");
 						return ret;
@@ -2053,7 +2064,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				}
 				if (wl_surface && wl_display) {
 					LOGD("surface = %p, wl_display = %p", wl_surface, wl_display);
-					wl_surface_id = _wlclient_get_wl_window_wl_surface_id(pc->wlclient, wl_surface, wl_display);
+					wl_surface_id = _wl_client_get_wl_window_wl_surface_id(pc->wlclient, wl_surface, wl_display);
 					LOGD("wl_surface_id = %d", wl_surface_id);
 					wl_win.wl_surface_id = wl_surface_id;
 					LOGD("wl_win.wl_surface_id = %d", wl_win.wl_surface_id);

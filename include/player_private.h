@@ -21,7 +21,7 @@
 #include <media_format.h>
 #include <muse_player.h>
 #include "player.h"
-#include "player_wayland.h"
+#include "player_display.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,8 +134,6 @@ typedef struct _player_cli_s {
 /* server state change timeout (sec) */
 #define SERVER_TIMEOUT(h)		((h)->server.timeout)
 
-int player_set_evas_object_cb(player_h player, Evas_Object * eo);
-int player_unset_evas_object_cb(player_h player);
 int client_get_api_timeout(player_cli_s * pc, muse_player_api_e api);
 int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s * cb_info, char **ret_buf, int time_out);
 
