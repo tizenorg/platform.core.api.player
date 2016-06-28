@@ -22,6 +22,7 @@
 #include <wayland-client.h>
 #include <mm_types.h>
 #include <mm_debug.h>
+#include "player.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,9 +35,12 @@ typedef struct {
 	struct tizen_resource *tz_resource;
 } wl_client;
 
-int _wlclient_create(wl_client ** wlclient);
-int _wlclient_get_wl_window_wl_surface_id(wl_client * wlclient, struct wl_surface *surface, struct wl_display *display);
-void _wlclient_finalize(wl_client * wlclient);
+int _wl_client_create(wl_client ** wlclient);
+int _wl_client_get_wl_window_wl_surface_id(wl_client * wlclient, struct wl_surface *surface, struct wl_display *display);
+void _wl_client_finalize(wl_client * wlclient);
+int _wl_window_geometry_get(Evas_Object *eo, Evas *e, int *x, int *y, int *width, int *height);
+int _wl_window_evas_object_cb_add(player_h player, Evas_Object *eo);
+int _wl_window_evas_object_cb_del(player_h player);
 
 #ifdef __cplusplus
 }

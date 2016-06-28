@@ -30,6 +30,7 @@
 #include "player_private.h"
 #include "player_msg.h"
 #include "player_internal.h"
+#include "player_display.h"
 
 int player_set_pcm_extraction_mode(player_h player, bool sync, player_audio_pcm_extraction_cb callback, void *user_data)
 {
@@ -170,93 +171,6 @@ int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream
 	return ret;
 }
 
-static void __evas_resize_cb(void *data, Evas * e, Evas_Object * eo, void *event_info)
-{
-	player_cli_s *pc = (player_cli_s *) data;
-	wl_win_msg_type wl_win;
-	char *wl_win_msg = (char *)&wl_win;
-	char *ret_buf = NULL;
-	int rotation;
-	Ecore_Evas *ecore_evas;
-	muse_player_api_e api = MUSE_PLAYER_API_RESIZE_VIDEO_RENDER_RECT;
-	int ret = PLAYER_ERROR_NONE;
-	LOGD("ret =%d", ret);
-
-	evas_object_geometry_get(eo, &wl_win.wl_window_x, &wl_win.wl_window_y, &wl_win.wl_window_width, &wl_win.wl_window_height);
-	ecore_evas = ecore_evas_ecore_evas_get(e);
-	rotation = ecore_evas_rotation_get(ecore_evas);
-	LOGD("rotation(%d)", rotation);
-	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
-			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
-	if (rotation == 270 || rotation == 90) {
-		LOGD("swap w and h");
-		int temp;
-		temp = wl_win.wl_window_width;
-		wl_win.wl_window_width = wl_win.wl_window_height;
-		wl_win.wl_window_height = temp;
-	}
-	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
-			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
-	wl_win.type = 0;			/*init  but not use */
-	wl_win.wl_surface_id = 0;	/*init  but not use */
-
-	player_msg_send_array(api, pc, ret_buf, ret, wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
-
-	g_free(ret_buf);
-	return;
-
-}
-
-static void __evas_del_cb(void *data, Evas * e, Evas_Object * eo, void *event_info)
-{
-
-	player_cli_s *pc = (player_cli_s *) data;
-
-	evas_object_event_callback_del(eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb);
-	evas_object_event_callback_del(eo, EVAS_CALLBACK_DEL, __evas_del_cb);
-
-	LOGD("evas callback del %p", eo);
-	pc->have_evas_callback = FALSE;
-
-	return;
-}
-
-int player_set_evas_object_cb(player_h player, Evas_Object * eo)
-{
-
-	PLAYER_INSTANCE_CHECK(player);
-	return_val_if_fail(eo != NULL, MM_ERROR_INVALID_ARGUMENT);
-
-	player_cli_s *pc = (player_cli_s *) player;
-
-	if (pc->have_evas_callback && pc->eo == eo) {
-		LOGW("evas object had callback already %p", pc->eo);
-		return MM_ERROR_UNKNOWN;
-	}
-	pc->eo = eo;
-	evas_object_event_callback_add(eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb, player);
-	evas_object_event_callback_add(eo, EVAS_CALLBACK_DEL, __evas_del_cb, player);
-	LOGD("evas callback add %p", pc->eo);
-	pc->have_evas_callback = TRUE;
-
-	return MM_ERROR_NONE;
-}
-
-int player_unset_evas_object_cb(player_h player)
-{
-	PLAYER_INSTANCE_CHECK(player);
-	player_cli_s *pc = (player_cli_s *) player;
-	return_val_if_fail(pc->eo != NULL, MM_ERROR_INVALID_ARGUMENT);
-
-	evas_object_event_callback_del(pc->eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb);
-	evas_object_event_callback_del(pc->eo, EVAS_CALLBACK_DEL, __evas_del_cb);
-	LOGD("evas callback del %p", pc->eo);
-	pc->eo = NULL;
-	pc->have_evas_callback = FALSE;
-
-	return MM_ERROR_NONE;
-}
-
 int player_set_media_stream_dynamic_resolution(player_h player, bool drc)
 {
 	PLAYER_INSTANCE_CHECK(player);
@@ -310,7 +224,7 @@ int player_set_ecore_wl_display(player_h player, player_display_type_e type, Eco
 	wl_display = (struct wl_display *)ecore_wl_display_get();
 
 	if (!pc->wlclient) {
-		ret = _wlclient_create(&pc->wlclient);
+		ret = _wl_client_create(&pc->wlclient);
 		if (ret != MM_ERROR_NONE) {
 			LOGE("Wayland client create failure");
 			return ret;
@@ -319,7 +233,7 @@ int player_set_ecore_wl_display(player_h player, player_display_type_e type, Eco
 
 	if (wl_surface && wl_display) {
 		LOGD("surface = %p, wl_display = %p", wl_surface, wl_display);
-		wl_surface_id = _wlclient_get_wl_window_wl_surface_id(pc->wlclient, wl_surface, wl_display);
+		wl_surface_id = _wl_client_get_wl_window_wl_surface_id(pc->wlclient, wl_surface, wl_display);
 		LOGD("wl_surface_id = %d", wl_surface_id);
 		wl_win.wl_surface_id = wl_surface_id;
 		LOGD("wl_win.wl_surface_id = %d", wl_win.wl_surface_id);
