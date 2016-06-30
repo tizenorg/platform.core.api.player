@@ -2003,6 +2003,12 @@ int player_get_duration(player_h player, int *pduration)
 	return ret;
 }
 
+static void __packet_rendered_cb(media_packet_h packet, void *user_data)
+{
+	if (media_packet_destroy(packet) != MEDIA_PACKET_ERROR_NONE)
+		LOGW("failed to destroy media_packet %p", packet);
+}
+
 int player_set_display(player_h player, player_display_type_e type, player_display_h display)
 {
 	PLAYER_INSTANCE_CHECK(player);
@@ -2093,7 +2099,9 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				}
 				if (mm_evas_renderer_create(&EVAS_HANDLE(pc), obj) != MM_ERROR_NONE) {
 					LOGW("fail to set evas client");
-				}
+				} else
+					mm_evas_renderer_set_packet_rendered_callback(EVAS_HANDLE(pc), __packet_rendered_cb, NULL);
+
 				if (player_set_media_packet_video_frame_decoded_cb(player, mm_evas_renderer_write, (void *)EVAS_HANDLE(pc)) != PLAYER_ERROR_NONE) {
 					LOGW("fail to set decoded callback");
 				}
