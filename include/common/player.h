@@ -407,6 +407,7 @@ typedef void (*player_video_stream_changed_cb) (int width, int height, int fps, 
  * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
  * @retval #PLAYER_ERROR_OUT_OF_MEMORY Out of memory
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_RESOURCE_LIMIT Cannot create more instace due to resource(socket, thread, etc) limitation on system.
  * @post The player state will be #PLAYER_STATE_IDLE.
  * @see player_destroy()
  */
