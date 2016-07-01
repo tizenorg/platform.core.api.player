@@ -26,7 +26,7 @@
 
 #define KEY_END "XF86Stop"
 
-#define ES_DEFAULT_DIR_PATH			"/home/owner/content/"
+#define ES_DEFAULT_DIR_PATH			"/home/owner/"
 #define ES_DEFAULT_H264_VIDEO_PATH		ES_DEFAULT_DIR_PATH"Simpsons.h264"
 #define ES_DEFAULT_VIDEO_FORMAT_TYPE	MEDIA_FORMAT_H264_SP
 #define ES_DEFAULT_VIDEO_FORMAT_WIDTH	1280

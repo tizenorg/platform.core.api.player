@@ -64,9 +64,9 @@ MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
     -DTIZEN_TV=YES \
 %endif
 %if "%{?profile}" == "tv" || "%{?profile}" == "wearable"
-	-DEVAS_RENDERER_SUPPORT=Off
+	-DTIZEN_FEATURE_EVAS_RENDERER=Off
 %else
-	-DEVAS_RENDERER_SUPPORT=On
+	-DTIZEN_FEATURE_EVAS_RENDERER=On
 %endif
 
 make %{?jobs:-j%jobs}
