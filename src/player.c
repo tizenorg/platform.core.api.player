@@ -2040,7 +2040,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				ret = _wl_window_geometry_get(obj, e, &wl_win.wl_window_x, &wl_win.wl_window_y,
 							&wl_win.wl_window_width, &wl_win.wl_window_height);
 				if (ret != MM_ERROR_NONE) {
-					LOGE ("Fail to get window geometry");
+					LOGE("Fail to get window geometry");
 					return ret;
 				}
 				if (_wl_window_evas_object_cb_add(player, obj) != MM_ERROR_NONE) {
@@ -2051,31 +2051,31 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				return_val_if_fail(wl_window != NULL, PLAYER_ERROR_INVALID_OPERATION);
 
 				wl_surface = (struct wl_surface *)ecore_wl_window_surface_get(wl_window);
+				return_val_if_fail(wl_surface != NULL, PLAYER_ERROR_INVALID_OPERATION);
 
 				/* get wl_display */
 				wl_display = (struct wl_display *)ecore_wl_display_get();
+				return_val_if_fail(wl_display != NULL, PLAYER_ERROR_INVALID_OPERATION);
 
-				if (!pc->wlclient) {
-					ret = _wl_client_create(&pc->wlclient);
-					if (ret != MM_ERROR_NONE) {
-						LOGE("Wayland client create failure");
-						return ret;
-					}
+				LOGD("surface = %p, wl_display = %p", wl_surface, wl_display);
+
+				ret = _wl_client_create(&pc->wlclient);
+				if (ret != MM_ERROR_NONE) {
+					LOGE("Wayland client create failure");
+					return ret;
 				}
-				if (wl_surface && wl_display) {
-					LOGD("surface = %p, wl_display = %p", wl_surface, wl_display);
-					wl_surface_id = _wl_client_get_wl_window_wl_surface_id(pc->wlclient, wl_surface, wl_display);
-					LOGD("wl_surface_id = %d", wl_surface_id);
-					wl_win.wl_surface_id = wl_surface_id;
-					LOGD("wl_win.wl_surface_id = %d", wl_win.wl_surface_id);
-				} else {
-					LOGE("Fail to get wl_surface or wl_display");
-					return PLAYER_ERROR_INVALID_OPERATION;
-				}
+
+				wl_surface_id = _wl_client_get_wl_window_wl_surface_id(pc->wlclient, wl_surface, wl_display);
+				LOGD("wl_surface_id = %d", wl_surface_id);
+
+				/* need to free always */
 				if (pc->wlclient) {
 					g_free(pc->wlclient);
 					pc->wlclient = NULL;
 				}
+				return_val_if_fail(wl_surface_id > 0, PLAYER_ERROR_INVALID_OPERATION);
+				wl_win.wl_surface_id = wl_surface_id;
+
 			}
 #ifdef EVAS_RENDERER_SUPPORT
 			else if (type == PLAYER_DISPLAY_TYPE_EVAS && !strcmp(object_type, "image")) {
