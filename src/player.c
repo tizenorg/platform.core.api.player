@@ -2066,6 +2066,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 					LOGD("surface = %p, wl_display = %p", wl_surface, wl_display);
 					wl_surface_id = _wl_client_get_wl_window_wl_surface_id(pc->wlclient, wl_surface, wl_display);
 					LOGD("wl_surface_id = %d", wl_surface_id);
+					if (!wl_surface_id) return PLAYER_ERROR_INVALID_OPERATION;
 					wl_win.wl_surface_id = wl_surface_id;
 					LOGD("wl_win.wl_surface_id = %d", wl_win.wl_surface_id);
 				} else {
