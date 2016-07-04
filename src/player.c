@@ -448,9 +448,8 @@ static void __subtitle_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 	bool ret = TRUE;
 
 	player_msg_get1_string(recvMsg, duration, INT, text, ret);
-	if (ret) {
+	if (ret)
 		((player_subtitle_updated_cb) cb_info->user_cb[ev]) (duration, text, cb_info->user_data[ev]);
-	}
 }
 
 static void __capture_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
@@ -642,9 +641,8 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 		g_mutex_lock(&cb_info->data_mutex);
 		cb_info->tsurf_list = g_list_append(cb_info->tsurf_list, tsurf_data);
 		LOGD("key %d is added to the pool", key[0]);
-		if (cb_info->video_frame_pool_size < g_list_length(cb_info->tsurf_list)) {
+		if (cb_info->video_frame_pool_size < g_list_length(cb_info->tsurf_list))
 			LOGE("need to check the pool size: %d < %d", cb_info->video_frame_pool_size, g_list_length(cb_info->tsurf_list));
-		}
 		g_mutex_unlock(&cb_info->data_mutex);
 	} else {
 		if (tsurf_data->tsurf) {
@@ -1857,9 +1855,8 @@ int player_set_play_position(player_h player, int millisecond, bool accurate, pl
 		return PLAYER_ERROR_SEEK_FAILED;
 	} else {
 		g_mutex_lock(&pc->cb_info->seek_cb_mutex);
-		if (pc->push_media_stream == TRUE) {
+		if (pc->push_media_stream == TRUE)
 			pc->cb_info->block_seek_cb = TRUE;
-		}
 		LOGI("Event type : %d, pos : %d ", MUSE_PLAYER_EVENT_TYPE_SEEK, millisecond);
 		pc->cb_info->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] = callback;
 		pc->cb_info->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK] = user_data;
@@ -1874,9 +1871,8 @@ int player_set_play_position(player_h player, int millisecond, bool accurate, pl
 		g_mutex_unlock(&pc->cb_info->seek_cb_mutex);
 	}
 
-	if (pc->push_media_stream == TRUE) {
+	if (pc->push_media_stream == TRUE)
 		_player_event_queue_remove(&pc->cb_info->event_queue, MUSE_PLAYER_EVENT_TYPE_SEEK);
-	}
 
 	pc->cb_info->block_seek_cb = FALSE;
 	g_free(ret_buf);
@@ -2040,12 +2036,11 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				ret = _wl_window_geometry_get(obj, e, &wl_win.wl_window_x, &wl_win.wl_window_y,
 							&wl_win.wl_window_width, &wl_win.wl_window_height);
 				if (ret != MM_ERROR_NONE) {
-					LOGE ("Fail to get window geometry");
+					LOGE("Fail to get window geometry");
 					return ret;
 				}
-				if (_wl_window_evas_object_cb_add(player, obj) != MM_ERROR_NONE) {
+				if (_wl_window_evas_object_cb_add(player, obj) != MM_ERROR_NONE)
 					LOGW("fail to set evas object callback");
-				}
 
 				wl_window = elm_win_wl_window_get(obj);
 				return_val_if_fail(wl_window != NULL, PLAYER_ERROR_INVALID_OPERATION);
@@ -2091,12 +2086,11 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 					if (mm_evas_renderer_destroy(&EVAS_HANDLE(pc)) != MM_ERROR_NONE)
 						LOGW("fail to unset evas client");
 				}
-				if (mm_evas_renderer_create(&EVAS_HANDLE(pc), obj) != MM_ERROR_NONE) {
+				if (mm_evas_renderer_create(&EVAS_HANDLE(pc), obj) != MM_ERROR_NONE)
 					LOGW("fail to set evas client");
-				}
-				if (player_set_media_packet_video_frame_decoded_cb(player, mm_evas_renderer_write, (void *)EVAS_HANDLE(pc)) != PLAYER_ERROR_NONE) {
+
+				if (player_set_media_packet_video_frame_decoded_cb(player, mm_evas_renderer_write, (void *)EVAS_HANDLE(pc)) != PLAYER_ERROR_NONE)
 					LOGW("fail to set decoded callback");
-				}
 			}
 #endif
 			else
