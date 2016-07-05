@@ -98,18 +98,15 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user
 		/* player handle is available. remove packet from the list */
 		if (fin_data->cb_info->packet_list) {
 			g_mutex_lock(&fin_data->cb_info->data_mutex);
-			if (g_list_find(fin_data->cb_info->packet_list, pkt)) {
+			if (g_list_find(fin_data->cb_info->packet_list, pkt))
 				fin_data->cb_info->packet_list = g_list_remove(fin_data->cb_info->packet_list, pkt);
-			} else {
+			else
 				LOGW("there is no packet(%p) in exported list.", pkt);
-			}
 			g_mutex_unlock(&fin_data->cb_info->data_mutex);
-		} else {
+		} else
 			LOGW("there is no packet list.", pkt);
-		}
-	} else {
+	} else
 		LOGE("fail to send msg.");
-	}
 
 EXIT:
 	if (fin_data) {
@@ -448,9 +445,8 @@ static void __subtitle_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 	bool ret = TRUE;
 
 	player_msg_get1_string(recvMsg, duration, INT, text, ret);
-	if (ret) {
+	if (ret)
 		((player_subtitle_updated_cb) cb_info->user_cb[ev]) (duration, text, cb_info->user_data[ev]);
-	}
 }
 
 static void __capture_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
@@ -642,14 +638,13 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 		g_mutex_lock(&cb_info->data_mutex);
 		cb_info->tsurf_list = g_list_append(cb_info->tsurf_list, tsurf_data);
 		LOGD("key %d is added to the pool", key[0]);
-		if (cb_info->video_frame_pool_size < g_list_length(cb_info->tsurf_list)) {
+		if (cb_info->video_frame_pool_size < g_list_length(cb_info->tsurf_list))
 			LOGE("need to check the pool size: %d < %d", cb_info->video_frame_pool_size, g_list_length(cb_info->tsurf_list));
-		}
 		g_mutex_unlock(&cb_info->data_mutex);
 	} else {
-		if (tsurf_data->tsurf) {
+		if (tsurf_data->tsurf)
 			tsurf = tsurf_data->tsurf;
-		} else {
+		else {
 			LOGE("tsurf_data->tsurf is null (never enter here)");
 			goto ERROR;
 		}
@@ -1174,6 +1169,11 @@ static void *client_cb_handler(gpointer data)
 						g_mutex_unlock(&cb_info->player_mutex);
 						if (muse_core_msg_json_object_get_value("event", jobj, &event, MUSE_TYPE_INT))
 							_user_callback_handler(cb_info, event, buffer);
+					} else if (api == MUSE_PLAYER_CB_CREATE_ACK) {
+						g_mutex_lock(&cb_info->player_mutex);
+						cb_info->buff.recved++;
+						g_cond_signal(&cb_info->server_ack_cond);
+						g_mutex_unlock(&cb_info->player_mutex);
 					}
 				} else {
 					LOGE("Failed to get value. offset:%d/%d, [msg][ %s ]", offset, len, (recvMsg+offset));
@@ -1211,6 +1211,7 @@ static callback_cb_info_s *callback_new(gint sockfd)
 	g_mutex_init(&cb_info->player_mutex);
 	for (i = 0; i < MUSE_PLAYER_API_MAX; i++)
 		g_cond_init(&cb_info->player_cond[i]);
+	g_cond_init(&cb_info->server_ack_cond);
 
 	g_mutex_init(&cb_info->data_mutex);
 	g_mutex_init(&cb_info->seek_cb_mutex);
@@ -1249,6 +1250,7 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	g_mutex_clear(&cb_info->player_mutex);
 	for (i = 0; i < MUSE_PLAYER_API_MAX; i++)
 		g_cond_clear(&cb_info->player_cond[i]);
+	g_cond_clear(&cb_info->server_ack_cond);
 
 	g_mutex_clear(&cb_info->data_mutex);
 	g_mutex_clear(&cb_info->seek_cb_mutex);
@@ -1317,6 +1319,33 @@ int client_wait_for_cb_return(muse_player_api_e api, callback_cb_info_s * cb_inf
 	return ret;
 }
 
+int client_wait_for_server_ack(muse_player_api_e api, callback_cb_info_s * cb_info, int time_out)
+{
+	int ret = PLAYER_ERROR_NONE;
+	gint64 end_time = g_get_monotonic_time() + time_out * G_TIME_SPAN_MILLISECOND;
+	msg_buff_s *buff = &cb_info->buff;
+
+	g_mutex_lock(&cb_info->player_mutex);
+
+	if (!buff->recved) {
+		if (!g_cond_wait_until(&cb_info->server_ack_cond, &cb_info->player_mutex, end_time)) {
+			LOGW("server ack msg does not received %dms", time_out);
+			if (!buff->recved)
+				ret =  PLAYER_ERROR_INVALID_OPERATION;
+			else
+				LOGD("Another msg is received, continue create handle");
+			g_mutex_unlock(&cb_info->player_mutex);
+			return ret;
+		}
+	}
+	buff->recved--;
+
+	g_mutex_unlock(&cb_info->player_mutex);
+
+	return ret;
+}
+
+
 /*
 * Public Implementation
 */
@@ -1333,64 +1362,81 @@ int player_create(player_h * player)
 	muse_core_api_module_e module = MUSE_PLAYER;
 	player_cli_s *pc = NULL;
 	char *ret_buf = NULL;
+	int retry_count = CONNECTION_RETRY;
+	bool retry = false;
 
 	LOGD("ENTER");
 
-	sock_fd = muse_core_client_new();
-	if (sock_fd <= INVALID_SOCKET) {
-		LOGE("connection failure %d", errno);
-		ret = PLAYER_ERROR_INVALID_OPERATION;
-		goto ERROR;
-	}
-	player_msg_create_handle(api, sock_fd, INT, module, INT, pid);
-
 	pc = g_new0(player_cli_s, 1);
-	if (pc == NULL) {
-		ret = PLAYER_ERROR_OUT_OF_MEMORY;
-		goto ERROR;
-	}
+	if (pc == NULL)
+		return PLAYER_ERROR_OUT_OF_MEMORY;
 
-	pc->cb_info = callback_new(sock_fd);
-	if (!pc->cb_info) {
-		LOGE("fail to create callback");
-		ret = PLAYER_ERROR_INVALID_OPERATION;
-		goto ERROR;
-	}
-	if (!_player_event_queue_new(pc->cb_info)) {
-		LOGE("fail to create event queue");
-		ret = PLAYER_ERROR_INVALID_OPERATION;
-		goto ERROR;
-	}
-
-	ret = client_wait_for_cb_return(api, pc->cb_info, &ret_buf, CALLBACK_TIME_OUT);
-	if (ret == PLAYER_ERROR_NONE) {
-		intptr_t module_addr;
-		*player = (player_h) pc;
-		if (player_msg_get_type(module_addr, ret_buf, POINTER)) {
-			pc->cb_info->data_fd = muse_core_client_new_data_ch();
-			muse_core_send_module_addr(module_addr, pc->cb_info->data_fd);
-			LOGD("Data channel fd %d, muse module addr %p", pc->cb_info->data_fd, module_addr);
+	while (--retry_count) {
+		sock_fd = muse_core_client_new();
+		if (sock_fd <= INVALID_SOCKET) {
+			LOGE("connection failure %d", errno);
+			return PLAYER_ERROR_INVALID_OPERATION;
 		}
-		SERVER_TIMEOUT(pc) = MAX_SERVER_TIME_OUT;	/* will be update after prepare phase. */
-	} else
-		goto ERROR;
 
-	pc->cb_info->bufmgr = tbm_bufmgr_init(-1);
-	pc->push_media_stream = FALSE;
+		player_msg_create_handle(api, sock_fd, INT, module, INT, pid);
 
-	g_free(ret_buf);
-	return ret;
+		pc->cb_info = callback_new(sock_fd);
+		if (!pc->cb_info) {
+			LOGE("fail to create callback");
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+			goto ERROR;
+		}
+
+		ret = client_wait_for_server_ack(api, pc->cb_info, CREATE_CB_TIME_OUT);
+		if (ret == PLAYER_ERROR_INVALID_OPERATION) {
+			retry = true;
+			goto ERROR;
+		}
+		retry = false;
+
+		if (!_player_event_queue_new(pc->cb_info)) {
+			LOGE("fail to create event queue");
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+			goto ERROR;
+		}
+
+		ret = client_wait_for_cb_return(api, pc->cb_info, &ret_buf, CALLBACK_TIME_OUT * 2);
+		if (ret == PLAYER_ERROR_NONE) {
+			intptr_t module_addr;
+			*player = (player_h) pc;
+			if (player_msg_get_type(module_addr, ret_buf, POINTER)) {
+				pc->cb_info->data_fd = muse_core_client_new_data_ch();
+				muse_core_send_module_addr(module_addr, pc->cb_info->data_fd);
+				LOGD("Data channel fd %d, muse module addr %p", pc->cb_info->data_fd, module_addr);
+			} else {
+				ret = PLAYER_ERROR_INVALID_OPERATION;
+				goto ERROR;
+			}
+			SERVER_TIMEOUT(pc) = MAX_SERVER_TIME_OUT; /* will be update after prepare phase. */
+		} else
+			goto ERROR;
+
+		pc->cb_info->bufmgr = tbm_bufmgr_init(-1);
+		pc->push_media_stream = FALSE;
+
+		g_free(ret_buf);
+		return ret;
 
  ERROR:
-	if (pc && pc->cb_info) {
-		if (pc->cb_info->event_queue.running)
-			_player_event_queue_destroy(pc->cb_info);
-		callback_destroy(pc->cb_info);
-		pc->cb_info = NULL;
+		if (pc && pc->cb_info) {
+			if (pc->cb_info->event_queue.running)
+				_player_event_queue_destroy(pc->cb_info);
+			callback_destroy(pc->cb_info);
+			pc->cb_info = NULL;
+		}
+		g_free(ret_buf);
+		ret_buf = NULL;
+		LOGE("ret value : %d, retry #%d", ret, CONNECTION_RETRY - retry_count);
+		if (!retry)
+			break;
 	}
 	g_free(pc);
-	g_free(ret_buf);
-	LOGD("ret value : %d", ret);
+	pc = NULL;
 	return ret;
 }
 
