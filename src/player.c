@@ -1204,6 +1204,8 @@ static callback_cb_info_s *callback_new(gint sockfd)
 	g_return_val_if_fail(sockfd > 0, NULL);
 
 	cb_info = g_new(callback_cb_info_s, 1);
+	if (!cb_info)
+		return NULL;
 	memset(cb_info, 0, sizeof(callback_cb_info_s));
 
 	g_mutex_init(&cb_info->player_mutex);
