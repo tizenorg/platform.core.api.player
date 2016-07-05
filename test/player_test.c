@@ -38,9 +38,7 @@
 #define LOG_TAG "PLAYER_TEST"
 
 #define MAX_STRING_LEN	2048
-#define MMTS_SAMPLELIST_INI_DEFAULT_PATH "/opt/etc/mmts_filelist.ini"
-#define PLAYER_TEST_DUMP_PATH_PREFIX   "/home/owner/content/dump_pcm_"
-#define INI_SAMPLE_LIST_MAX 9
+#define PLAYER_TEST_DUMP_PATH_PREFIX   "/home/owner/dump_pcm_"
 #define DEFAULT_HTTP_TIMEOUT -1
 
 static gboolean g_memory_playback = FALSE;
@@ -113,7 +111,6 @@ static player_h g_player[MAX_HANDLE] = { 0, };
 
 int g_handle_num = 1;
 int g_menu_state = CURRENT_STATUS_MAINMENU;
-char g_file_list[9][256];
 gboolean quit_pushing;
 sound_stream_info_h g_stream_info_h = NULL;
 
@@ -1682,24 +1679,6 @@ void _interpret_main_menu(char *cmd)
 	if (len == 1) {
 		if (strncmp(cmd, "a", 1) == 0) {
 			g_menu_state = CURRENT_STATUS_FILENAME;
-		} else if (strncmp(cmd, "1", 1) == 0) {
-			play_with_ini(g_file_list[0]);
-		} else if (strncmp(cmd, "2", 1) == 0) {
-			play_with_ini(g_file_list[1]);
-		} else if (strncmp(cmd, "3", 1) == 0) {
-			play_with_ini(g_file_list[2]);
-		} else if (strncmp(cmd, "4", 1) == 0) {
-			play_with_ini(g_file_list[3]);
-		} else if (strncmp(cmd, "5", 1) == 0) {
-			play_with_ini(g_file_list[4]);
-		} else if (strncmp(cmd, "6", 1) == 0) {
-			play_with_ini(g_file_list[5]);
-		} else if (strncmp(cmd, "7", 1) == 0) {
-			play_with_ini(g_file_list[6]);
-		} else if (strncmp(cmd, "8", 1) == 0) {
-			play_with_ini(g_file_list[7]);
-		} else if (strncmp(cmd, "9", 1) == 0) {
-			play_with_ini(g_file_list[8]);
 		} else if (strncmp(cmd, "b", 1) == 0) {
 			_player_play();
 		} else if (strncmp(cmd, "c", 1) == 0) {
@@ -1814,17 +1793,9 @@ void _interpret_main_menu(char *cmd)
 
 void display_sub_basic()
 {
-	int idx;
 	g_print("\n");
 	g_print("=========================================================================================\n");
 	g_print("                          Player Test (press q to quit) \n");
-	g_print("-----------------------------------------------------------------------------------------\n");
-	g_print("*. Sample List in [%s]      \t", MMTS_SAMPLELIST_INI_DEFAULT_PATH);
-	g_print("nb. num. of handles \n");
-	for (idx = 1; idx <= INI_SAMPLE_LIST_MAX; idx++) {
-		if (strlen(g_file_list[idx - 1]) > 0)
-			g_print("%d. Play [%s]\n", idx, g_file_list[idx - 1]);
-	}
 	g_print("-----------------------------------------------------------------------------------------\n");
 	g_print("[playback] a. Create\t");
 	g_print("pr. Prepare  \t");

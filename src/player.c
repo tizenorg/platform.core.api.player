@@ -1244,7 +1244,7 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	g_thread_unref(cb_info->thread);
 	cb_info->thread = NULL;
 
-	LOGI("%p Callback destroyed", cb_info->thread);
+	LOGI("%p Callback destroyed", cb_info);
 
 	g_mutex_clear(&cb_info->player_mutex);
 	for (i = 0; i < MUSE_PLAYER_API_MAX; i++)
