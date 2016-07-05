@@ -85,6 +85,7 @@ typedef enum {
 	PLAYER_ERROR_PERMISSION_DENIED  = TIZEN_ERROR_PERMISSION_DENIED,        /**< Permission denied */
 	PLAYER_ERROR_SERVICE_DISCONNECTED = PLAYER_ERROR_CLASS | 0x0d,          /**< Socket connection lost (Since 3.0) */
 	PLAYER_ERROR_BUFFER_SPACE         = TIZEN_ERROR_BUFFER_SPACE,           /**< No buffer space available (Since 3.0)*/
+	PLAYER_ERROR_SERVICE_NO_RESPONSE = PLAYER_ERROR_CLASS | 0x0e,           /**< muse server no respense (Since 3.0) */
 } player_error_e;
 
 /**
@@ -408,6 +409,7 @@ typedef void (*player_video_stream_changed_cb) (int width, int height, int fps, 
  * @retval #PLAYER_ERROR_OUT_OF_MEMORY Out of memory
  * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
  * @retval #PLAYER_ERROR_RESOURCE_LIMIT Cannot create more instace due to resource(socket, thread, etc) limitation on system.
+ * @retval #PLAYER_ERROR_SERVICE_NO_RESPONSE server does not response
  * @post The player state will be #PLAYER_STATE_IDLE.
  * @see player_destroy()
  */

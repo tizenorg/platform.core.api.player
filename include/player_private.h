@@ -45,6 +45,9 @@ extern "C" {
 #define PLAYER_NULL_ARG_CHECK(arg)      \
 		PLAYER_CHECK_CONDITION(arg != NULL, PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER")
 
+#define CONNECTION_RETRY 51
+#define CREATE_CB_TIME_OUT 400
+
 #define CALLBACK_TIME_OUT (5*1000) /* ms */
 #define MAX_SERVER_TIME_OUT 35     /* sec */
 
@@ -90,6 +93,7 @@ typedef struct _callback_cb_info {
 	gpointer user_data[MUSE_PLAYER_EVENT_TYPE_NUM];
 	GMutex player_mutex;
 	GCond player_cond[MUSE_PLAYER_API_MAX];
+	GCond server_ack_cond;
 	GList *packet_list;
 	GMutex data_mutex;
 	gboolean block_seek_cb;
