@@ -546,7 +546,7 @@ static void __player_remove_tsurf_list(player_cli_s * pc)
 	return;
 }
 
-static player_tsurf_info_t* __player_get_tsurf_from_list(callback_cb_info_s * cb_info, tbm_key key)
+static player_tsurf_info_t* __player_get_tsurf_from_list(callback_cb_info_s * cb_info, tbm_key key, tbm_surface_info_s sinfo)
 {
 	GList *l = NULL;
 
@@ -555,8 +555,23 @@ static player_tsurf_info_t* __player_get_tsurf_from_list(callback_cb_info_s * cb
 		player_tsurf_info_t *tmp = (player_tsurf_info_t *)l->data;
 		if (tmp && (tmp->key == key)) {
 			LOGD("found tsurf_data of tbm_key %d", key);
-			g_mutex_unlock(&cb_info->data_mutex);
-			return tmp;
+
+			/* need to check tsuf info to support DRC */
+			if ((tbm_surface_get_height(tmp->tsurf) != sinfo.height) ||
+				(tbm_surface_get_width(tmp->tsurf) != sinfo.width)) {
+
+				cb_info->tsurf_list = g_list_remove(cb_info->tsurf_list, tmp);
+				LOGW("tsurf info is changed. need to create new tsurf.");
+				tbm_surface_destroy(tmp->tsurf);
+				g_free(tmp);
+
+				g_mutex_unlock(&cb_info->data_mutex);
+				return NULL;
+
+			} else {
+				g_mutex_unlock(&cb_info->data_mutex);
+				return tmp;
+			}
 		}
 	}
 	g_mutex_unlock(&cb_info->data_mutex);
@@ -622,7 +637,7 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 		}
 	}
 
-	tsurf_data = __player_get_tsurf_from_list(cb_info, key[0]);
+	tsurf_data = __player_get_tsurf_from_list(cb_info, key[0], sinfo);
 	if (!tsurf_data) {
 		tsurf_data = g_new(player_tsurf_info_t, 1);
 		if (!tsurf_data) {
