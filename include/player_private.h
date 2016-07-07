@@ -90,7 +90,6 @@ typedef struct _callback_cb_info {
 	gpointer user_data[MUSE_PLAYER_EVENT_TYPE_NUM];
 	GMutex player_mutex;
 	GCond player_cond[MUSE_PLAYER_API_MAX];
-	GList *packet_list;
 	GMutex data_mutex;
 	gboolean block_seek_cb;
 	GMutex seek_cb_mutex;
