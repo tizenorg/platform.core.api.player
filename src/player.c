@@ -55,6 +55,7 @@ typedef struct {
 	intptr_t remote_pkt;
 	callback_cb_info_s *cb_info; /* to monitor the packet_list */
 	gint fd;
+	bool use_tsurf_pool;
 } _media_pkt_fin_data;
 
 /*
@@ -85,9 +86,29 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user
 		goto EXIT;
 	}
 
-	/* Do not destroy tbm surface here to reuse during playback          *
-	 * they will be destroyed at player_unprepare() or player_destroy(). *
-	 * ref: __player_remove_tsurf_list()                                 */
+	if (!fin_data->use_tsurf_pool) {
+		tbm_surface_h tsurf = NULL;
+		if (media_packet_get_tbm_surface(pkt, &tsurf) != MEDIA_PACKET_ERROR_NONE) {
+			LOGE("media_packet_get_tbm_surface failed");
+			/* continue the remained job */
+		}
+		if (tsurf) {
+			LOGD("_player_media_packet_finalize tsurf destroy %p", tsurf);
+			tbm_surface_destroy(tsurf);
+			tsurf = NULL;
+		}
+	} else {
+		/* Do not destroy tbm surface here to reuse during playback          *
+		 * they will be destroyed at player_unprepare() or player_destroy(). *
+		 * ref: __player_remove_tsurf_list()                                 */
+
+		tbm_surface_h tsurf = NULL;
+
+		if (media_packet_get_tbm_surface(pkt, &tsurf) == MEDIA_PACKET_ERROR_NONE) {
+			LOGD("tsurf set to null %p", tsurf);
+			tsurf = NULL;
+		}
+	}
 
 	packet = fin_data->remote_pkt;
 	snd_msg = muse_core_msg_json_factory_new(api, MUSE_TYPE_POINTER, "packet", packet, 0);
@@ -96,7 +117,7 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user
 
 	if (snd_len > 0) {
 		/* player handle is available. remove packet from the list */
-		if (fin_data->cb_info->packet_list) {
+		if (fin_data->cb_info && fin_data->cb_info->packet_list) {
 			g_mutex_lock(&fin_data->cb_info->data_mutex);
 			if (g_list_find(fin_data->cb_info->packet_list, pkt)) {
 				fin_data->cb_info->packet_list = g_list_remove(fin_data->cb_info->packet_list, pkt);
@@ -653,12 +674,14 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 		}
 		tsurf_data->key = key[0];
 		tsurf_data->tsurf = tsurf;
-		g_mutex_lock(&cb_info->data_mutex);
-		cb_info->tsurf_list = g_list_append(cb_info->tsurf_list, tsurf_data);
-		LOGD("key %d is added to the pool", key[0]);
-		if (cb_info->video_frame_pool_size < g_list_length(cb_info->tsurf_list))
-			LOGE("need to check the pool size: %d < %d", cb_info->video_frame_pool_size, g_list_length(cb_info->tsurf_list));
-		g_mutex_unlock(&cb_info->data_mutex);
+		if (cb_info->use_tsurf_pool) {
+			g_mutex_lock(&cb_info->data_mutex);
+			cb_info->tsurf_list = g_list_append(cb_info->tsurf_list, tsurf_data);
+			LOGD("key %d is added to the pool", key[0]);
+			if (cb_info->video_frame_pool_size < g_list_length(cb_info->tsurf_list))
+				LOGE("need to check the pool size: %d < %d", cb_info->video_frame_pool_size, g_list_length(cb_info->tsurf_list));
+			g_mutex_unlock(&cb_info->data_mutex);
+		}
 	} else {
 		if (tsurf_data->tsurf) {
 			tsurf = tsurf_data->tsurf;
@@ -706,6 +729,7 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s * cb_info, 
 	fin_data->remote_pkt = packet;
 	fin_data->cb_info = cb_info;
 	fin_data->fd = cb_info->fd;
+	fin_data->use_tsurf_pool = cb_info->use_tsurf_pool;
 	ret = media_packet_create_from_tbm_surface(cb_info->pkt_fmt, tsurf, (media_packet_finalize_cb) _player_media_packet_finalize, (void *)fin_data, &pkt);
 	if (ret != MEDIA_PACKET_ERROR_NONE || !pkt) {
 		LOGE("media_packet_create_from_tbm_surface failed %d %p", ret, pkt);

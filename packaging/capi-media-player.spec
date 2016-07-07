@@ -1,6 +1,6 @@
 Name:       capi-media-player
 Summary:    A Media Player API
-Version:    0.3.14
+Version:    0.3.15
 Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
