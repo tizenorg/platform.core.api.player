@@ -329,6 +329,42 @@ int player_is_gapless(player_h player, bool *gapless)
 	return ret;
 }
 
+int player_enable_tsurf_pool(player_h player, bool enable)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	int ret = PLAYER_ERROR_NONE;
+	player_cli_s *pc = (player_cli_s *) player;
+
+	LOGD("ENTER enable:%d", enable);
+
+	if (pc && pc->cb_info)
+		pc->cb_info->use_tsurf_pool = enable;
+	else {
+		LOGE("failed to enable the tbm surf pool");
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
+
+	return ret;
+}
+
+int player_is_enabled_tsurf_pool(player_h player, bool *enabled)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(enabled);
+	int ret = PLAYER_ERROR_NONE;
+	player_cli_s *pc = (player_cli_s *) player;
+
+	LOGD("ENTER");
+	if (pc && pc->cb_info)
+		*enabled = pc->cb_info->use_tsurf_pool;
+	else {
+		LOGE("failed to get the tbm surf pool state");
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
+
+	return ret;
+}
+
 int player_get_media_packet_video_frame_pool_size(player_h player, int *size)
 {
 	PLAYER_INSTANCE_CHECK(player);
