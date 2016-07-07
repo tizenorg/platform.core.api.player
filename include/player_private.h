@@ -101,6 +101,7 @@ typedef struct _callback_cb_info {
 	tbm_bufmgr bufmgr;
 	GList *tsurf_list; /* player_tsurf_info_t */
 	int video_frame_pool_size;
+	bool use_tsurf_pool;
 } callback_cb_info_s;
 
 typedef struct {

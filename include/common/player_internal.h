@@ -499,6 +499,41 @@ int player_set_gapless(player_h player, bool gapless);
 int player_is_gapless(player_h player, bool *gapless);
 
 /**
+ * @brief Enables the tbm surface pool.
+ * @since_tizen 3.0
+ * @details If it is @c true, tbm surface will be enabled to share the video frame.
+ *          If it is @c false, it won't. The default value is @c false.
+ * @param[in] player  The handle to the media player
+ * @param[in] enable  The new tbm surface status
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @pre The player state must be #PLAYER_STATE_IDLE.
+ * @see	player_is_enabled_tsurf_pool()
+ */
+int player_enable_tsurf_pool(player_h player, bool enable);
+
+/**
+ * @brief Gets the player's tbm surface pool enable status.
+ * @since_tizen 3.0
+ * @details If it is @c true, tbm surface pool is enabled to share the video frame.
+ *          If it is @c false, it won't. The default value is @c false.
+ * @param[in]   player The handle to the media player
+ * @param[out]  enabled The tbm surface enable status
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_enable_tsurf_pool()
+ */
+int player_is_enabled_tsurf_pool(player_h player, bool *enabled);
+
+/**
  * @brief Gets the size of video frame pool.
  * @since_tizen 3.0
  * @details App gets the video frame pool size which will be reused during playback.
