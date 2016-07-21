@@ -83,6 +83,7 @@ enum {
 	CURRENT_STATUS_STREAMING_PLAYBACK_RATE,
 	CURRENT_STATUS_SWITCH_SUBTITLE,
 	CURRENT_STATUS_NEXT_URI,
+	CURRENT_STATUS_GAPLESS,
 };
 
 #define MAX_HANDLE 20
@@ -1168,7 +1169,6 @@ static void _player_get_progressive_download_status()
 static void set_next_uri(char * uri)
 {
 #ifndef TIZEN_TV
-	player_set_gapless(g_player[0], TRUE);
 	if (player_set_next_uri(g_player[0], uri) != PLAYER_ERROR_NONE)
 		g_print("fail to set next uri");
 #else
@@ -1392,6 +1392,24 @@ static void get_stream_info()
 	}
 	player_get_video_size(g_player[0], &w, &h);
 	g_print("                                                            ==> [Player_Test] Width: [%d ] , Height: [%d ] \n", w, h);
+}
+
+static void set_gapless(bool gapless)
+{
+#ifndef TIZEN_TV
+	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
+		if (player_set_gapless(g_player[0], gapless) != PLAYER_ERROR_NONE)
+			g_print("failed set_gapless\n");
+	} else {
+		int i = 0;
+		for (i = 0; i < g_handle_num; i++) {
+			if (player_set_gapless(g_player[i], gapless) != PLAYER_ERROR_NONE)
+				g_print("failed to set_gapless\n");
+		}
+	}
+#else
+	g_print("not support at TV profile");
+#endif
 }
 
 static void set_looping(bool looping)
@@ -1780,6 +1798,8 @@ void _interpret_main_menu(char *cmd)
 			g_menu_state = CURRENT_STATUS_NEXT_URI;
 		} else if (strncmp(cmd, "gu", 2) == 0) {
 			get_next_uri();
+		} else if (strncmp(cmd, "sg", 2) == 0) {
+			g_menu_state = CURRENT_STATUS_GAPLESS;
 		} else {
 			g_print("unknown menu \n");
 		}
@@ -1834,6 +1854,7 @@ void display_sub_basic()
 	g_print("[Video Capture] C. Capture \n");
 	g_print("[next uri] su. set next uri. \t");
 	g_print("gu. get next uri. \t");
+	g_print("sg. set gapless. \n");
 	g_print("[etc] sp. Set Progressive Download\t");
 	g_print("gp. Get Progressive Download status\n");
 	g_print("mp. memory playback\n");
@@ -1893,6 +1914,8 @@ static void displaymenu()
 			g_print("no track\n");
 	} else if (g_menu_state == CURRENT_STATUS_NEXT_URI) {
 		g_print("*** input next uri.\n");
+	} else if (g_menu_state == CURRENT_STATUS_GAPLESS) {
+		g_print("*** input gapless value.(0:disable, 1: enable) \n");
 	} else {
 		g_print("*** unknown status.\n");
 		quit_program();
@@ -1981,6 +2004,13 @@ static void interpret(char *cmd)
 		{
 			int looping = atoi(cmd);
 			set_looping(looping);
+			reset_menu_state();
+		}
+		break;
+	case CURRENT_STATUS_GAPLESS:
+		{
+			int gapless = atoi(cmd);
+			set_gapless(gapless);
 			reset_menu_state();
 		}
 		break;
